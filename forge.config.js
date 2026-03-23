@@ -37,19 +37,17 @@ module.exports = {
           config: './webpack.renderer.config.js',
           entryPoints: [
             {
+              name: 'main_window', 
               html: './src/index.html',
-              js: './src/renderer.js',
-              name: 'main_window',
+              js: './src/main/renderer.js',
               preload: {
-                js: './src/preload.js',
+                js: './src/main/preload.js',
               },
             },
           ],
         },
       },
     },
-    // Fuses are used to enable/disable various Electron functionality
-    // at package time, before code signing the application
     new FusesPlugin({
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
