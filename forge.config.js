@@ -36,15 +36,15 @@ module.exports = {
         renderer: {
           config: './webpack.renderer.config.js',
           entryPoints: [
-            {
-              name: 'main_window', 
-              html: './src/index.html',
-              js: './src/main/renderer.js',
-              preload: {
-                js: './src/main/preload.js',
-              },
-            },
-          ],
+  {
+    name: 'main_window',
+    html: './src/index.html',              // ✅ ton vrai fichier
+    js: './src/renderer/index.jsx',        // ✅ ton vrai entry React
+    preload: {
+      js: './src/main/preload.js',         // ✅ celui-ci est déjà bon
+    },
+  },
+],
         },
       },
     },
