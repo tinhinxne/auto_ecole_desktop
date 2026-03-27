@@ -12,19 +12,19 @@ import {
 } from "react-icons/fa";
 
 import SidebarImage from "../../assets/sidebarImage.png";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
   const [active, setActive] = useState("Candidats");
 
-  const menu = [
-    { name: "Dashboard", icon: <FaThLarge /> },
-    { name: "Candidats", icon: <FaUserFriends /> },
-    { name: "Moniteur", icon: <FaUserTie /> },
-    { name: "Agenda", icon: <FaCalendarAlt /> },
-    { name: "Examens", icon: <FaFileAlt /> },
-    { name: "Payments", icon: <FaCreditCard /> },
-  ];
-
+ const menu = [
+  { name: "Dashboard", icon: <FaThLarge />, path: "/dashboard" },
+  { name: "Candidats", icon: <FaUserFriends />, path: "/candidats" },
+  { name: "Moniteur", icon: <FaUserTie />, path: "/moniteur" },
+  { name: "Agenda", icon: <FaCalendarAlt />, path: "/agenda" },
+  { name: "Examens", icon: <FaFileAlt />, path: "/examens" },
+  { name: "Payments", icon: <FaCreditCard />, path: "/payments" },
+];
   return (
     <div className="sidebar">
       {/* TOP */}
