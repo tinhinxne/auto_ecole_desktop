@@ -3,7 +3,9 @@ import Sidebar from "../components/Sidebar";
 import AddButton from "../components/Button";
 import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
-import {SquarePen,Trash} from "lucide-react";
+import SmallCar from "../../assets/SmallCar.png";
+import {SquarePen,Trash,Search,UserRound,Camera} from "lucide-react";
+
 
 
 const Condidats = () => {
@@ -17,7 +19,7 @@ const Condidats = () => {
         {/* HEADER */}
         <div className="header">
             <img src={ConnexionImg} alt="illustration" className="header-img" />
-          <h1>Panneau de contrôle de l'auto-école</h1>
+          <h1><img src={SmallCar} alt="" width={40}/> Panneau de contrôle de l'auto-école</h1>
           <p>Gérer les étudiants, les leçons et les examens</p>
                   
         </div>
@@ -38,12 +40,17 @@ const Condidats = () => {
 
           </div>
 
-         <div className="search-bar">
-  <input
-    type="text"
-    placeholder="Search candidates..."
-    className="search"
-  />
+
+
+<div className="search-bar">
+  <div className="search-wrapper">
+    <Search size={16} className="search-icon" />
+    <input
+      type="text"
+      placeholder="Search candidates..."
+      className="search"
+    />
+  </div>
 </div>
 
 
@@ -74,7 +81,7 @@ const Condidats = () => {
 
                 <td>Jean Dupont</td>
                 <td><span className="status active">Active</span></td>
-                <td><SquarePen /><Trash /></td>
+                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
               </tr>
 
               <tr>
@@ -90,7 +97,7 @@ const Condidats = () => {
 
                 <td>Sophie Laurent</td>
                 <td><span className="status active">Active</span></td>
-                <td><SquarePen /><Trash /></td>
+                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
               </tr>
 
               <tr>
@@ -106,7 +113,37 @@ const Condidats = () => {
 
                 <td>Jean Dupont</td>
                 <td><span className="status pending">Pending</span></td>
-                <td><SquarePen /><Trash /></td>
+                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
+              </tr>
+               <tr>
+                <td>Benazzouz Sonia</td>
+                <td>06 34 56 78 90</td>
+                <td>2025-03-10</td>
+               <td>
+  <div className="progress-container">
+    <div className="progress-bar" style={{ width: "60%" }}></div>
+  </div>
+  <span className="progress-text">120 sessions</span>
+</td>
+
+                <td>Jean Dupont</td>
+                <td><span className="status pending">Pending</span></td>
+                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
+              </tr>
+               <tr>
+                <td>Albane Amina</td>
+                <td>06 34 56 78 90</td>
+                <td>2025-03-10</td>
+               <td>
+  <div className="progress-container">
+    <div className="progress-bar" style={{ width: "60%" }}></div>
+  </div>
+  <span className="progress-text">120 sessions</span>
+</td>
+
+                <td>Jean Dupont</td>
+                <td><span className="status active">Active</span></td>
+                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
               </tr>
             </tbody>
           </table>
@@ -129,45 +166,57 @@ const Condidats = () => {
         {/* LEFT FORM */}
         <div className="form-left">
 
-          <label>Nom du candidat *</label>
+          <label>Nom du candidat <span>*</span></label>
           <input type="text" placeholder="Saisir le nom" />
 
-          <label>Prénom du candidat *</label>
+          <label>Prénom du candidat <span>*</span></label>
           <input type="text" placeholder="Saisir le prénom" />
 
           <div className="row">
             <div>
-              <label>Date de naissance *</label>
+              <label>Date de naissance <span>*</span></label>
               <input type="date" />
             </div>
 
             <div>
-              <label>Date d'inscription *</label>
+              <label>Date d'inscription <span>*</span></label>
               <input type="date" />
             </div>
           </div>
 
-          <label>Numéro de téléphone *</label>
+          <label>Numéro de téléphone <span>*</span></label>
           <input type="text" placeholder="Saisir le numéro" />
 
           {/* SEXE */}
-          <label>Sexe *</label>
-          <div className="gender">
-            <span>Homme</span>
-            <label className="switch">
-              <input type="checkbox" />
-              <span className="slider"></span>
-            </label>
-            <span>Femme</span>
-          </div>
+          <label>Sexe <span>*</span></label>
+         <div className="gender">
+  <label>
+    <input type="radio" name="sexe" value="homme" />
+    Homme
+  </label>
+
+  <label>
+    <input type="radio" name="sexe" value="femme" />
+    Femme
+  </label>
+</div>
+
 
         </div>
 
         {/* RIGHT IMAGE */}
         <div className="form-right">
-          <div className="avatar"></div>
-          <button className="upload-btn">Photo du candidat</button>
-        </div>
+  <div className="avatar">
+    <UserRound size={40} className="avatar-icon" />
+
+    {/* bouton upload */}
+    <div className="avatar-upload">
+      <Camera size={14} />
+    </div>
+  </div>
+
+  <button className="upload-btn">Photo du candidat</button>
+</div>
 
       </div>
 
