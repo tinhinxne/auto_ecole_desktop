@@ -4,7 +4,7 @@ import AddButton from "../components/Button";
 import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
-import {SquarePen,Trash,Search,UserRound,Camera} from "lucide-react";
+import {SquarePen,Trash,Search,UserRound,Camera,Phone} from "lucide-react";
 
 
 
@@ -70,13 +70,13 @@ const Condidats = () => {
             <tbody>
               <tr>
                 <td>Belarbi Tinhinane</td>
-                <td>06 12 34 56 78</td>
+                <td><Phone size={15}/> 06 12 34 56 78</td>
                 <td>2025-01-15</td>
               <td>
   <div className="progress-container">
     <div className="progress-bar" style={{ width: "60%" }}></div>
   </div>
-  <span className="progress-text">120 sessions</span>
+  <span className="progress-text">18/30 sessions</span>
 </td>
 
                 <td>Jean Dupont</td>
@@ -86,13 +86,13 @@ const Condidats = () => {
 
               <tr>
                 <td>Azil Melissa</td>
-                <td>06 23 45 67 89</td>
+                <td><Phone size={15}/> 06 23 45 67 89</td>
                 <td>2025-02-01</td>
                <td>
   <div className="progress-container">
     <div className="progress-bar" style={{ width: "60%" }}></div>
   </div>
-  <span className="progress-text">120 sessions</span>
+  <span className="progress-text">12/30 sessions</span>
 </td>
 
                 <td>Sophie Laurent</td>
@@ -102,13 +102,13 @@ const Condidats = () => {
 
               <tr>
                 <td>Bouariche Nadine</td>
-                <td>06 34 56 78 90</td>
+                <td><Phone size={15}/> 06 34 56 78 90</td>
                 <td>2025-03-10</td>
                <td>
   <div className="progress-container">
     <div className="progress-bar" style={{ width: "60%" }}></div>
   </div>
-  <span className="progress-text">120 sessions</span>
+  <span className="progress-text">25/30 sessions</span>
 </td>
 
                 <td>Jean Dupont</td>
@@ -117,13 +117,13 @@ const Condidats = () => {
               </tr>
                <tr>
                 <td>Benazzouz Sonia</td>
-                <td>06 34 56 78 90</td>
+                <td><Phone size={15}/> 06 34 56 78 90</td>
                 <td>2025-03-10</td>
                <td>
   <div className="progress-container">
     <div className="progress-bar" style={{ width: "60%" }}></div>
   </div>
-  <span className="progress-text">120 sessions</span>
+  <span className="progress-text">22/30 sessions</span>
 </td>
 
                 <td>Jean Dupont</td>
@@ -132,13 +132,13 @@ const Condidats = () => {
               </tr>
                <tr>
                 <td>Albane Amina</td>
-                <td>06 34 56 78 90</td>
+                <td><Phone size={15}/> 06 34 56 78 90</td>
                 <td>2025-03-10</td>
                <td>
   <div className="progress-container">
     <div className="progress-bar" style={{ width: "60%" }}></div>
   </div>
-  <span className="progress-text">120 sessions</span>
+  <span className="progress-text">129/30 sessions</span>
 </td>
 
                 <td>Jean Dupont</td>
