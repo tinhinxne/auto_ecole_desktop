@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa";
 
 import SidebarImage from "../../assets/sidebarImage.png";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
   const location = useLocation();
