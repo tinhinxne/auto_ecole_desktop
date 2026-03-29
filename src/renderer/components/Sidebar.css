@@ -87,3 +87,30 @@
   width: 100%;
   pointer-events: none;
 }
+.menu-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 8px;
+  color: #333;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+}
+
+.menu-item.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.icon {
+  font-size: 16px;
+}

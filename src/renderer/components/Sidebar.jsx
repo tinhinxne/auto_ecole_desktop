@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import "./Sidebar.css";
+import { Link, useLocation } from "react-router-dom";
+
 import {
   FaThLarge,
   FaUserFriends,
@@ -14,46 +16,57 @@ import {
 import SidebarImage from "../../assets/sidebarImage.png";
 
 const Sidebar = () => {
-  const [active, setActive] = useState("Candidats");
+  const location = useLocation();
 
   const menu = [
-    { name: "Dashboard", icon: <FaThLarge /> },
-    { name: "Candidats", icon: <FaUserFriends /> },
-    { name: "Moniteur", icon: <FaUserTie /> },
-    { name: "Agenda", icon: <FaCalendarAlt /> },
-    { name: "Examens", icon: <FaFileAlt /> },
-    { name: "Payments", icon: <FaCreditCard /> },
+    { name: "Dashboard", icon: <FaThLarge />, path: "/dashboard" },
+    { name: "Candidats", icon: <FaUserFriends />, path: "/candidats" },
+    { name: "Moniteur", icon: <FaUserTie />, path: "/moniteur" },
+    { name: "Agenda", icon: <FaCalendarAlt />, path: "/agenda" },
+    { name: "Examens", icon: <FaFileAlt />, path: "/examens" },
+    { name: "Payments", icon: <FaCreditCard />, path: "/payments" },
   ];
 
   return (
     <div className="sidebar">
+
       {/* TOP */}
       <div className="sidebar-top">
         <h2 className="logo">AutoÉcole Pro</h2>
 
         <ul className="menu">
           {menu.map((item) => (
-            <li
+            <Link
+              to={item.path}
               key={item.name}
-              className={active === item.name ? "menu-item active" : "menu-item"}
-              onClick={() => setActive(item.name)}
+              className="menu-link"
             >
-              <span className="icon">{item.icon}</span>
-              <span>{item.name}</span>
-            </li>
+              <li
+                className={
+                  location.pathname === item.path
+                    ? "menu-item active"
+                    : "menu-item"
+                }
+              >
+                <span className="icon">{item.icon}</span>
+                <span>{item.name}</span>
+              </li>
+            </Link>
           ))}
 
-          <li
-            className={
-              active === "Parametre"
-                ? "menu-item param active"
-                : "menu-item param"
-            }
-            onClick={() => setActive("Parametre")}
-          >
-            <FaCog />
-            <span>Parametre</span>
-          </li>
+          {/* SETTINGS */}
+          <Link to="/settings" className="menu-link">
+            <li
+              className={
+                location.pathname === "/settings"
+                  ? "menu-item active"
+                  : "menu-item"
+              }
+            >
+              <FaCog />
+              <span>Paramètres</span>
+            </li>
+          </Link>
         </ul>
       </div>
 
@@ -64,7 +77,7 @@ const Sidebar = () => {
           <span>Déconnexion</span>
         </div>
 
-        <img src={SidebarImage} alt="" className="sidebar-image" />
+        <img src={SidebarImage} alt="sidebar" className="sidebar-image" />
       </div>
     </div>
   );
