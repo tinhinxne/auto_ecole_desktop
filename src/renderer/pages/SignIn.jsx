@@ -59,8 +59,8 @@ export default function SignIn() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Connexion :', { email, password }); 
-     navigate("/dashboard");
+    console.log('Connexion :', { email, password });
+    navigate("/access"); // ← SEULE MODIFICATION : était "/dashboard"
   };
 
   return (
