@@ -5,6 +5,7 @@ import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import {SquarePen,Trash,Search,UserRound,Camera,Phone} from "lucide-react";
+import { TbBackground } from "react-icons/tb";
 
 
 
@@ -190,15 +191,15 @@ const Condidats = () => {
           {/* SEXE */}
           <label>Sexe <span>*</span></label>
          <div className="gender">
-  <label>
-    <input type="radio" name="sexe" value="homme" />
-    Homme
-  </label>
+  
+    <input type="radio" name="sexe" value="homme" id="homme" />
+   
+  <label for="homme">Homme</label>
 
-  <label>
-    <input type="radio" name="sexe" value="femme" />
-    Femme
-  </label>
+  
+    <input type="radio" name="sexe" value="femme" id="femme"/>
+    
+  <label for="femme">Femme</label>
 </div>
 
 
@@ -207,7 +208,7 @@ const Condidats = () => {
         {/* RIGHT IMAGE */}
         <div className="form-right">
   <div className="avatar">
-    <UserRound size={40} className="avatar-icon" />
+    <UserRound size={40} className="avatar-icon" fill="1E2940"  color="1E2940"/>
 
     {/* bouton upload */}
     <div className="avatar-upload">
