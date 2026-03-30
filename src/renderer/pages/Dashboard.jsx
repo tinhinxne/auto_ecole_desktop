@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import ConnexionImage from '../../assets/Connexion.png';
 import './Dashboard.css';
 
-/* ─── Shared tiny components ─── */
-
+/* ─── StatCard ─── */
 const StatCard = ({ icon, iconClass, label, value, trend, trendDown }) => (
   <div className="stat-card">
     <div className="stat-header">
@@ -16,7 +16,7 @@ const StatCard = ({ icon, iconClass, label, value, trend, trendDown }) => (
   </div>
 );
 
-/* ─── Simple SVG line chart ─── */
+/* ─── Line Chart ─── */
 const LineChart = ({ data, color = '#1e88e5' }) => {
   const max = Math.max(...data);
   const points = data
@@ -26,9 +26,7 @@ const LineChart = ({ data, color = '#1e88e5' }) => {
       return `${x},${y}`;
     })
     .join(' ');
-
   const area = `0,100 ${points} 280,100`;
-
   return (
     <div className="line-chart-wrap">
       <svg viewBox="0 0 280 110" preserveAspectRatio="none">
@@ -52,7 +50,7 @@ const LineChart = ({ data, color = '#1e88e5' }) => {
   );
 };
 
-/* ─── Simple bar chart ─── */
+/* ─── Bar Chart ─── */
 const BarChart = ({ data, color }) => {
   const max = Math.max(...data.map((d) => d.value));
   return (
@@ -61,10 +59,7 @@ const BarChart = ({ data, color }) => {
         <div key={i} className="bar-item">
           <div
             className="bar-fill"
-            style={{
-              height: `${(d.value / max) * 100}%`,
-              background: color || 'linear-gradient(180deg, #42a5f5, #1565c0)',
-            }}
+            style={{ height: `${(d.value / max) * 100}%`, background: color || '#26a69a' }}
           />
           <span className="bar-label">{d.label}</span>
         </div>
@@ -73,9 +68,22 @@ const BarChart = ({ data, color }) => {
   );
 };
 
-/* ═══════════════════════════════════════════
+/* ─── Banner commun admin + moniteur ─── */
+const DashboardBanner = ({ isAdmin }) => (
+  <div className="dashboard-banner">
+    <img src={ConnexionImage} alt="banner" className="dashboard-banner__img" />
+    <div className="dashboard-banner__overlay">
+      <div className="dashboard-banner__text">
+        <h2>{isAdmin ? 'Driving School Control Panel' : 'Tableau de bord — Moniteur'}</h2>
+        <p>{isAdmin ? 'Manage students, lessons and driving tests' : 'Vos sessions, candidats et progression'}</p>
+      </div>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════
    ADMIN DASHBOARD
-   ═══════════════════════════════════════════ */
+   ═══════════════════════ */
 const AdminDashboard = () => {
   const revenueData = [3800, 4500, 5200, 4800, 6200, 6800, 7100];
   const sessionsData = [
@@ -84,24 +92,21 @@ const AdminDashboard = () => {
     { label: 'S3', value: 48 },
     { label: 'S4', value: 61 },
   ];
-
   const exams = [
-    { name: 'Marie Dubois',   date: '2026-03-10 09:00', type: 'code' },
-    { name: 'Pierre Martin',  date: '2026-03-10 14:00', type: 'conduite' },
-    { name: 'Sophie Leroy',   date: '2026-03-11 10:00', type: 'code' },
-    { name: 'Luc Bernard',    date: '2026-03-12 15:30', type: 'conduite' },
+    { name: 'Marie Dubois',  date: '2026-03-10 09:00', type: 'code' },
+    { name: 'Pierre Martin', date: '2026-03-10 14:00', type: 'conduite' },
+    { name: 'Sophie Leroy',  date: '2026-03-11 10:00', type: 'code' },
+    { name: 'Luc Bernard',   date: '2026-03-12 15:30', type: 'conduite' },
   ];
-
   const activities = [
     { dot: 'blue',   text: 'Nouvelle candidate enregistrée : Emma Petit', time: 'Il y a 2 heures' },
     { dot: 'green',  text: 'Paiement reçu de Jacques Durand',             time: 'Il y a 3 heures' },
     { dot: 'orange', text: 'Session terminée : Marie Dubois',             time: 'Il y a 5 heures' },
-    { dot: 'purple', text: 'Examen prévu pour Pierre Martin',             time: 'Il y a 1 jour' },
+    { dot: 'purple', text: 'Examen prévu pour Pierre Martin',             time: 'Il y a 1 jour'   },
   ];
 
   return (
     <>
-      {/* Stats */}
       <div className="stats-grid">
         <StatCard icon="👥" iconClass="blue"   label="Total candidats"  value="156"      trend="↑ +12% ce mois" />
         <StatCard icon="🚗" iconClass="green"  label="Sessions actives" value="48"       trend="↑ +8% ce mois" />
@@ -109,7 +114,6 @@ const AdminDashboard = () => {
         <StatCard icon="💰" iconClass="purple" label="Revenu mensuel"   value="7 100 DA" trend="↑ +15% ce mois" />
       </div>
 
-      {/* Charts */}
       <div className="charts-row">
         <div className="chart-card">
           <h3>📈 Aperçu des revenus</h3>
@@ -121,7 +125,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Bottom */}
       <div className="bottom-row">
         <div className="section-card">
           <h3>📋 Examens à venir</h3>
@@ -159,12 +162,11 @@ const AdminDashboard = () => {
   );
 };
 
-/* ═══════════════════════════════════════════
+/* ═══════════════════════
    MONITEUR DASHBOARD
-   ═══════════════════════════════════════════ */
+   ═══════════════════════ */
 const MoniteurDashboard = () => {
   const progressData = [30, 50, 60, 40, 70];
-
   const sessions = [
     { candidate: 'Ahmed Benali',   date: '2026-03-29', heure: '09:00', type: 'Conduite', status: 'planifie' },
     { candidate: 'Fatima Zohra',   date: '2026-03-29', heure: '11:00', type: 'Conduite', status: 'termine'  },
@@ -172,7 +174,6 @@ const MoniteurDashboard = () => {
     { candidate: 'Nadia Brahim',   date: '2026-03-30', heure: '09:30', type: 'Conduite', status: 'annule'   },
     { candidate: 'Youcef Mansour', date: '2026-03-30', heure: '15:00', type: 'Conduite', status: 'planifie' },
   ];
-
   const students = [
     { name: 'Ahmed Benali',   heures: 14, total: 20 },
     { name: 'Fatima Zohra',   heures: 18, total: 20 },
@@ -183,7 +184,6 @@ const MoniteurDashboard = () => {
 
   return (
     <>
-      {/* Stats */}
       <div className="stats-grid">
         <StatCard icon="🎓" iconClass="blue"   label="Mes candidats"     value="12"  trend="↑ 2 ce mois" />
         <StatCard icon="📅" iconClass="green"  label="Sessions ce mois"  value="31"  trend="↑ +5 vs mois dernier" />
@@ -191,27 +191,22 @@ const MoniteurDashboard = () => {
         <StatCard icon="⏳" iconClass="purple" label="Heures totales"     value="62h" trend="↑ +8h ce mois" />
       </div>
 
-      {/* Charts */}
       <div className="charts-row">
         <div className="chart-card">
           <h3>📈 Mes sessions (5 semaines)</h3>
           <LineChart data={progressData} color="#26a69a" />
         </div>
-
         <div className="chart-card">
           <h3>🎯 Progression des candidats</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
             {students.map((s, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '13px', color: '#1a2332', minWidth: '120px', fontWeight: 500 }}>
+                <span style={{ fontSize: '13px', color: '#1a2332', minWidth: '55px', fontWeight: 500 }}>
                   {s.name.split(' ')[0]}
                 </span>
                 <div className="progress-wrap" style={{ flex: 1 }}>
                   <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${(s.heures / s.total) * 100}%` }}
-                    />
+                    <div className="progress-fill" style={{ width: `${(s.heures / s.total) * 100}%` }} />
                   </div>
                   <span className="progress-label">{s.heures}/{s.total}h</span>
                 </div>
@@ -221,7 +216,6 @@ const MoniteurDashboard = () => {
         </div>
       </div>
 
-      {/* Sessions table */}
       <div className="bottom-row" style={{ gridTemplateColumns: '1fr' }}>
         <div className="section-card">
           <h3>🚗 Mes sessions à venir</h3>
@@ -244,9 +238,9 @@ const MoniteurDashboard = () => {
                   <td>{s.type}</td>
                   <td>
                     <span className={`status-badge ${s.status}`}>
-                      {s.status === 'planifie'  && 'Planifiée'}
-                      {s.status === 'termine'   && 'Terminée'}
-                      {s.status === 'annule'    && 'Annulée'}
+                      {s.status === 'planifie' && 'Planifiée'}
+                      {s.status === 'termine'  && 'Terminée'}
+                      {s.status === 'annule'   && 'Annulée'}
                     </span>
                   </td>
                 </tr>
@@ -259,54 +253,45 @@ const MoniteurDashboard = () => {
   );
 };
 
-/* ═══════════════════════════════════════════
-   MAIN DASHBOARD COMPONENT
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════
+   MAIN DASHBOARD
+   ═══════════════════════ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState(null);
 
   useEffect(() => {
     const storedRole = sessionStorage.getItem('userRole');
-    if (!storedRole) {
-      navigate('/access');
-      return;
-    }
+    if (!storedRole) { navigate('/access'); return; }
     setRole(storedRole);
   }, [navigate]);
 
   const isAdmin = role === 'admin';
-
-  const pageTitle   = isAdmin ? "Panneau de contrôle de l'auto-école" : 'Tableau de bord — Moniteur';
-  const pageSubtitle = isAdmin
-    ? 'Gérer les étudiants, les leçons et les examens de conduite'
-    : 'Vos sessions, candidats et progression';
-
   if (!role) return null;
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar from components */}
       <Sidebar role={role} />
 
       <div className="dashboard-main">
-        {/* Top bar */}
+        {/* ── Bannière image en haut ── */}
+        <DashboardBanner isAdmin={isAdmin} />
+
+        {/* ── Topbar ── */}
         <div className="dashboard-topbar">
           <div className="topbar-left">
-            <h1>🚗 {pageTitle}</h1>
-            <p>{pageSubtitle}</p>
+            <h1>🚗 {isAdmin ? "Panneau de contrôle de l'auto-école" : 'Tableau de bord — Moniteur'}</h1>
+            <p>{isAdmin ? 'Gérer les étudiants, les leçons et les examens de conduite' : 'Vos sessions, candidats et progression'}</p>
           </div>
           <div className="topbar-right">
             <span className={`topbar-role-badge ${isAdmin ? '' : 'moniteur'}`}>
               {isAdmin ? 'Administrateur' : 'Moniteur'}
             </span>
-            <div className="topbar-avatar">
-              {isAdmin ? 'A' : 'M'}
-            </div>
+            <div className="topbar-avatar">{isAdmin ? 'A' : 'M'}</div>
           </div>
         </div>
 
-        {/* Content */}
+        {/* ── Contenu ── */}
         <div className="dashboard-content">
           {isAdmin ? <AdminDashboard /> : <MoniteurDashboard />}
         </div>

@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import "./Sidebar.css";
+import { Link, useLocation } from "react-router-dom";
+
 import {
   FaThLarge,
   FaUserFriends,
@@ -8,81 +10,75 @@ import {
   FaFileAlt,
   FaCreditCard,
   FaSignOutAlt,
-  FaCog,
+  FaCog
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+
 import SidebarImage from "../../assets/sidebarImage.png";
+import { NavLink } from "react-router-dom";
 
-const Sidebar = ({ role = "admin" }) => {
-  const [active, setActive] = useState("Dashboard");
-  const navigate = useNavigate();
+const Sidebar = () => {
+  const location = useLocation();
 
-  // ── Admin menu ──────────────────────────────────
-  const adminMenu = [
-    { name: "Dashboard",  icon: <FaThLarge /> },
-    { name: "Candidats",  icon: <FaUserFriends /> },
-    { name: "Moniteur",   icon: <FaUserTie /> },
-    { name: "Agenda",     icon: <FaCalendarAlt /> },
-    { name: "Examens",    icon: <FaFileAlt /> },
-    { name: "Paiements",  icon: <FaCreditCard /> },
+  const menu = [
+    { name: "Dashboard", icon: <FaThLarge />, path: "/dashboard" },
+    { name: "Candidats", icon: <FaUserFriends />, path: "/candidats" },
+    { name: "Moniteur", icon: <FaUserTie />, path: "/moniteur" },
+    { name: "Agenda", icon: <FaCalendarAlt />, path: "/agenda" },
+    { name: "Examens", icon: <FaFileAlt />, path: "/examens" },
+    { name: "Payments", icon: <FaCreditCard />, path: "/payments" },
   ];
-
-  // ── Moniteur menu ────────────────────────────────
-  const moniteurMenu = [
-    { name: "Dashboard",   icon: <FaThLarge /> },
-    { name: "Candidats",   icon: <FaUserFriends /> },
-    { name: "Mes Sessions",icon: <FaCalendarAlt /> },
-    { name: "Examens",     icon: <FaFileAlt /> },
-  ];
-
-  const menu = role === "moniteur" ? moniteurMenu : adminMenu;
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("userRole");
-    navigate("/");
-  };
 
   return (
     <div className="sidebar">
+
       {/* TOP */}
       <div className="sidebar-top">
         <h2 className="logo">AutoÉcole Pro</h2>
 
         <ul className="menu">
           {menu.map((item) => (
-            <li
+            <Link
+              to={item.path}
               key={item.name}
-              className={active === item.name ? "menu-item active" : "menu-item"}
-              onClick={() => setActive(item.name)}
+              className="menu-link"
             >
-              <span className="icon">{item.icon}</span>
-              <span>{item.name}</span>
-            </li>
+              <li
+                className={
+                  location.pathname === item.path
+                    ? "menu-item active"
+                    : "menu-item"
+                }
+              >
+                <span className="icon">{item.icon}</span>
+                <span>{item.name}</span>
+              </li>
+            </Link>
           ))}
+
+          {/* SETTINGS */}
+          <Link to="/settings" className="menu-link">
+            <li
+              className={
+                location.pathname === "/settings"
+                  ? "menu-item active"
+                  : "menu-item"
+              }
+            >
+              <FaCog />
+              <span>Paramètres</span>
+            </li>
+          </Link>
         </ul>
-
-        {/* Paramètres — admin uniquement */}
-        {role === "admin" && (
-          <li
-            className={active === "Parametre" ? "menu-item-param menu-item-param-active" : "menu-item-param"}
-            onClick={() => setActive("Parametre")}
-            style={{ listStyle: "none" }}
-          >
-            <span className="icon"><FaCog /></span>
-            <span>Paramètre</span>
-          </li>
-        )}
       </div>
 
-      {/* BOTTOM IMAGE */}
+      {/* BOTTOM */}
       <div className="sidebar-bottom">
-        <img src={SidebarImage} alt="sidebar illustration" className="sidebar-image" />
-      </div>
+        <div className="logout">
+          <FaSignOutAlt />
+          <span>Déconnexion</span>
+        </div>
 
-      {/* LOGOUT */}
-      <div className="logout" onClick={handleLogout} style={{ cursor: "pointer" }}>
-        <FaSignOutAlt />
-        <span>Déconnexion</span>
+        <img src={SidebarImage} alt="sidebar" className="sidebar-image" />
       </div>
     </div>
   );
