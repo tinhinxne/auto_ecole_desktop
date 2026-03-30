@@ -476,8 +476,13 @@ const Moniteur = () => {
               <div className="strip-stat-info">
                 <p>Total moniteurs</p>
                 <strong>{moniteurs.length}</strong>
+                <span className="strip-trend up">
+                  <i className="fa-solid fa-arrow-trend-up" /> +1 moniteur ce
+                  mois
+                </span>
               </div>
             </div>
+
             <div className="strip-stat">
               <div className="strip-stat-icon green">
                 <i className="fa-solid fa-circle-check" />
@@ -485,8 +490,12 @@ const Moniteur = () => {
               <div className="strip-stat-info">
                 <p>Actifs</p>
                 <strong>{totalActifs}</strong>
+                <span className="strip-trend up">
+                  <i className="fa-solid fa-arrow-trend-up" /> +2 actifs ce mois
+                </span>
               </div>
             </div>
+
             <div className="strip-stat">
               <div className="strip-stat-icon orange">
                 <i className="fa-solid fa-graduation-cap" />
@@ -494,6 +503,10 @@ const Moniteur = () => {
               <div className="strip-stat-info">
                 <p>Candidats encadrés</p>
                 <strong>{totalEtudiants}</strong>
+                <span className="strip-trend down">
+                  <i className="fa-solid fa-arrow-trend-down" /> -1 candidat ce
+                  mois
+                </span>
               </div>
             </div>
           </div>
