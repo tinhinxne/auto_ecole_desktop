@@ -42,7 +42,7 @@ const App = () => {
 
         {/* ROUTES AVEC SIDEBAR */}
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<AgendaPage/>} />
+          <Route path="/dashboard" element={<Dashboard/>} />
           <Route path="/agenda" element={<AgendaPage />} />
         </Route>
 
