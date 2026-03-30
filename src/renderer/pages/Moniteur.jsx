@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import './Moniteur.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
+import "./Moniteur.css";
 
 // const Dashboard = () => {
 //   return (
@@ -15,93 +15,91 @@ import './Moniteur.css';
 //   );
 // };
 
-
-
 /* ─────────────────────────────────────
    INITIAL MOCK DATA
 ───────────────────────────────────── */
 const INITIAL_MONITEURS = [
   {
     id: 1,
-    prenom: 'Karim',
-    nom: 'Benali',
-    email: 'k.benali@autocole.dz',
-    telephone: '+213 555 012 345',
-    typeBoite: 'manuelle',
+    prenom: "Karim",
+    nom: "Benali",
+    email: "k.benali@autocole.dz",
+    telephone: "+213 555 012 345",
+    typeBoite: "manuelle",
     nbEtudiants: 14,
     rating: 4.5,
-    statut: 'actif',
+    statut: "actif",
     photo: null,
   },
   {
     id: 2,
-    prenom: 'Samira',
-    nom: 'Aït Yahia',
-    email: 's.aityahia@autocole.dz',
-    telephone: '+213 555 023 456',
-    typeBoite: 'automatique',
+    prenom: "Samira",
+    nom: "Aït Yahia",
+    email: "s.aityahia@autocole.dz",
+    telephone: "+213 555 023 456",
+    typeBoite: "automatique",
     nbEtudiants: 9,
     rating: 4.8,
-    statut: 'actif',
+    statut: "actif",
     photo: null,
   },
   {
     id: 3,
-    prenom: 'Yacine',
-    nom: 'Messaoud',
-    email: 'y.messaoud@autocole.dz',
-    telephone: '+213 555 034 567',
-    typeBoite: 'manuelle',
+    prenom: "Yacine",
+    nom: "Messaoud",
+    email: "y.messaoud@autocole.dz",
+    telephone: "+213 555 034 567",
+    typeBoite: "manuelle",
     nbEtudiants: 11,
     rating: 3.5,
-    statut: 'actif',
+    statut: "actif",
     photo: null,
   },
   {
     id: 4,
-    prenom: 'Nadia',
-    nom: 'Hadjadj',
-    email: 'n.hadjadj@autocole.dz',
-    telephone: '+213 555 045 678',
-    typeBoite: 'automatique',
+    prenom: "Nadia",
+    nom: "Hadjadj",
+    email: "n.hadjadj@autocole.dz",
+    telephone: "+213 555 045 678",
+    typeBoite: "automatique",
     nbEtudiants: 7,
     rating: 4.0,
-    statut: 'inactif',
+    statut: "inactif",
     photo: null,
   },
   {
     id: 5,
-    prenom: 'Bilal',
-    nom: 'Ouahrani',
-    email: 'b.ouahrani@autocole.dz',
-    telephone: '+213 555 056 789',
-    typeBoite: 'manuelle',
+    prenom: "Bilal",
+    nom: "Ouahrani",
+    email: "b.ouahrani@autocole.dz",
+    telephone: "+213 555 056 789",
+    typeBoite: "manuelle",
     nbEtudiants: 18,
     rating: 5.0,
-    statut: 'actif',
+    statut: "actif",
     photo: null,
   },
   {
     id: 6,
-    prenom: 'Assia',
-    nom: 'Tlemçani',
-    email: 'a.tlemcani@autocole.dz',
-    telephone: '+213 555 067 890',
-    typeBoite: 'manuelle',
+    prenom: "Assia",
+    nom: "Tlemçani",
+    email: "a.tlemcani@autocole.dz",
+    telephone: "+213 555 067 890",
+    typeBoite: "manuelle",
     nbEtudiants: 5,
     rating: 3.0,
-    statut: 'inactif',
+    statut: "inactif",
     photo: null,
   },
 ];
 
 const EMPTY_FORM = {
-  prenom: '',
-  nom: '',
-  email: '',
-  telephone: '',
-  typeBoite: 'manuelle',
-  statut: 'actif',
+  prenom: "",
+  nom: "",
+  email: "",
+  telephone: "",
+  typeBoite: "manuelle",
+  statut: "actif",
 };
 
 /* ─────────────────────────────────────
@@ -125,16 +123,23 @@ const StarRating = ({ rating }) => {
    MONITEUR CARD
 ───────────────────────────────────── */
 const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
-  const { prenom, nom, email, telephone, typeBoite, nbEtudiants, rating, statut } = moniteur;
+  const {
+    prenom,
+    nom,
+    email,
+    telephone,
+    typeBoite,
+    nbEtudiants,
+    rating,
+    statut,
+  } = moniteur;
 
   return (
-    
-    
     <div className="moniteur-card">
       {/* Status badge */}
       <span className={`card-status ${statut}`}>
         <i className="fa-solid fa-circle" />
-        {statut === 'actif' ? 'Actif' : 'Inactif'}
+        {statut === "actif" ? "Actif" : "Inactif"}
       </span>
 
       <div className="card-body">
@@ -144,12 +149,20 @@ const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
         </div>
 
         {/* Name */}
-        <p className="card-name">{prenom} {nom}</p>
+        <p className="card-name">
+          {prenom} {nom}
+        </p>
 
         {/* Car type pill */}
         <span className={`card-car-type ${typeBoite}`}>
-          <i className={typeBoite === 'manuelle' ? 'fa-solid fa-gears' : 'fa-solid fa-gauge-high'} />
-          {typeBoite === 'manuelle' ? 'Boîte manuelle' : 'Boîte automatique'}
+          <i
+            className={
+              typeBoite === "manuelle"
+                ? "fa-solid fa-gears"
+                : "fa-solid fa-gauge-high"
+            }
+          />
+          {typeBoite === "manuelle" ? "Boîte manuelle" : "Boîte automatique"}
         </span>
 
         {/* Info rows */}
@@ -164,16 +177,10 @@ const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
           </div>
         </div>
 
-        {/* Stats: students + rating */}
         <div className="card-meta">
-          <div className="card-meta-item">
-            <span className="meta-value">{nbEtudiants}</span>
-            <span className="meta-label">Candidats</span>
-          </div>
-          <div className="card-meta-item">
-            <StarRating rating={rating} />
-            <span className="meta-label">{rating.toFixed(1)} / 5</span>
-          </div>
+          <i className="fa-solid fa-user"></i>
+          <span className="meta-value">{nbEtudiants}</span>
+          <span className="meta-label">Candidats</span>
         </div>
       </div>
 
@@ -183,7 +190,11 @@ const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
           <i className="fa-solid fa-pen-to-square" />
           Modifier
         </button>
-        <button className="btn-delete" onClick={() => onDelete(moniteur)} title="Supprimer">
+        <button
+          className="btn-delete"
+          onClick={() => onDelete(moniteur)}
+          title="Supprimer"
+        >
           <i className="fa-solid fa-trash" />
         </button>
       </div>
@@ -225,12 +236,19 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal-box">
         <div className="modal-header">
           <h2>
-            <i className={editData ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-user-plus'} />
-            {editData ? 'Modifier le moniteur' : 'Ajouter un moniteur'}
+            <i
+              className={
+                editData ? "fa-solid fa-pen-to-square" : "fa-solid fa-user-plus"
+              }
+            />
+            {editData ? "Modifier le moniteur" : "Ajouter un moniteur"}
           </h2>
           <button className="modal-close" onClick={onClose}>
             <i className="fa-solid fa-xmark" />
@@ -240,7 +258,10 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" />Prénom</label>
+              <label>
+                <i className="fa-solid fa-id-card" />
+                Prénom
+              </label>
               <input
                 name="prenom"
                 value={form.prenom}
@@ -250,7 +271,10 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
               />
             </div>
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" />Nom</label>
+              <label>
+                <i className="fa-solid fa-id-card" />
+                Nom
+              </label>
               <input
                 name="nom"
                 value={form.nom}
@@ -262,7 +286,10 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
           </div>
 
           <div className="form-field">
-            <label><i className="fa-solid fa-envelope" />Adresse e-mail</label>
+            <label>
+              <i className="fa-solid fa-envelope" />
+              Adresse e-mail
+            </label>
             <input
               name="email"
               type="email"
@@ -274,7 +301,10 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
           </div>
 
           <div className="form-field">
-            <label><i className="fa-solid fa-phone" />Téléphone</label>
+            <label>
+              <i className="fa-solid fa-phone" />
+              Téléphone
+            </label>
             <input
               name="telephone"
               value={form.telephone}
@@ -286,14 +316,24 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
 
           <div className="form-row">
             <div className="form-field">
-              <label><i className="fa-solid fa-car" />Type de boîte</label>
-              <select name="typeBoite" value={form.typeBoite} onChange={handleChange}>
+              <label>
+                <i className="fa-solid fa-car" />
+                Type de boîte
+              </label>
+              <select
+                name="typeBoite"
+                value={form.typeBoite}
+                onChange={handleChange}
+              >
                 <option value="manuelle">Boîte manuelle</option>
                 <option value="automatique">Boîte automatique</option>
               </select>
             </div>
             <div className="form-field">
-              <label><i className="fa-solid fa-circle-check" />Statut</label>
+              <label>
+                <i className="fa-solid fa-circle-check" />
+                Statut
+              </label>
               <select name="statut" value={form.statut} onChange={handleChange}>
                 <option value="actif">Actif</option>
                 <option value="inactif">Inactif</option>
@@ -307,7 +347,7 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
             </button>
             <button type="submit" className="btn-save">
               <i className="fa-solid fa-floppy-disk" />
-              {editData ? 'Enregistrer' : 'Ajouter'}
+              {editData ? "Enregistrer" : "Ajouter"}
             </button>
           </div>
         </form>
@@ -323,20 +363,31 @@ const ConfirmDeleteModal = ({ isOpen, moniteur, onClose, onConfirm }) => {
   if (!isOpen || !moniteur) return null;
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal-box confirm">
         <div className="confirm-icon">
           <i className="fa-solid fa-trash" />
         </div>
         <p className="confirm-title">Supprimer le moniteur</p>
         <p className="confirm-text">
-          Êtes-vous sûr de vouloir supprimer{' '}
-          <strong>{moniteur.prenom} {moniteur.nom}</strong> ?<br />
+          Êtes-vous sûr de vouloir supprimer{" "}
+          <strong>
+            {moniteur.prenom} {moniteur.nom}
+          </strong>{" "}
+          ?<br />
           Cette action est irréversible.
         </p>
         <div className="modal-actions">
-          <button className="btn-cancel" onClick={onClose}>Annuler</button>
-          <button className="btn-delete-confirm" onClick={() => onConfirm(moniteur.id)}>
+          <button className="btn-cancel" onClick={onClose}>
+            Annuler
+          </button>
+          <button
+            className="btn-delete-confirm"
+            onClick={() => onConfirm(moniteur.id)}
+          >
             <i className="fa-solid fa-trash" />
             Supprimer
           </button>
@@ -355,9 +406,9 @@ const Moniteur = () => {
   const [moniteurs, setMoniteurs] = useState(INITIAL_MONITEURS);
 
   // Search & filters
-  const [search, setSearch] = useState('');
-  const [filterStatut, setFilterStatut] = useState('tous');    // tous | actif | inactif
-  const [filterBoite, setFilterBoite] = useState('tous');      // tous | manuelle | automatique
+  const [search, setSearch] = useState("");
+  const [filterStatut, setFilterStatut] = useState("tous"); // tous | actif | inactif
+  const [filterBoite, setFilterBoite] = useState("tous"); // tous | manuelle | automatique
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -365,22 +416,26 @@ const Moniteur = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    const storedRole = sessionStorage.getItem('userRole');
-    if (!storedRole) { navigate('/access'); return; }
+    const storedRole = sessionStorage.getItem("userRole");
+    if (!storedRole) {
+      navigate("/access");
+      return;
+    }
     setRole(storedRole);
   }, [navigate]);
 
   /* ── Derived stats ── */
-  const totalActifs   = moniteurs.filter((m) => m.statut === 'actif').length;
-  const totalInactifs = moniteurs.filter((m) => m.statut === 'inactif').length;
+  const totalActifs = moniteurs.filter((m) => m.statut === "actif").length;
+  const totalInactifs = moniteurs.filter((m) => m.statut === "inactif").length;
   const totalEtudiants = moniteurs.reduce((acc, m) => acc + m.nbEtudiants, 0);
 
   /* ── Filtered list ── */
   const filtered = moniteurs.filter((m) => {
-    const matchSearch =
-      `${m.prenom} ${m.nom} ${m.email}`.toLowerCase().includes(search.toLowerCase());
-    const matchStatut = filterStatut === 'tous' || m.statut === filterStatut;
-    const matchBoite  = filterBoite  === 'tous' || m.typeBoite === filterBoite;
+    const matchSearch = `${m.prenom} ${m.nom} ${m.email}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchStatut = filterStatut === "tous" || m.statut === filterStatut;
+    const matchBoite = filterBoite === "tous" || m.typeBoite === filterBoite;
     return matchSearch && matchStatut && matchBoite;
   });
 
@@ -388,7 +443,7 @@ const Moniteur = () => {
   const handleSave = (form) => {
     if (editTarget) {
       setMoniteurs((prev) =>
-        prev.map((m) => (m.id === editTarget.id ? { ...m, ...form } : m))
+        prev.map((m) => (m.id === editTarget.id ? { ...m, ...form } : m)),
       );
       setEditTarget(null);
     } else {
@@ -439,7 +494,6 @@ const Moniteur = () => {
         </div>
 
         <div className="moniteur-content">
-
           {/* ── Stats strip ── */}
           <div className="moniteur-stats-strip">
             <div className="strip-stat">
@@ -488,36 +542,50 @@ const Moniteur = () => {
             {/* Filters */}
             <div className="filter-group">
               <button
-                className={`filter-btn ${filterStatut === 'tous' ? 'active' : ''}`}
-                onClick={() => setFilterStatut('tous')}
+                className={`filter-btn ${filterStatut === "tous" ? "active" : ""}`}
+                onClick={() => setFilterStatut("tous")}
               >
                 <i className="fa-solid fa-layer-group" />
                 Tous
               </button>
               <button
-                className={`filter-btn ${filterStatut === 'actif' ? 'active-moniteur' : ''}`}
-                onClick={() => setFilterStatut(filterStatut === 'actif' ? 'tous' : 'actif')}
+                className={`filter-btn ${filterStatut === "actif" ? "active-moniteur" : ""}`}
+                onClick={() =>
+                  setFilterStatut(filterStatut === "actif" ? "tous" : "actif")
+                }
               >
                 <i className="fa-solid fa-circle-check" />
                 Actifs
               </button>
               <button
-                className={`filter-btn ${filterStatut === 'inactif' ? 'active' : ''}`}
-                onClick={() => setFilterStatut(filterStatut === 'inactif' ? 'tous' : 'inactif')}
+                className={`filter-btn ${filterStatut === "inactif" ? "active" : ""}`}
+                onClick={() =>
+                  setFilterStatut(
+                    filterStatut === "inactif" ? "tous" : "inactif",
+                  )
+                }
               >
                 <i className="fa-solid fa-circle-xmark" />
                 Inactifs
               </button>
               <button
-                className={`filter-btn ${filterBoite === 'manuelle' ? 'active' : ''}`}
-                onClick={() => setFilterBoite(filterBoite === 'manuelle' ? 'tous' : 'manuelle')}
+                className={`filter-btn ${filterBoite === "manuelle" ? "active" : ""}`}
+                onClick={() =>
+                  setFilterBoite(
+                    filterBoite === "manuelle" ? "tous" : "manuelle",
+                  )
+                }
               >
                 <i className="fa-solid fa-gears" />
                 Manuelle
               </button>
               <button
-                className={`filter-btn ${filterBoite === 'automatique' ? 'active' : ''}`}
-                onClick={() => setFilterBoite(filterBoite === 'automatique' ? 'tous' : 'automatique')}
+                className={`filter-btn ${filterBoite === "automatique" ? "active" : ""}`}
+                onClick={() =>
+                  setFilterBoite(
+                    filterBoite === "automatique" ? "tous" : "automatique",
+                  )
+                }
               >
                 <i className="fa-solid fa-gauge-high" />
                 Automatique
@@ -555,7 +623,10 @@ const Moniteur = () => {
       {/* ── Add / Edit Modal ── */}
       <MoniteurModal
         isOpen={showAddModal}
-        onClose={() => { setShowAddModal(false); setEditTarget(null); }}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditTarget(null);
+        }}
         onSave={handleSave}
         editData={editTarget}
       />

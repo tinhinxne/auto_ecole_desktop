@@ -6,11 +6,16 @@
 /* @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap'); */
 /* @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'); */
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-body, #root {
+body,
+#root {
   height: 100vh;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   background: #f0f4f8;
 }
 
@@ -100,8 +105,14 @@ body, #root {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* =====================
@@ -140,14 +151,18 @@ body, #root {
   background: #ffffff;
   border: 1px solid #e8edf2;
   border-radius: 10px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 14px;
   color: #1a2332;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-.search-input::placeholder { color: #b0bec5; }
+.search-input::placeholder {
+  color: #b0bec5;
+}
 
 .search-input:focus {
   border-color: #1e88e5;
@@ -166,7 +181,7 @@ body, #root {
   border-radius: 10px;
   border: 1px solid #e8edf2;
   background: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 13px;
   font-weight: 500;
   color: #4b5563;
@@ -189,7 +204,9 @@ body, #root {
   background: #f0f7ff;
 }
 
-.filter-btn:hover i { color: #1e88e5; }
+.filter-btn:hover i {
+  color: #1e88e5;
+}
 
 .filter-btn.active {
   background: #1e88e5;
@@ -197,7 +214,9 @@ body, #root {
   color: #ffffff;
 }
 
-.filter-btn.active i { color: #ffffff; }
+.filter-btn.active i {
+  color: #ffffff;
+}
 
 .filter-btn.active-moniteur {
   background: #26a69a;
@@ -205,7 +224,9 @@ body, #root {
   color: #ffffff;
 }
 
-.filter-btn.active-moniteur i { color: #ffffff; }
+.filter-btn.active-moniteur i {
+  color: #ffffff;
+}
 
 /* Add button */
 .btn-add-moniteur {
@@ -215,7 +236,7 @@ body, #root {
   border: none;
   border-radius: 10px;
   color: #fff;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -223,12 +244,17 @@ body, #root {
   align-items: center;
   gap: 8px;
   margin-left: auto;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    box-shadow 0.2s;
   box-shadow: 0 2px 10px rgba(30, 136, 229, 0.25);
   white-space: nowrap;
 }
 
-.btn-add-moniteur i { font-size: 14px; }
+.btn-add-moniteur i {
+  font-size: 14px;
+}
 
 .btn-add-moniteur:hover {
   background: #1565c0;
@@ -264,9 +290,18 @@ body, #root {
   font-size: 15px;
 }
 
-.strip-stat-icon.blue   { background: #e3f2fd; color: #1e88e5; }
-.strip-stat-icon.green  { background: #e0f7f4; color: #00897b; }
-.strip-stat-icon.orange { background: #fff3e0; color: #fb8c00; }
+.strip-stat-icon.blue {
+  background: #e3f2fd;
+  color: #1e88e5;
+}
+.strip-stat-icon.green {
+  background: #e0f7f4;
+  color: #00897b;
+}
+.strip-stat-icon.orange {
+  background: #fff3e0;
+  color: #fb8c00;
+}
 
 .strip-stat-info p {
   font-size: 11px;
@@ -293,11 +328,13 @@ body, #root {
 
 /* ── Moniteur Card ── */
 .moniteur-card {
-  background: #ffffff;
+  background: #a1c6ee;
   border: 1px solid #e8edf2;
   border-radius: 14px;
   overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -310,7 +347,7 @@ body, #root {
 
 /* Card top accent bar */
 .moniteur-card::before {
-  content: '';
+  content: "";
   display: block;
   height: 4px;
   background: linear-gradient(90deg, #1e88e5, #26a69a);
@@ -330,7 +367,9 @@ body, #root {
   gap: 5px;
 }
 
-.card-status i { font-size: 7px; }
+.card-status i {
+  font-size: 7px;
+}
 
 .card-status.actif {
   background: #e0f7f4;
@@ -440,9 +479,10 @@ body, #root {
 /* Stats row (students + rating) */
 .card-meta {
   display: flex;
-  align-items: center;
+  align-items: end;
   justify-content: center;
-  gap: 18px;
+  color: #4e96e1;
+  gap: 0.15rem;
   width: 100%;
   padding: 12px 0;
   border-top: 1px solid #f0f4f8;
@@ -450,11 +490,8 @@ body, #root {
   margin-bottom: 14px;
 }
 
-.card-meta-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+.card-meta i {
+  font-size: 2rem;
 }
 
 .card-meta-item .meta-value {
@@ -472,16 +509,6 @@ body, #root {
 }
 
 /* Star rating */
-.star-rating {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 13px;
-}
-
-.star-rating i.filled  { color: #ffa726; }
-.star-rating i.half    { color: #ffa726; }
-.star-rating i.empty   { color: #d1d5db; }
 
 /* Card footer buttons */
 .card-footer {
@@ -494,11 +521,12 @@ body, #root {
 .btn-edit {
   flex: 1;
   height: 36px;
-  background: #f0f7ff;
-  border: 1px solid #bbdefb;
+  background: #4e96e1;
+  /* border: 1px solid #bbdefb; */
+  border: none;
   border-radius: 8px;
-  color: #1e88e5;
-  font-family: 'Outfit', sans-serif;
+  color: white;
+  font-family: "Outfit", sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -519,10 +547,10 @@ body, #root {
 .btn-delete {
   width: 36px;
   height: 36px;
-  background: #fff5f5;
-  border: 1px solid #ffcdd2;
+  background: #dc2626;
+  border: none;
   border-radius: 8px;
-  color: #e53935;
+  color: white;
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -533,8 +561,7 @@ body, #root {
 }
 
 .btn-delete:hover {
-  background: #e53935;
-  border-color: #e53935;
+  background: #fa625f;
   color: #ffffff;
 }
 
@@ -574,8 +601,12 @@ body, #root {
 }
 
 @keyframes overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-box {
@@ -591,8 +622,14 @@ body, #root {
 }
 
 @keyframes modal-in {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {
@@ -627,7 +664,9 @@ body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .modal-close:hover {
@@ -674,12 +713,14 @@ body, #root {
   padding: 0 14px;
   border: 1px solid #e8edf2;
   border-radius: 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 13px;
   color: #1a2332;
   outline: none;
   background: #f8fafc;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .form-field input:focus,
@@ -689,7 +730,9 @@ body, #root {
   background: #ffffff;
 }
 
-.form-field input::placeholder { color: #b0bec5; }
+.form-field input::placeholder {
+  color: #b0bec5;
+}
 
 .modal-actions {
   display: flex;
@@ -703,7 +746,7 @@ body, #root {
   border: 1px solid #e8edf2;
   border-radius: 8px;
   background: #f0f4f8;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #4b5563;
@@ -711,7 +754,9 @@ body, #root {
   transition: background 0.2s;
 }
 
-.btn-cancel:hover { background: #e8edf2; }
+.btn-cancel:hover {
+  background: #e8edf2;
+}
 
 .btn-save {
   flex: 1;
@@ -719,7 +764,7 @@ body, #root {
   border: none;
   border-radius: 8px;
   background: #1e88e5;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
@@ -728,7 +773,9 @@ body, #root {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    transform 0.15s;
   box-shadow: 0 2px 10px rgba(30, 136, 229, 0.25);
 }
 
@@ -778,7 +825,7 @@ body, #root {
   border: none;
   border-radius: 8px;
   background: #e53935;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
@@ -790,7 +837,9 @@ body, #root {
   gap: 8px;
 }
 
-.btn-delete-confirm:hover { background: #c62828; }
+.btn-delete-confirm:hover {
+  background: #c62828;
+}
 
 /* =====================
    RESPONSIVE
@@ -813,5 +862,7 @@ body, #root {
     margin-left: 0;
     justify-content: center;
   }
-  .search-wrap { max-width: 100%; }
+  .search-wrap {
+    max-width: 100%;
+  }
 }
