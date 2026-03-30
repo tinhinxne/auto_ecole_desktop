@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import carBannerImg from "../../assets/car_banner.png";
 import "./Moniteur.css";
-
-// const Dashboard = () => {
-//   return (
-//     <div style={{ display: "flex" }}>
-//       <Sidebar />
-
-//       <div style={{ flex: 1, padding: "20px" }}>
-//         <h1>Bienvenue sur le Dashboard</h1>
-//       </div>
-//     </div>
-//   );
-// };
 
 /* ─────────────────────────────────────
    INITIAL MOCK DATA
@@ -100,23 +89,6 @@ const EMPTY_FORM = {
   telephone: "",
   typeBoite: "manuelle",
   statut: "actif",
-};
-
-/* ─────────────────────────────────────
-   STAR RATING DISPLAY
-───────────────────────────────────── */
-const StarRating = ({ rating }) => {
-  const stars = [];
-  for (let i = 1; i <= 5; i++) {
-    if (rating >= i) {
-      stars.push(<i key={i} className="fa-solid fa-star filled" />);
-    } else if (rating >= i - 0.5) {
-      stars.push(<i key={i} className="fa-solid fa-star-half-stroke half" />);
-    } else {
-      stars.push(<i key={i} className="fa-regular fa-star empty" />);
-    }
-  }
-  return <div className="star-rating">{stars}</div>;
 };
 
 /* ─────────────────────────────────────
@@ -480,6 +452,7 @@ const Moniteur = () => {
       <div className="moniteur-main">
         {/* ── Top Bar ── */}
         <div className="moniteur-topbar">
+          <img src={carBannerImg} className="topbar-bg-img" />
           <div className="topbar-left">
             <h1>
               <i className="fa-solid fa-chalkboard-user" />

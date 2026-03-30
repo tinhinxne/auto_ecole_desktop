@@ -41,14 +41,33 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
-  background: #ffffff;
+  padding: 20px 24px;
   border-bottom: 1px solid #e8edf2;
   position: sticky;
   top: 0;
   z-index: 50;
+  padding-bottom: 18rem;
+
+  /* let height follow the image */
+  position: relative;
 }
 
+.topbar-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  aspect-ratio: 1216 / 251;
+  z-index: 0;
+}
+
+/* keep content above the image */
+.topbar-left,
+.topbar-right {
+  position: relative;
+  z-index: 1;
+}
 .topbar-left h1 {
   font-size: 19px;
   font-weight: 700;
