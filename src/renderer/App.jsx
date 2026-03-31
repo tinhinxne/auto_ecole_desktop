@@ -38,7 +38,7 @@ const App = () => {
   return (
    <Router>
   <Routes>
-    <Route path="/" element={<Examens />} />
+    <Route path="/" element={<SignIn />} />
 
     <Route element={<Layout />}>
       <Route path="/dashboard" element={<Dashboard />} />
