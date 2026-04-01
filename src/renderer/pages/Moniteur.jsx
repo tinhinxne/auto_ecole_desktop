@@ -14,7 +14,7 @@ const INITIAL_MONITEURS = [
   { id: 6, prenom: "Assia", nom: "Tlemçani", email: "a.tlemcani@autocole.dz", telephone: "+213 555 067 890", typeBoite: "manuelle", statut: "inactif", nbEtudiants: 8  },
 ];
 
-const EMPTY_FORM = { prenom: "", nom: "", email: "", telephone: "", typeBoite: "manuelle", statut: "actif" };
+const EMPTY_FORM = { prenom: "", nom: "", email: "", telephone: "", typeBoite: "manuelle", statut: "actif",nbEtudiants: 0 };
 
 /* ── MONITEUR CARD (version prototype) ── */
 const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
@@ -112,20 +112,20 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" /> Prénom</label>
+              <label><i className="fa-solid fa-id-card" /> Prénom <span>*</span> </label>
               <input name="prenom" value={form.prenom} onChange={handleChange} placeholder="ex. Karim" required />
             </div>
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" /> Nom</label>
+              <label><i className="fa-solid fa-id-card" /> Nom <span>*</span> </label>
               <input name="nom" value={form.nom} onChange={handleChange} placeholder="ex. Benali" required />
             </div>
           </div>
           <div className="form-field">
-            <label><i className="fa-solid fa-envelope" /> Adresse e-mail</label>
+            <label><i className="fa-solid fa-envelope" /> Adresse e-mail <span>*</span> </label>
             <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="ex. k.benali@autocole.dz" required />
           </div>
           <div className="form-field">
-            <label><i className="fa-solid fa-phone" /> Téléphone</label>
+            <label><i className="fa-solid fa-phone" /> Téléphone <span>*</span> </label>
             <input name="telephone" value={form.telephone} onChange={handleChange} placeholder="ex. +213 555 012 345" required />
           </div>
           <div className="form-row">

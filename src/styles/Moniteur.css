@@ -655,6 +655,10 @@ body,
   }
 }
 
+label span {
+  color: #dc2626;
+}
+
 .modal-box {
   background: #ffffff;
   border-radius: 16px;
