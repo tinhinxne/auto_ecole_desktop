@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import './Dashboard.css';
+import React from "react";
+import "../../styles/Dashboard.css";
+import ConnexionImg from "../../assets/Connexion.png";
+import SmallCar from "../../assets/SmallCar.png";
 
-/* ─── Shared tiny components ─── */
-
+/* ─── StatCard ─── */
 const StatCard = ({ icon, iconClass, label, value, trend, trendDown }) => (
   <div className="stat-card">
     <div className="stat-header">
@@ -12,12 +11,12 @@ const StatCard = ({ icon, iconClass, label, value, trend, trendDown }) => (
       <div className={`stat-icon ${iconClass}`}>{icon}</div>
     </div>
     <div className="stat-value">{value}</div>
-    <div className={`stat-trend ${trendDown ? 'down' : ''}`}>{trend}</div>
+    <div className={`stat-trend ${trendDown ? "down" : ""}`}>{trend}</div>
   </div>
 );
 
-/* ─── Simple SVG line chart ─── */
-const LineChart = ({ data, color = '#1e88e5' }) => {
+/* ─── Line Chart ─── */
+const LineChart = ({ data, color = "#1e88e5" }) => {
   const max = Math.max(...data);
   const points = data
     .map((v, i) => {
@@ -25,10 +24,8 @@ const LineChart = ({ data, color = '#1e88e5' }) => {
       const y = 100 - (v / max) * 90;
       return `${x},${y}`;
     })
-    .join(' ');
-
+    .join(" ");
   const area = `0,100 ${points} 280,100`;
-
   return (
     <div className="line-chart-wrap">
       <svg viewBox="0 0 280 110" preserveAspectRatio="none">
@@ -52,7 +49,7 @@ const LineChart = ({ data, color = '#1e88e5' }) => {
   );
 };
 
-/* ─── Simple bar chart ─── */
+/* ─── Bar Chart ─── */
 const BarChart = ({ data, color }) => {
   const max = Math.max(...data.map((d) => d.value));
   return (
@@ -63,7 +60,7 @@ const BarChart = ({ data, color }) => {
             className="bar-fill"
             style={{
               height: `${(d.value / max) * 100}%`,
-              background: color || 'linear-gradient(180deg, #42a5f5, #1565c0)',
+              background: color || "#26a69a",
             }}
           />
           <span className="bar-label">{d.label}</span>
@@ -73,43 +70,62 @@ const BarChart = ({ data, color }) => {
   );
 };
 
-/* ═══════════════════════════════════════════
-   ADMIN DASHBOARD
-   ═══════════════════════════════════════════ */
+/* ─── ADMIN DASHBOARD (contenu principal) ─── */
 const AdminDashboard = () => {
   const revenueData = [3800, 4500, 5200, 4800, 6200, 6800, 7100];
   const sessionsData = [
-    { label: 'S1', value: 42 },
-    { label: 'S2', value: 55 },
-    { label: 'S3', value: 48 },
-    { label: 'S4', value: 61 },
+    { label: "S1", value: 42 },
+    { label: "S2", value: 55 },
+    { label: "S3", value: 48 },
+    { label: "S4", value: 61 },
   ];
-
   const exams = [
-    { name: 'Marie Dubois',   date: '2026-03-10 09:00', type: 'code' },
-    { name: 'Pierre Martin',  date: '2026-03-10 14:00', type: 'conduite' },
-    { name: 'Sophie Leroy',   date: '2026-03-11 10:00', type: 'code' },
-    { name: 'Luc Bernard',    date: '2026-03-12 15:30', type: 'conduite' },
+    { name: "Marie Dubois", date: "2026-03-10 09:00", type: "code" },
+    { name: "Pierre Martin", date: "2026-03-10 14:00", type: "conduite" },
+    { name: "Sophie Leroy", date: "2026-03-11 10:00", type: "code" },
+    { name: "Luc Bernard", date: "2026-03-12 15:30", type: "conduite" },
   ];
-
   const activities = [
-    { dot: 'blue',   text: 'Nouvelle candidate enregistrée : Emma Petit', time: 'Il y a 2 heures' },
-    { dot: 'green',  text: 'Paiement reçu de Jacques Durand',             time: 'Il y a 3 heures' },
-    { dot: 'orange', text: 'Session terminée : Marie Dubois',             time: 'Il y a 5 heures' },
-    { dot: 'purple', text: 'Examen prévu pour Pierre Martin',             time: 'Il y a 1 jour' },
+    { dot: "blue", text: "Nouvelle candidate enregistrée : Emma Petit", time: "Il y a 2 heures" },
+    { dot: "green", text: "Paiement reçu de Jacques Durand", time: "Il y a 3 heures" },
+    { dot: "orange", text: "Session terminée : Marie Dubois", time: "Il y a 5 heures" },
+    { dot: "purple", text: "Examen prévu pour Pierre Martin", time: "Il y a 1 jour" },
   ];
 
   return (
     <>
-      {/* Stats */}
       <div className="stats-grid">
-        <StatCard icon="👥" iconClass="blue"   label="Total candidats"  value="156"      trend="↑ +12% ce mois" />
-        <StatCard icon="🚗" iconClass="green"  label="Sessions actives" value="48"       trend="↑ +8% ce mois" />
-        <StatCard icon="📋" iconClass="orange" label="Examens à venir"  value="23"       trend="↓ 3% ce mois" trendDown />
-        <StatCard icon="💰" iconClass="purple" label="Revenu mensuel"   value="7 100 DA" trend="↑ +15% ce mois" />
+        <StatCard
+          icon="👥"
+          iconClass="blue"
+          label="Total candidats"
+          value="156"
+          trend="↑ +12% ce mois"
+        />
+        <StatCard
+          icon="🚗"
+          iconClass="green"
+          label="Sessions actives"
+          value="48"
+          trend="↑ +8% ce mois"
+        />
+        <StatCard
+          icon="📋"
+          iconClass="orange"
+          label="Examens à venir"
+          value="23"
+          trend="↓ 3% ce mois"
+          trendDown
+        />
+        <StatCard
+          icon="💰"
+          iconClass="purple"
+          label="Revenu mensuel"
+          value="7 100 DA"
+          trend="↑ +15% ce mois"
+        />
       </div>
 
-      {/* Charts */}
       <div className="charts-row">
         <div className="chart-card">
           <h3>📈 Aperçu des revenus</h3>
@@ -121,7 +137,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Bottom */}
       <div className="bottom-row">
         <div className="section-card">
           <h3>📋 Examens à venir</h3>
@@ -133,7 +148,7 @@ const AdminDashboard = () => {
                   <span>{e.date}</span>
                 </div>
                 <span className={`exam-badge ${e.type}`}>
-                  {e.type === 'code' ? 'Code' : 'Conduite'}
+                  {e.type === "code" ? "Code" : "Conduite"}
                 </span>
               </div>
             ))}
@@ -159,156 +174,24 @@ const AdminDashboard = () => {
   );
 };
 
-/* ═══════════════════════════════════════════
-   MONITEUR DASHBOARD
-   ═══════════════════════════════════════════ */
-const MoniteurDashboard = () => {
-  const progressData = [30, 50, 60, 40, 70];
-
-  const sessions = [
-    { candidate: 'Ahmed Benali',   date: '2026-03-29', heure: '09:00', type: 'Conduite', status: 'planifie' },
-    { candidate: 'Fatima Zohra',   date: '2026-03-29', heure: '11:00', type: 'Conduite', status: 'termine'  },
-    { candidate: 'Karim Hadj',     date: '2026-03-29', heure: '14:00', type: 'Conduite', status: 'planifie' },
-    { candidate: 'Nadia Brahim',   date: '2026-03-30', heure: '09:30', type: 'Conduite', status: 'annule'   },
-    { candidate: 'Youcef Mansour', date: '2026-03-30', heure: '15:00', type: 'Conduite', status: 'planifie' },
-  ];
-
-  const students = [
-    { name: 'Ahmed Benali',   heures: 14, total: 20 },
-    { name: 'Fatima Zohra',   heures: 18, total: 20 },
-    { name: 'Karim Hadj',     heures:  8, total: 20 },
-    { name: 'Nadia Brahim',   heures: 20, total: 20 },
-    { name: 'Youcef Mansour', heures:  5, total: 20 },
-  ];
-
-  return (
-    <>
-      {/* Stats */}
-      <div className="stats-grid">
-        <StatCard icon="🎓" iconClass="blue"   label="Mes candidats"     value="12"  trend="↑ 2 ce mois" />
-        <StatCard icon="📅" iconClass="green"  label="Sessions ce mois"  value="31"  trend="↑ +5 vs mois dernier" />
-        <StatCard icon="✅" iconClass="orange" label="Sessions terminées" value="26"  trend="84% du total" />
-        <StatCard icon="⏳" iconClass="purple" label="Heures totales"     value="62h" trend="↑ +8h ce mois" />
-      </div>
-
-      {/* Charts */}
-      <div className="charts-row">
-        <div className="chart-card">
-          <h3>📈 Mes sessions (5 semaines)</h3>
-          <LineChart data={progressData} color="#26a69a" />
-        </div>
-
-        <div className="chart-card">
-          <h3>🎯 Progression des candidats</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-            {students.map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '13px', color: '#1a2332', minWidth: '120px', fontWeight: 500 }}>
-                  {s.name.split(' ')[0]}
-                </span>
-                <div className="progress-wrap" style={{ flex: 1 }}>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${(s.heures / s.total) * 100}%` }}
-                    />
-                  </div>
-                  <span className="progress-label">{s.heures}/{s.total}h</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Sessions table */}
-      <div className="bottom-row" style={{ gridTemplateColumns: '1fr' }}>
-        <div className="section-card">
-          <h3>🚗 Mes sessions à venir</h3>
-          <table className="sessions-table">
-            <thead>
-              <tr>
-                <th>Candidat</th>
-                <th>Date</th>
-                <th>Heure</th>
-                <th>Type</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 500 }}>{s.candidate}</td>
-                  <td>{s.date}</td>
-                  <td>{s.heure}</td>
-                  <td>{s.type}</td>
-                  <td>
-                    <span className={`status-badge ${s.status}`}>
-                      {s.status === 'planifie'  && 'Planifiée'}
-                      {s.status === 'termine'   && 'Terminée'}
-                      {s.status === 'annule'    && 'Annulée'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </>
-  );
-};
-
-/* ═══════════════════════════════════════════
-   MAIN DASHBOARD COMPONENT
-   ═══════════════════════════════════════════ */
+/* ─── PAGE PRINCIPALE ─── */
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    const storedRole = sessionStorage.getItem('userRole');
-    if (!storedRole) {
-      navigate('/access');
-      return;
-    }
-    setRole(storedRole);
-  }, [navigate]);
-
-  const isAdmin = role === 'admin';
-
-  const pageTitle   = isAdmin ? "Panneau de contrôle de l'auto-école" : 'Tableau de bord — Moniteur';
-  const pageSubtitle = isAdmin
-    ? 'Gérer les étudiants, les leçons et les examens de conduite'
-    : 'Vos sessions, candidats et progression';
-
-  if (!role) return null;
-
   return (
     <div className="dashboard-layout">
-      {/* Sidebar from components */}
-      <Sidebar role={role} />
-
+      {/* Pas de Sidebar */}
       <div className="dashboard-main">
-        {/* Top bar */}
-        <div className="dashboard-topbar">
-          <div className="topbar-left">
-            <h1>🚗 {pageTitle}</h1>
-            <p>{pageSubtitle}</p>
-          </div>
-          <div className="topbar-right">
-            <span className={`topbar-role-badge ${isAdmin ? '' : 'moniteur'}`}>
-              {isAdmin ? 'Administrateur' : 'Moniteur'}
-            </span>
-            <div className="topbar-avatar">
-              {isAdmin ? 'A' : 'M'}
-            </div>
-          </div>
+        {/* Header identique à la page Candidats */}
+        <div className="header">
+          <img src={ConnexionImg} alt="illustration" className="header-img" />
+          <h1>
+            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+          </h1>
+          <p>Gérer les étudiants, les leçons et les examens</p>
         </div>
 
-        {/* Content */}
+        {/* Contenu */}
         <div className="dashboard-content">
-          {isAdmin ? <AdminDashboard /> : <MoniteurDashboard />}
+          <AdminDashboard />
         </div>
       </div>
     </div>

@@ -28,72 +28,65 @@ body, #root {
 }
 
 /* =====================
-   TOP BAR
+   HEADER (identique à Condidats)
    ===================== */
-.dashboard-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 24px;
-  background: #ffffff;
-  border-bottom: 1px solid #e8edf2;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+.header {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px; /* espace avec le contenu */
 }
 
-.topbar-left h1 {
-  font-size: 19px;
-  font-weight: 700;
-  color: #1a2332;
+.header-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header h1 {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  color: black;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 8px;
+  font-family: 'Outfit', sans-serif;
 }
 
-.topbar-left p {
-  font-size: 12px;
-  color: #8a9ab5;
-  margin-top: 2px;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.topbar-role-badge {
-  background: transparent;
-  color: #1e88e5;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.topbar-role-badge.moniteur {
-  color: #00897b;
-}
-
-.topbar-avatar {
-  width: 36px;
-  height: 36px;
-  background: #1e88e5;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
+.header p {
+  position: absolute;
+  top: 60px;
+  left: 30px;
+  color: black;
   font-size: 14px;
+  z-index: 3;
+  font-family: 'Outfit', sans-serif;
 }
+
+.header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(154, 174, 222, 0.37);
+  z-index: 2;
+}
+
+/* =====================
+   TOP BAR (supprimé, mais on garde si jamais utilisé)
+   ===================== */
+/* .dashboard-topbar a été supprimé, on peut garder vide */
 
 /* =====================
    CONTENT
    ===================== */
 .dashboard-content {
-  padding: 20px 24px;
+  padding: 0 24px 24px 24px;
   animation: fade-in 0.35s ease both;
 }
 
@@ -381,4 +374,55 @@ body, #root {
   color: #8a9ab5;
   min-width: 40px;
   text-align: right;
+}
+
+/* =====================
+   RESPONSIVE (header inclus)
+   ===================== */
+@media (max-width: 1024px) {
+  .dashboard-content {
+    padding: 0 16px 16px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .dashboard-main {
+    overflow-y: auto;
+  }
+
+  .header {
+    height: 140px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    left: 15px;
+  }
+
+  .header p {
+    top: 50px;
+    left: 15px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }

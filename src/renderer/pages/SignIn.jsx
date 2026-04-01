@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './SignIn.css';
+import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
 
@@ -60,7 +60,7 @@ export default function SignIn() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Connexion :', { email, password });
-    navigate("/access"); // ← SEULE MODIFICATION : était "/dashboard"
+    navigate("/dashboard"); // ← SEULE MODIFICATION : était "/dashboard"
   };
 
   return (

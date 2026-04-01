@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import Sidebar from "../components/Sidebar";
 import Card from "../components/Card";
-import Button from "../components/Button";
 import PaymentModal from "../components/PaymentModal";
-import bgImage from "../../assets/Connexion.png";
+import ConnexionImg from "../../assets/Connexion.png";
+import SmallCar from "../../assets/SmallCar.png";
 
 const Payments = () => {
   const [selected, setSelected] = useState(null);
@@ -164,25 +163,18 @@ const Payments = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F0F4F9" }}>
-      <Sidebar />
-
       <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
-        {/* HEADER IMAGE */}
-        <div
-          style={{
-            background: `url(${bgImage})`,
-            height: "180px",
-            borderRadius: "20px",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            marginBottom: "20px",
-          }}
-        />
-
-        <h2 style={{ marginBottom: "10px", color: "#333" }}>Paiements et factures</h2>
-        <p style={{ color: "#777", marginBottom: "20px" }}>
-          Suivre les paiements et gérer les factures
-        </p>
+        {/* HEADER AVEC IMAGE */}
+        <div className="header" style={{ position: "relative", width: "100%", height: "180px", borderRadius: "20px", overflow: "hidden", marginBottom: "20px" }}>
+          <img src={ConnexionImg} alt="illustration" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <h1 style={{ position: "absolute", top: "20px", left: "30px", color: "black", fontSize: "24px", fontWeight: "bold", zIndex: 3, display: "flex", alignItems: "center", gap: "8px" }}>
+            <img src={SmallCar} alt="" width={40} /> Paiements et factures
+          </h1>
+          <p style={{ position: "absolute", top: "60px", left: "30px", color: "black", fontSize: "14px", zIndex: 3 }}>
+            Suivre les paiements et gérer les factures
+          </p>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(154, 174, 222, 0.37)", zIndex: 2 }} />
+        </div>
 
         {/* STATS CARDS */}
         <div

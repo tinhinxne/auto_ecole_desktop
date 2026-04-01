@@ -1,5 +1,3 @@
-
-
 import React, { useState } from "react";
 import { FaPlus, FaCalendarDay } from "react-icons/fa";
 
@@ -7,9 +5,9 @@ import Sidebar from "../components/Sidebar";
 import StatCard from "../components/Statcard";
 import SelectFilter from "../components/SelectFilter";
 import ExamenModal from "../components/Examenmodal";
-import Connexion from "../../assets/Connexion.png";
-
-import "./Examens.css";
+import ConnexionImg from "../../assets/Connexion.png";
+import SmallCar from "../../assets/SmallCar.png";
+import "../../styles/Examens.css";
 
 /* ──────────────────────────────────────────────
    STATIC DATA
@@ -105,33 +103,74 @@ const Examens = () => {
   });
 
   return (
-    <div className="examens-layout">
-      <Sidebar />
-
-      <div className="examens-main">
-        {/* ── Banner ── */}
-        <div className="examens-banner">
+    <>
+      <div className="examen-main">
+        {/* HEADER AVEC IMAGE (identique à Payments) */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "180px",
+            borderRadius: "20px",
+            overflow: "hidden",
+            marginBottom: "20px",
+          }}
+        >
           <img
-            src={Connexion}
-            alt="banner"
-            className="examens-banner__img"
+            src={ConnexionImg}
+            alt="illustration"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-        
+          <h1
+            style={{
+              position: "absolute",
+              top: "20px",
+              left: "30px",
+              color: "black",
+              fontSize: "24px",
+              fontWeight: "bold",
+              zIndex: 3,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+          </h1>
+          <p
+            style={{
+              position: "absolute",
+              top: "60px",
+              left: "30px",
+              color: "black",
+              fontSize: "14px",
+              zIndex: 3,
+            }}
+          >
+            Gérer les étudiants, les leçons et les examens
+          </p>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(154, 174, 222, 0.37)",
+              zIndex: 2,
+            }}
+          />
         </div>
 
         {/* ── Content ── */}
         <div className="examens-content">
-
           {/* Page header */}
           <div className="examens-page-header">
             <div>
               <h2 className="examens-page-title">Examens</h2>
               <p className="examens-page-sub">Gérer et suivre les examens de conduite</p>
             </div>
-             <button className="examens-btn-planifier">
+            <button className="examens-btn-planifier">
               <FaPlus style={{ marginRight: 6 }} />
               Planifier un examen
-            </button> 
+            </button>
           </div>
 
           {/* Stats */}
@@ -216,7 +255,7 @@ const Examens = () => {
         examen={selectedExamen}
         onClose={() => setSelectedExamen(null)}
       />
-    </div>
+    </>
   );
 };
 
