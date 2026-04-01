@@ -177,17 +177,17 @@ const AdminDashboard = () => {
 /* ─── PAGE PRINCIPALE ─── */
 const Dashboard = () => {
   return (
-    <div className="dashboard-layout">
+   <div className="container">
       {/* Pas de Sidebar */}
-      <div className="dashboard-main">
+       <div className="main">
         {/* Header identique à la page Candidats */}
-        <div className="header">
-          <img src={ConnexionImg} alt="illustration" className="header-img" />
-          <h1>
-            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
-          </h1>
-          <p>Gérer les étudiants, les leçons et les examens</p>
-        </div>
+       <div className="header">
+                 <img src={ConnexionImg} alt="illustration" className="header-img" />
+                 <h1>
+                   <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+                 </h1>
+                 <p>Gérer les étudiants, les leçons et les examens</p>
+               </div>
 
         {/* Contenu */}
         <div className="dashboard-content">

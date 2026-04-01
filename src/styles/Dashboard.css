@@ -15,28 +15,26 @@ body, #root {
 /* =====================
    LAYOUT
    ===================== */
-.dashboard-layout {
+.container {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  background: #f4f6f9;
 }
 
-.dashboard-main {
+main {
   flex: 1;
-  overflow-y: auto;
-  background: #f0f4f8;
+  padding: 20px;
 }
 
-/* =====================
-   HEADER (identique à Condidats)
-   ===================== */
+
+/* HEADER */
+
 .header {
   position: relative;
   width: 100%;
   height: 180px;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 20px; /* espace avec le contenu */
 }
 
 .header-img {
@@ -53,10 +51,6 @@ body, #root {
   font-size: 24px;
   font-weight: bold;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'Outfit', sans-serif;
 }
 
 .header p {
@@ -66,7 +60,6 @@ body, #root {
   color: black;
   font-size: 14px;
   z-index: 3;
-  font-family: 'Outfit', sans-serif;
 }
 
 .header::after {
@@ -76,6 +69,7 @@ body, #root {
   background: rgba(154, 174, 222, 0.37);
   z-index: 2;
 }
+
 
 /* =====================
    TOP BAR (supprimé, mais on garde si jamais utilisé)
@@ -88,6 +82,7 @@ body, #root {
 .dashboard-content {
   padding: 0 24px 24px 24px;
   animation: fade-in 0.35s ease both;
+  margin-top: 20px;
 }
 
 @keyframes fade-in {

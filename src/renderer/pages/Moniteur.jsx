@@ -173,16 +173,16 @@ const Moniteur = () => {
   const openAdd = () => { setEditTarget(null); setShowAddModal(true); };
 
   return (
-    <div className="moniteur-layout">
-   <div className="dashboard-main">
+     <div className="container">
+ <div className="main">
            {/* Header identique à la page Candidats */}
            <div className="header">
-             <img src={ConnexionImg} alt="illustration" className="header-img" />
-             <h1>
-               <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
-             </h1>
-             <p>Gérer les moniteurs et leurs affectations</p>
-           </div>
+                    <img src={ConnexionImg} alt="illustration" className="header-img" />
+                    <h1>
+                      <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+                    </h1>
+                    <p>Gérer les étudiants, les leçons et les examens</p>
+                  </div>
 
         <div className="moniteur-content">
           {/* Barre d'outils : recherche + filtres + bouton ajout */}

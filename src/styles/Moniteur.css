@@ -15,16 +15,15 @@ body,
 /* =====================
    LAYOUT (identique Dashboard)
    ===================== */
-.moniteur-layout {
+.container {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  background: #f4f6f9;
 }
 
-.moniteur-main {
+.main {
   flex: 1;
-  overflow-y: auto;
-  background: #f0f4f8;
+  padding: 20px;
 }
 
 /* =====================

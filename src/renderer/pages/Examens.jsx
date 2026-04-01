@@ -104,60 +104,15 @@ const Examens = () => {
 
   return (
     <>
-      <div className="examen-main">
+      <div className="main">
         {/* HEADER AVEC IMAGE (identique à Payments) */}
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            height: "180px",
-            borderRadius: "20px",
-            overflow: "hidden",
-            marginBottom: "20px",
-          }}
-        >
-          <img
-            src={ConnexionImg}
-            alt="illustration"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          <h1
-            style={{
-              position: "absolute",
-              top: "20px",
-              left: "30px",
-              color: "black",
-              fontSize: "24px",
-              fontWeight: "bold",
-              zIndex: 3,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
-          </h1>
-          <p
-            style={{
-              position: "absolute",
-              top: "60px",
-              left: "30px",
-              color: "black",
-              fontSize: "14px",
-              zIndex: 3,
-            }}
-          >
-            Gérer les étudiants, les leçons et les examens
-          </p>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(154, 174, 222, 0.37)",
-              zIndex: 2,
-            }}
-          />
-        </div>
+      <div className="header">
+                <img src={ConnexionImg} alt="illustration" className="header-img" />
+                <h1>
+                  <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+                </h1>
+                <p>Gérer les étudiants, les leçons et les examens</p>
+              </div>
 
         {/* ── Content ── */}
         <div className="examens-content">
