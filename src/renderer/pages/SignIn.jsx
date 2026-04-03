@@ -60,7 +60,7 @@ export default function SignIn() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Connexion :', { email, password });
-    navigate("/dashboard"); // ← SEULE MODIFICATION : était "/dashboard"
+    navigate("/access");
   };
 
   return (

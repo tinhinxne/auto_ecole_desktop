@@ -3,6 +3,7 @@ import React from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import SignIn from "./pages/SignIn";
+import Access from "./pages/Access";
 import Dashboard from "./pages/Dashboard";
 import Condidats from "./pages/condidats";
 import Moniteur from "./pages/Moniteur";
@@ -21,6 +22,7 @@ const App = () => {
 
         {/* ── Page connexion — sans sidebar ── */}
         <Route path="/connexion" element={<SignIn />} />
+        <Route path="/access" element={<Access />} />
 
         {/* ── Pages protégées — avec sidebar via Layout ── */}
         <Route element={<Layout />}>
