@@ -6,15 +6,15 @@ import SmallCar from "../../assets/SmallCar.png";
 
 /* ── INITIAL MOCK DATA ── */
 const INITIAL_MONITEURS = [
-  { id: 1, prenom: "Karim", nom: "Benali", email: "k.benali@autocole.dz", telephone: "+213 555 012 345", typeBoite: "manuelle", statut: "actif" },
-  { id: 2, prenom: "Samira", nom: "Aït Yahia", email: "s.aityahia@autocole.dz", telephone: "+213 555 023 456", typeBoite: "automatique", statut: "actif" },
-  { id: 3, prenom: "Yacine", nom: "Messaoud", email: "y.messaoud@autocole.dz", telephone: "+213 555 034 567", typeBoite: "manuelle", statut: "actif" },
-  { id: 4, prenom: "Nadia", nom: "Hadjadj", email: "n.hadjadj@autocole.dz", telephone: "+213 555 045 678", typeBoite: "automatique", statut: "inactif" },
-  { id: 5, prenom: "Bilal", nom: "Ouahrani", email: "b.ouahrani@autocole.dz", telephone: "+213 555 056 789", typeBoite: "manuelle", statut: "actif" },
-  { id: 6, prenom: "Assia", nom: "Tlemçani", email: "a.tlemcani@autocole.dz", telephone: "+213 555 067 890", typeBoite: "manuelle", statut: "inactif" },
+  { id: 1, prenom: "Karim", nom: "Benali", email: "k.benali@autocole.dz", telephone: "+213 555 012 345", typeBoite: "manuelle", statut: "actif", nbEtudiants: 10 },
+  { id: 2, prenom: "Samira", nom: "Aït Yahia", email: "s.aityahia@autocole.dz", telephone: "+213 555 023 456", typeBoite: "automatique", statut: "actif", nbEtudiants: 11  },
+  { id: 3, prenom: "Yacine", nom: "Messaoud", email: "y.messaoud@autocole.dz", telephone: "+213 555 034 567", typeBoite: "manuelle", statut: "actif", nbEtudiants: 5  },
+  { id: 4, prenom: "Nadia", nom: "Hadjadj", email: "n.hadjadj@autocole.dz", telephone: "+213 555 045 678", typeBoite: "automatique", statut: "inactif", nbEtudiants: 2 },
+  { id: 5, prenom: "Bilal", nom: "Ouahrani", email: "b.ouahrani@autocole.dz", telephone: "+213 555 056 789", typeBoite: "manuelle", statut: "actif", nbEtudiants: 9  },
+  { id: 6, prenom: "Assia", nom: "Tlemçani", email: "a.tlemcani@autocole.dz", telephone: "+213 555 067 890", typeBoite: "manuelle", statut: "inactif", nbEtudiants: 8  },
 ];
 
-const EMPTY_FORM = { prenom: "", nom: "", email: "", telephone: "", typeBoite: "manuelle", statut: "actif" };
+const EMPTY_FORM = { prenom: "", nom: "", email: "", telephone: "", typeBoite: "manuelle", statut: "actif",nbEtudiants: 0 };
 
 /* ── MONITEUR CARD (version prototype) ── */
 const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
@@ -22,22 +22,65 @@ const MoniteurCard = ({ moniteur, onEdit, onDelete }) => {
 
   return (
     <div className="moniteur-card">
-      <div className="card-avatar">{initials}</div>
+      {/* Status badge */}
+      <span className={`card-status ${moniteur.statut}`}>
+        <i className="fa-solid fa-circle" />
+        {moniteur.statut === "actif" ? "Actif" : "Inactif"}
+      </span>
+
       <div className="card-body">
-        <h3 className="card-name">{moniteur.prenom} {moniteur.nom}</h3>
-        <div className="card-car-type">
-          <i className={moniteur.typeBoite === "manuelle" ? "fa-solid fa-gears" : "fa-solid fa-gauge-high"} />
-          <span>{moniteur.typeBoite === "manuelle" ? "Boîte manuelle" : "Boîte automatique"}</span>
+        {/* Avatar */}
+        <div className="card-avatar">{initials}</div>
+
+        {/* Name */}
+        <p className="card-name">
+          {moniteur.prenom} {moniteur.nom}
+        </p>
+
+        {/* Car type pill */}
+        <span className={`card-car-type ${moniteur.typeBoite}`}>
+          <i
+            className={
+              moniteur.typeBoite === "manuelle"
+                ? "fa-solid fa-gears"
+                : "fa-solid fa-gauge-high"
+            }
+          />
+          {moniteur.typeBoite === "manuelle"
+            ? "Boîte manuelle"
+            : "Boîte automatique"}
+        </span>
+
+        {/* Info rows */}
+        <div className="card-info-list">
+          <div className="card-info-row">
+            <i className="fa-solid fa-envelope" />
+            <span title={moniteur.email}>{moniteur.email}</span>
+          </div>
+          <div className="card-info-row">
+            <i className="fa-solid fa-phone" />
+            <span>{moniteur.telephone}</span>
+          </div>
         </div>
-        <div className="card-phone">
-          <i className="fa-solid fa-phone" /> {moniteur.telephone}
+
+        <div className="card-meta">
+          <i className="fa-solid fa-user"></i>
+          <span className="meta-value">{moniteur.nbEtudiants}</span>
+          <span className="meta-label">Candidats</span>
         </div>
       </div>
+
+      {/* Footer actions */}
       <div className="card-footer">
         <button className="btn-edit" onClick={() => onEdit(moniteur)}>
-          <i className="fa-solid fa-pen-to-square" /> Modifier
+          <i className="fa-solid fa-pen-to-square" />
+          Modifier
         </button>
-        <button className="btn-delete" onClick={() => onDelete(moniteur)} title="Supprimer">
+        <button
+          className="btn-delete"
+          onClick={() => onDelete(moniteur)}
+          title="Supprimer"
+        >
           <i className="fa-solid fa-trash" />
         </button>
       </div>
@@ -69,20 +112,20 @@ const MoniteurModal = ({ isOpen, onClose, onSave, editData }) => {
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" /> Prénom</label>
+              <label><i className="fa-solid fa-id-card" /> Prénom <span>*</span> </label>
               <input name="prenom" value={form.prenom} onChange={handleChange} placeholder="ex. Karim" required />
             </div>
             <div className="form-field">
-              <label><i className="fa-solid fa-id-card" /> Nom</label>
+              <label><i className="fa-solid fa-id-card" /> Nom <span>*</span> </label>
               <input name="nom" value={form.nom} onChange={handleChange} placeholder="ex. Benali" required />
             </div>
           </div>
           <div className="form-field">
-            <label><i className="fa-solid fa-envelope" /> Adresse e-mail</label>
+            <label><i className="fa-solid fa-envelope" /> Adresse e-mail <span>*</span> </label>
             <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="ex. k.benali@autocole.dz" required />
           </div>
           <div className="form-field">
-            <label><i className="fa-solid fa-phone" /> Téléphone</label>
+            <label><i className="fa-solid fa-phone" /> Téléphone <span>*</span> </label>
             <input name="telephone" value={form.telephone} onChange={handleChange} placeholder="ex. +213 555 012 345" required />
           </div>
           <div className="form-row">
