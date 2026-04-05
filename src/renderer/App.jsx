@@ -10,29 +10,24 @@ import AgendaPage from "./pages/Agenda";
 import Payments from "./pages/Payments";
 import Examens from "./pages/Examens";
 import Layout from "./layout/Layout";
+import  Parametres from "./pages/parametres";
 
 const App = () => {
   return (
     <HashRouter>
-      <Routes>
-
-        {/* ── Redirection racine → connexion ── */}
-        <Route path="/" element={<Navigate to="/connexion" replace />} />
-
-        {/* ── Page connexion — sans sidebar ── */}
-        <Route path="/connexion" element={<SignIn />} />
-
-        {/* ── Pages protégées — avec sidebar via Layout ── */}
-        <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/candidats" element={<Condidats />} />
-          <Route path="/moniteur" element={<Moniteur />} />
-          <Route path="/agenda" element={<AgendaPage />} />
-          <Route path="/examens" element={<Examens />} />
-          <Route path="/payments" element={<Payments />} />
-        </Route>
-
-      </Routes>
+     <Routes>
+  <Route path="/" element={<Navigate to="/parametres" replace />} />
+  
+  <Route element={<Layout />}>
+    <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/candidats" element={<Condidats />} />
+    <Route path="/moniteur" element={<Moniteur />} />
+    <Route path="/agenda" element={<AgendaPage />} />
+    <Route path="/examens" element={<Examens />} />
+    <Route path="/payments" element={<Payments />} />
+    <Route path="/parametres" element={<Parametres />} />
+  </Route>
+</Routes>
     </HashRouter>
   );
 };
