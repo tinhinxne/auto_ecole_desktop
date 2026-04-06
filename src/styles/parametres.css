@@ -19,7 +19,7 @@
 
 .param-card:hover {
   box-shadow: 0 2px 12px rgba(77, 163, 255, 0.15);
-  border-color: #4da3ff;
+  border-color: #2b537e;
 }
 
 .param-card-left {
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4da3ff;
+  color: #2b537e;
   flex-shrink: 0;
 }
 
@@ -86,7 +86,7 @@
 }
 
 .btn-configurer:hover {
-  background: #2774c5;
+  background: #2b537e;
 }
 
 /* ===== NEW MODAL ===== */
@@ -167,7 +167,7 @@
   align-items: center;
   gap: 6px;
   margin-top: 14px;
-  background: #4da3ff;
+  background: #2b537e;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -180,7 +180,7 @@
 }
 
 .add-rule-btn:hover {
-  background: #2774c5;
+  background: #2b537e;
 }
 
 /* ===== MODAL FOOTER ===== */
@@ -208,7 +208,7 @@
 }
 
 .btn.primary {
-  background: #2774C5;
+  background: #2b537e;
 }
 
 /* ===== RESPONSIVE ===== */

@@ -135,15 +135,15 @@
 }
 
 .today-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: #2b537e;
+  color: #2b537e;
 }
 
 .add-session-btn {
   display: flex;
   align-items: center;
   gap: 7px;
-  background: #2563eb;
+  background: #2b537e;
   color: #fff;
   border: none;
   border-radius: 9px;
@@ -157,7 +157,7 @@
 }
 
 .add-session-btn:hover {
-  background: #3b82f6;
+  background: #2b537e;
 }
 
 /* ── SEARCH ─────────────────────────────────────────────────────────────── */
@@ -188,7 +188,7 @@
 }
 
 .search-bar input:focus {
-  border-color: #2563eb;
+  border-color: #2b537e;
 }
 
 /* ── CALENDRIER CARD ─────────────────────────────────────────────────────── */
@@ -620,7 +620,7 @@
 }
 
 .am-btn-create {
-  background: #2563eb;
+  background: #2b537e;
   color: #fff;
   border: none;
   border-radius: 8px;

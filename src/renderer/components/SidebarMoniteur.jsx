@@ -1,16 +1,21 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   FaThLarge,
   FaUserFriends,
   FaCalendarAlt,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaCog
 } from "react-icons/fa";
-
 import SidebarImage from "../../assets/sidebarImage.png";
 
 const SidebarMoniteur = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/connexion");
+  };
 
   const menu = [
     { name: "Dashboard", icon: <FaThLarge />, path: "/moniteur/dashboard" },
@@ -20,58 +25,101 @@ const SidebarMoniteur = () => {
 
   return (
     <>
-      {/* SIDEBAR */}
       <div className="sidebar">
-        <div className="sidebar-top">
-          <h2 className="logo">Moniteur</h2>
+        {/* BRAND / LOGO */}
+        <div className="sidebar-brand">
+          <div className="brand-icon">M</div>
+          <h2 className="logo">Espace <span>Moniteur</span></h2>
+        </div>
 
+        {/* NAVIGATION */}
+        <nav className="sidebar-nav">
           <ul className="menu">
             {menu.map((item) => (
               <Link to={item.path} key={item.name} className="menu-link">
-                <li
-                  className={
-                    location.pathname === item.path
-                      ? "menu-item active"
-                      : "menu-item"
-                  }
-                >
+                <li className={`menu-item ${location.pathname === item.path ? "active" : ""}`}>
+                  <div className="active-indicator"></div>
                   <span className="icon">{item.icon}</span>
-                  <span>{item.name}</span>
+                  <span className="text">{item.name}</span>
                 </li>
               </Link>
             ))}
           </ul>
-        </div>
 
-        <div className="sidebar-bottom">
-          <div className="logout">
-            <FaSignOutAlt />
-            <span>Déconnexion</span>
+          <div className="separator"></div>
+
+          <Link to="/moniteur/parametres" className="menu-link">
+            <li className={`menu-item ${location.pathname === "/moniteur/parametres" ? "active" : ""}`}>
+              <div className="active-indicator"></div>
+              <span className="icon"><FaCog /></span>
+              <span className="text">Paramètres</span>
+            </li>
+          </Link>
+        </nav>
+
+        {/* FOOTER AVEC LOGOUT ET IMAGE */}
+        <div className="sidebar-footer">
+          <div className="logout-card" onClick={handleLogout}>
+            <div className="logout-btn">
+              <FaSignOutAlt />
+              <span>Déconnexion</span>
+            </div>
           </div>
-
-          <img src={SidebarImage} alt="sidebar" className="sidebar-image" />
+          <img src={SidebarImage} alt="" className="footer-bg-img" />
         </div>
       </div>
 
-      {/* CSS */}
       <style>{`
+        :root {
+          --sidebar-bg: #1e293b; 
+          --active-blue: #4da3ff; /* Le bleu de tes pages */
+          --text-gray: #94a3b8;
+        }
+
         .sidebar {
-          width: 250px;
+          width: 260px;
           height: 100vh;
-          background: #4E96E1;
+          background: var(--sidebar-bg);
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
-          padding: 20px 12px;
+          padding: 30px 0;
           color: white;
           position: relative;
           overflow: hidden;
+          font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 25px;
+          margin-bottom: 40px;
+        }
+
+        .brand-icon {
+          background: var(--active-blue);
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 16px;
+          color: white;
         }
 
         .logo {
-          font-size: 18px;
-          font-weight: 500;
-          margin-bottom: 25px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .logo span { color: var(--active-blue); }
+
+        .sidebar-nav {
+          flex: 1;
         }
 
         .menu {
@@ -80,62 +128,110 @@ const SidebarMoniteur = () => {
           margin: 0;
         }
 
-        .menu-link {
-          text-decoration: none;
-          color: inherit;
-        }
+        .menu-link { text-decoration: none; color: inherit; }
 
         .menu-item {
+          position: relative;
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 11px 14px;
-          border-radius: 10px;
+          gap: 15px;
+          padding: 14px 25px;
+          color: var(--text-gray);
+          transition: all 0.3s ease;
           cursor: pointer;
-          font-size: 14px;
-          margin-bottom: 8px;
-          transition: 0.2s;
-          color: white;
+        }
+
+        .active-indicator {
+          position: absolute;
+          left: 0;
+          width: 0;
+          height: 100%;
+          background: var(--active-blue);
+          transition: width 0.3s ease;
         }
 
         .menu-item:hover {
-          background: rgba(0, 0, 0, 0.15);
+          color: white;
+          background: rgba(255, 255, 255, 0.05);
+          padding-left: 30px;
         }
 
         .menu-item.active {
-          background: #2F2F2F;
+          color: white;
+          background: rgba(77, 163, 255, 0.1);
+        }
+
+        .menu-item.active .active-indicator {
+          width: 5px;
+        }
+
+        .menu-item.active .icon {
+          color: var(--active-blue);
+          transform: scale(1.1);
         }
 
         .icon {
+          font-size: 18px;
           display: flex;
           align-items: center;
-          font-size: 16px;
+          transition: transform 0.3s ease;
         }
 
-        .sidebar-bottom {
+        .separator {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.05);
+          margin: 20px 25px;
+        }
+
+        .sidebar-footer {
           position: relative;
+          padding: 0 20px;
+          height: 150px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
         }
 
-        .logout {
-          background: #E44C3C;
+        .logout-card {
+          background: rgba(228, 76, 60, 0.1);
+          border: 1px solid rgba(228, 76, 60, 0.2);
+          border-radius: 12px;
           padding: 12px;
-          border-radius: 10px;
+          margin-bottom: 25px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          position: relative;
+          z-index: 10;
+        }
+
+        .logout-btn {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
+          color: #E44C3C;
+          font-weight: 600;
           font-size: 14px;
-          cursor: pointer;
-          margin-bottom: 10px;
-          z-index: 2;
         }
 
-        .sidebar-image {
+        .logout-card:hover {
+          background: #E44C3C;
+          transform: translateY(-2px);
+        }
+
+        .logout-card:hover .logout-btn {
+          color: white;
+        }
+
+        .footer-bg-img {
           position: absolute;
-          bottom: -5px;
+          bottom: -10px;
           left: 0;
           width: 100%;
+          opacity: 0.1;
+          z-index: 1;
           pointer-events: none;
+          filter: grayscale(100%);
         }
       `}</style>
     </>

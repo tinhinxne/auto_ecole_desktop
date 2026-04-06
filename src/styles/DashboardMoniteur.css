@@ -63,7 +63,7 @@
 .interactive-stat-card-small:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-  border-color: #4e96e1;
+  border-color: #2b537e;
 }
 
 .stat-label-small {
@@ -103,8 +103,8 @@
   border-radius: 18px;
 }
 
-.sessions-theme { background-color: #4e96e1; }
-.alerts-theme { background-color: #5ba4ef; }
+.sessions-theme { background-color: #2b537e; }
+.alerts-theme { background-color: #2b537e; }
 
 .column-header {
   color: white;
