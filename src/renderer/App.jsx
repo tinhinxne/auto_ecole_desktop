@@ -10,6 +10,7 @@ import AgendaPage from "./pages/Agenda";
 import Payments from "./pages/Payments";
 import Examens from "./pages/Examens";
 import Layout from "./layout/Layout";
+import MesCandidats from ""
 
 const App = () => {
   return (
@@ -17,7 +18,7 @@ const App = () => {
       <Routes>
 
         {/* ── Redirection racine → connexion ── */}
-        <Route path="/" element={<Navigate to="/connexion" replace />} />
+        <Route path="/" element={<Navigate to="/MesCondidats" replace />} />
 
         {/* ── Page connexion — sans sidebar ── */}
         <Route path="/connexion" element={<SignIn />} />
