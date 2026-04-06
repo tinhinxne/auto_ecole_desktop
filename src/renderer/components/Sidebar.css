@@ -1,31 +1,40 @@
+/* STRUCTURE GÉNÉRALE */
 .sidebar {
   width: 250px;
   height: 100vh;
-  background: #4E96E1;
+  background: #4E96E1; /* Ton bleu d'origine */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 20px 12px;
   color: white;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* Empêche l'image de dépasser des bords */
 }
 
 /* LOGO */
 .logo {
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 25px;
+  padding-left: 10px;
+}
+.logo-pro {
+  color: #FFD700; /* Jaune/Or pour le "Pro" */
 }
 
-/* MENU */
+/* MENU & LIENS */
 .menu {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-/* ITEM */
+.menu-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -38,79 +47,66 @@
   transition: 0.2s;
 }
 
-/* ICON */
-.icon {
-  display: flex;
-  align-items: center;
-}
-
-/* HOVER */
 .menu-item:hover {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* ACTIVE EXACT */
+/* ÉTAT ACTIF (Dashboard, Candidats, etc.) */
 .menu-item.active {
-  background: #2F2F2F;
+  background: #2F2F2F; /* Ton noir d'origine pour l'actif */
+  color: white;
 }
 
-/* PARAM */
 .param {
   margin-top: 30px;
 }
 
-/* BOTTOM */
+/* SECTION BAS DE SIDEBAR */
 .sidebar-bottom {
   position: relative;
+  width: 100%;
+  padding-bottom: 10px;
+  z-index: 5; /* Assure que ce conteneur est en avant */
 }
 
-/* LOGOUT */
+/* BOUTON DÉCONNEXION ROUGE */
 .logout {
-  background: #E44C3C;
-  padding: 12px;
+  background: #E44C3C; /* Rouge de ton image dashboard.PNG */
+  padding: 10px 15px;
   border-radius: 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 10px;
-  z-index: 2;
+  position: relative;
+  z-index: 10; /* FORCE LE BOUTON AU-DESSUS DE TOUT */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
 }
 
-/* IMAGE BAS EXACT */
-.sidebar-image {
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 100%;
-  pointer-events: none;
-}
-.menu-link {
-  text-decoration: none;
-  color: inherit;
+.logout:hover {
+  background: #c0392b;
+  transform: scale(1.02);
 }
 
-.menu-item {
+.logout-icon-bg {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 15px;
-  cursor: pointer;
-  border-radius: 8px;
-  color: #333;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px;
+  border-radius: 6px;
 }
 
-.menu-item:hover {
-  background: #f3f4f6;
-}
-
-.menu-item.active {
-  background: #3b82f6;
-  color: white;
-}
-
-.icon {
-  font-size: 16px;
+/* IMAGE EN ARRIÈRE-PLAN */
+.sidebar-image {
+  position: absolute;
+  bottom: -15px; /* Aligné tout en bas */
+  left: -12px;
+  width: 115%; /* Déborde légèrement pour l'effet visuel */
+  pointer-events: none; /* Les clics passent à travers l'image vers le bouton */
+  z-index: 1; /* Reste sous le bouton (z-index 10) */
+  opacity: 0.9;
 }

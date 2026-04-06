@@ -1,7 +1,6 @@
 import React from "react";
 import "./Sidebar.css";
-import { Link, useLocation } from "react-router-dom";
-
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   FaThLarge,
   FaUserFriends,
@@ -12,12 +11,11 @@ import {
   FaSignOutAlt,
   FaCog
 } from "react-icons/fa";
-
 import SidebarImage from "../../assets/sidebarImage.png";
-import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menu = [
     { name: "Dashboard", icon: <FaThLarge />, path: "/dashboard" },
@@ -28,57 +26,46 @@ const Sidebar = () => {
     { name: "Payments", icon: <FaCreditCard />, path: "/payments" },
   ];
 
+  const handleLogout = () => {
+    // Logique de déconnexion ici (ex: clear localStorage)
+    navigate("/connexion");
+  };
+
   return (
     <div className="sidebar">
-
-      {/* TOP */}
+      {/* SECTION HAUTE */}
       <div className="sidebar-top">
-        <h2 className="logo">AutoÉcole Pro</h2>
+        <h2 className="logo">AutoÉcole <span style={{ color: "#FFD700" }}>Pro</span></h2>
 
         <ul className="menu">
           {menu.map((item) => (
-            <Link
-              to={item.path}
-              key={item.name}
-              className="menu-link"
-            >
-              <li
-                className={
-                  location.pathname === item.path
-                    ? "menu-item active"
-                    : "menu-item"
-                }
-              >
+            <Link to={item.path} key={item.name} className="menu-link">
+              <li className={`menu-item ${location.pathname === item.path ? "active" : ""}`}>
                 <span className="icon">{item.icon}</span>
                 <span>{item.name}</span>
               </li>
             </Link>
           ))}
 
-          {/* SETTINGS */}
-          <Link to="/settings" className="menu-link">
-            <li
-              className={
-                location.pathname === "/settings"
-                  ? "menu-item active"
-                  : "menu-item"
-              }
-            >
-              <FaCog />
+          {/* Bouton Paramètres séparé par un margin-top comme dans ton CSS */}
+          <Link to="/parametres" className="menu-link">
+            <li className={`menu-item param ${location.pathname === "/parametres" ? "active" : ""}`}>
+              <span className="icon"><FaCog /></span>
               <span>Paramètres</span>
             </li>
           </Link>
         </ul>
       </div>
 
-      {/* BOTTOM */}
+      {/* SECTION BASSE */}
       <div className="sidebar-bottom">
-        <div className="logout">
+        <div className="logout" onClick={handleLogout}>
           <FaSignOutAlt />
           <span>Déconnexion</span>
         </div>
 
-        <img src={SidebarImage} alt="sidebar" className="sidebar-image" />
+        {/* L'image de décoration en fond de sidebar */}
+        <img src={SidebarImage} alt="décoration" className="sidebar-image" />
       </div>
     </div>
   );
