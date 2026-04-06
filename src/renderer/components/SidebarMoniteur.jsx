@@ -14,8 +14,8 @@ const SidebarMoniteur = () => {
 
   const menu = [
     { name: "Dashboard", icon: <FaThLarge />, path: "/moniteur/dashboard" },
-    { name: "Mes Candidats", icon: <FaUserFriends />, path: "/moniteur/candidats" },
-    { name: "Mes Séances", icon: <FaCalendarAlt />, path: "/moniteur/seances" },
+    { name: "Mes Candidats", icon: <FaUserFriends />, path: "/moniteur/candidat" },
+    { name: "Mes Séances", icon: <FaCalendarAlt />, path: "/moniteur/agenda" },
   ];
 
   return (

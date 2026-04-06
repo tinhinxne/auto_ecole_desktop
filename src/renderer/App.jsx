@@ -15,6 +15,8 @@ import Layout from "./layout/Layout";
 
 import LayoutMoniteur from "./layout/LayoutMoniteur";
 import DashboardMoniteur from "./pages/DashboardMoniteur"
+import MesCandidats from "./pages/MesCandidats";
+import AgendaMoniteur from "./pages/AgendaMoniteur";
 
 const App = () => {
   return (
@@ -40,6 +42,8 @@ const App = () => {
        {/* ── ROUTES MONITEUR ── */}
         <Route element={<LayoutMoniteur />}>
           <Route path="/moniteur/dashboard" element={<DashboardMoniteur />} />
+          <Route path="/moniteur/candidat" element={<MesCandidats />} />
+          <Route path="/moniteur/agenda"element={<AgendaMoniteur />} />
         </Route>
       </Routes>
     </HashRouter>
