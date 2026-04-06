@@ -40,10 +40,18 @@ const Access = () => {
     },
   ];
 
-  const handleConfirm = () => {
+ const handleConfirm = () => {
     if (!selectedRole) return;
+    
+    // On enregistre le rôle (utile pour plus tard)
     sessionStorage.setItem('userRole', selectedRole);
-    navigate('/dashboard');
+
+    // Redirection conditionnelle
+    if (selectedRole === 'moniteur') {
+      navigate('/moniteur/dashboard');
+    } else {
+      navigate('/dashboard'); // Pour l'admin
+    }
   };
 
   return (

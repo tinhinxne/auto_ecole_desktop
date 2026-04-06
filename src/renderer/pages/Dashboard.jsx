@@ -1,198 +1,144 @@
 import React from "react";
-import "../../styles/Dashboard.css";
+import { motion } from "framer-motion";
+import { 
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, 
+  CartesianGrid, Tooltip, ResponsiveContainer 
+} from "recharts";
+import { FiUsers, FiActivity, FiCalendar, FiClock } from "react-icons/fi";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
+import "../../styles/Dashboard.css";
 
-/* ─── StatCard ─── */
-const StatCard = ({ icon, iconClass, label, value, trend, trendDown }) => (
-  <div className="stat-card">
-    <div className="stat-header">
-      <span className="stat-label">{label}</span>
-      <div className={`stat-icon ${iconClass}`}>{icon}</div>
-    </div>
-    <div className="stat-value">{value}</div>
-    <div className={`stat-trend ${trendDown ? "down" : ""}`}>{trend}</div>
-  </div>
-);
-
-/* ─── Line Chart ─── */
-const LineChart = ({ data, color = "#1e88e5" }) => {
-  const max = Math.max(...data);
-  const points = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * 280;
-      const y = 100 - (v / max) * 90;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const area = `0,100 ${points} 280,100`;
-  return (
-    <div className="line-chart-wrap">
-      <svg viewBox="0 0 280 110" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="lineGrad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon points={area} fill="url(#lineGrad)" />
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-  );
+// Animations de base
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
 };
 
-/* ─── Bar Chart ─── */
-const BarChart = ({ data, color }) => {
-  const max = Math.max(...data.map((d) => d.value));
-  return (
-    <div className="bar-chart">
-      {data.map((d, i) => (
-        <div key={i} className="bar-item">
-          <div
-            className="bar-fill"
-            style={{
-              height: `${(d.value / max) * 100}%`,
-              background: color || "#26a69a",
-            }}
-          />
-          <span className="bar-label">{d.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-/* ─── ADMIN DASHBOARD (contenu principal) ─── */
-const AdminDashboard = () => {
-  const revenueData = [3800, 4500, 5200, 4800, 6200, 6800, 7100];
-  const sessionsData = [
-    { label: "S1", value: 42 },
-    { label: "S2", value: 55 },
-    { label: "S3", value: 48 },
-    { label: "S4", value: 61 },
-  ];
-  const exams = [
-    { name: "Marie Dubois", date: "2026-03-10 09:00", type: "code" },
-    { name: "Pierre Martin", date: "2026-03-10 14:00", type: "conduite" },
-    { name: "Sophie Leroy", date: "2026-03-11 10:00", type: "code" },
-    { name: "Luc Bernard", date: "2026-03-12 15:30", type: "conduite" },
-  ];
-  const activities = [
-    { dot: "blue", text: "Nouvelle candidate enregistrée : Emma Petit", time: "Il y a 2 heures" },
-    { dot: "green", text: "Paiement reçu de Jacques Durand", time: "Il y a 3 heures" },
-    { dot: "orange", text: "Session terminée : Marie Dubois", time: "Il y a 5 heures" },
-    { dot: "purple", text: "Examen prévu pour Pierre Martin", time: "Il y a 1 jour" },
-  ];
-
-  return (
-    <>
-      <div className="stats-grid">
-        <StatCard
-          icon="👥"
-          iconClass="blue"
-          label="Total candidats"
-          value="156"
-          trend="↑ +12% ce mois"
-        />
-        <StatCard
-          icon="🚗"
-          iconClass="green"
-          label="Sessions actives"
-          value="48"
-          trend="↑ +8% ce mois"
-        />
-        <StatCard
-          icon="📋"
-          iconClass="orange"
-          label="Examens à venir"
-          value="23"
-          trend="↓ 3% ce mois"
-          trendDown
-        />
-        <StatCard
-          icon="💰"
-          iconClass="purple"
-          label="Revenu mensuel"
-          value="7 100 DA"
-          trend="↑ +15% ce mois"
-        />
-      </div>
-
-      <div className="charts-row">
-        <div className="chart-card">
-          <h3>📈 Aperçu des revenus</h3>
-          <LineChart data={revenueData} color="#1e88e5" />
-        </div>
-        <div className="chart-card">
-          <h3>📅 Sessions de ce mois</h3>
-          <BarChart data={sessionsData} />
-        </div>
-      </div>
-
-      <div className="bottom-row">
-        <div className="section-card">
-          <h3>📋 Examens à venir</h3>
-          <div className="exam-list">
-            {exams.map((e, i) => (
-              <div key={i} className="exam-item">
-                <div className="exam-info">
-                  <p>{e.name}</p>
-                  <span>{e.date}</span>
-                </div>
-                <span className={`exam-badge ${e.type}`}>
-                  {e.type === "code" ? "Code" : "Conduite"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="section-card">
-          <h3>🔔 Activité récente</h3>
-          <div className="activity-list">
-            {activities.map((a, i) => (
-              <div key={i} className="activity-item">
-                <div className={`activity-dot ${a.dot}`} />
-                <div>
-                  <div className="activity-text">{a.text}</div>
-                  <div className="activity-time">{a.time}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
-
-/* ─── PAGE PRINCIPALE ─── */
 const Dashboard = () => {
   return (
-   <div className="container">
-      {/* Pas de Sidebar */}
-       <div className="main">
-        {/* Header identique à la page Candidats */}
-       <div className="header">
-                 <img src={ConnexionImg} alt="illustration" className="header-img" />
-                 <h1>
-                   <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
-                 </h1>
-                 <p>Gérer les étudiants, les leçons et les examens</p>
-               </div>
-
-        {/* Contenu */}
-        <div className="dashboard-content">
-          <AdminDashboard />
+    <div className="dashboard-wrapper">
+      {/* BANNIÈRE AVEC ENTRÉE DOUCE */}
+      <motion.div 
+        className="header-banner-container"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+            {/* HEADER */}
+               <div className="header">
+          <img src={ConnexionImg} alt="illustration" className="header-img" />
+          <h1>
+            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
+          </h1>
+          <p>Gérer les étudiants, les leçons et les examens de conduite</p>
         </div>
+        
+      </motion.div>
+
+      <motion.div className="welcome-section" {...fadeInUp}>
+        <h2>Tableau de bord de l'administateur</h2>
+        <p>Bon retour ! Voici votre emploi du temps pour aujourd'hui.</p>
+      </motion.div>
+
+      {/* CARDS INTERACTIVES : SURVOL ET CLIC */}
+      <div className="stats-grid">
+        {[
+          { label: "Nombre total de candidats", val: "156", trend: "+12%", color: "blue", icon: <FiUsers /> },
+          { label: "Sessions actives", val: "48", trend: "+8%", color: "green", icon: <FiActivity /> },
+          { label: "Examens à venir", val: "23", trend: "-3%", color: "red", icon: <FiCalendar /> },
+          { label: "Revenu mensuel", val: "7,100 DA", trend: "+15%", color: "orange", icon: <FiActivity /> }
+        ].map((item, i) => (
+          <motion.div 
+            key={i} 
+            className="stat-card-modern"
+            whileHover={{ y: -8, scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <div className="stat-left">
+               <span className="stat-label">{item.label}</span>
+               <span className="stat-value">{item.val}</span>
+               <span className={`stat-trend ${item.color}`}>{item.trend}</span>
+            </div>
+            <div className={`stat-icon ${item.color}`}>{item.icon}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* GRAPHIQUES AVEC TOOLTIPS INTERACTIFS */}
+      <div className="charts-main-grid">
+        <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.4 }}>
+          <h3>Aperçu des revenus</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={[
+              { n: "Jan", v: 4000 }, { n: "Feb", v: 3000 }, { n: "Mar", v: 5000 }, 
+              { n: "Apr", v: 4500 }, { n: "May", v: 7000 }, { n: "Jun", v: 6500 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="n" tick={{fill: '#fff'}} axisLine={false} />
+              <YAxis tick={{fill: '#fff'}} axisLine={false} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', color: '#1e293b' }}
+                cursor={{ stroke: '#fff', strokeWidth: 2 }}
+              />
+              <Area type="monotone" dataKey="v" stroke="#fff" fillOpacity={0.4} fill="#fff" animationDuration={2000} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.5 }}>
+          <h3>Sessions de ce mois</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={[{n:'W1', v:45}, {n:'W2', v:52}, {n:'W3', v:48}, {n:'W4', v:61}]}>
+              <XAxis dataKey="n" tick={{fill: '#fff'}} axisLine={false} />
+              <Tooltip cursor={{fill: 'rgba(255,255,255,0.1)'}} />
+              <Bar dataKey="v" fill="#065F46" radius={[6, 6, 0, 0]} animationDuration={1500} />
+            </BarChart>
+          </ResponsiveContainer>
+        </motion.div>
+      </div>
+
+      {/* LISTES AVEC EFFET DE GLISSEMENT AU SURVOL */}
+      <div className="bottom-sections">
+        <motion.div className="list-container blue-container" {...fadeInUp} transition={{ delay: 0.6 }}>
+          <h3><FiCalendar /> Examens à venir</h3>
+          {["Marie Dubois", "Pierre Martin", "Sophie Leroy", "Luc Bernard"].map((name, i) => (
+            <motion.div 
+              key={i} 
+              className="modern-item-row"
+              whileHover={{ x: 10, backgroundColor: "#fff" }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className="item-details">
+                <strong>{name}</strong>
+                <span>2026-03-10 à 09:00</span>
+              </div>
+              <span className="type-badge">Code</span>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div className="list-container blue-container" {...fadeInUp} transition={{ delay: 0.7 }}>
+          <h3><FiClock /> Activité récente</h3>
+          {["Emma Petit", "Jacques Durand", "Marie Dubois", "Pierre Martin"].map((name, i) => (
+            <motion.div 
+              key={i} 
+              className="modern-item-row"
+              whileHover={{ x: 10, backgroundColor: "#fff" }}
+            >
+              <div className="activity-flex">
+                <div className="blue-dot"></div>
+                <div className="item-details">
+                  <strong>Action effectuée pour {name}</strong>
+                  <span>Il y a {i + 2} heures</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
