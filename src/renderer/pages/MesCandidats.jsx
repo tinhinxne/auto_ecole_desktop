@@ -36,38 +36,30 @@ const MesCandidats = () => {
           </h1>
           <p>Gérer les étudiants, les leçons et les examens</p>
         </div>
+{/* SECTION STATS - Version Large et Imposante */}
+<div className="stats-row-layout">
+  {/* Card Total Candidats */}
+  <div className="interactive-stat-card-small large-stat">
+    <div className="stat-data">
+      <p className="stat-label-small">Total Candidats</p>
+      <h3 className="stat-number-small">{candidatsData.length}</h3>
+    </div>
+    <div className="stat-icon-circle-small large-icon" style={{ backgroundColor: "rgba(77,163,255,0.15)" }}>
+      <Users size={24} color="#4da3ff" />
+    </div>
+  </div>
 
-        {/* STAT CARDS */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-          <div style={statCard}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: "rgba(77,163,255,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Users size={18} color="#4da3ff" />
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "#64748B", marginBottom: 2 }}>Total Candidats</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#1e293b" }}>{candidatsData.length}</div>
-            </div>
-          </div>
-
-          <div style={statCard}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: "#d4edda",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <TrendingUp size={18} color="green" />
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "#64748B", marginBottom: 2 }}>En bonne voie</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#1e293b" }}>{onTrack}</div>
-            </div>
-          </div>
-        </div>
-
+  {/* Card En bonne voie */}
+  <div className="interactive-stat-card-small large-stat">
+    <div className="stat-data">
+      <p className="stat-label-small">En bonne voie</p>
+      <h3 className="stat-number-small">{onTrack}</h3>
+    </div>
+    <div className="stat-icon-circle-small large-icon" style={{ backgroundColor: "#d4edda" }}>
+      <TrendingUp size={24} color="green" />
+    </div>
+  </div>
+</div>
         {/* SECTION CANDIDATS */}
         <div className="card">
           <div className="card-header">

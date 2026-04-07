@@ -64,7 +64,7 @@ const Payments = () => {
           }}
         >
           {[
-            { title: "Chiffre d'Affaires", value: "450.000 DA", detail: "Encaissé ce mois", color: "#4E96E1" },
+            { title: "Chiffre d'Affaires", value: "450.000 DA", detail: "Encaissé ce mois", color: "#2b537e" },
             { title: "Prévisions d'Entrée", value: "185.000 DA", detail: "Tranches à venir", color: "#011659" },
             { title: "Taux de Recouvrement", value: "82%", detail: "Globalité des dossiers", color: "#166534" }
           ].map((card, index) => (
@@ -102,7 +102,7 @@ const Payments = () => {
             placeholder="Rechercher un candidat..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: 1, padding: "10px", border: `1px solid #4E96E1`, borderRadius: "10px", outline: "none" }}
+            style={{ flex: 1, padding: "10px", border: `1px solid #2b537e`, borderRadius: "10px", outline: "none" }}
           />
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: "10px", border: `1px solid #4E96E1`, borderRadius: "10px" }} />
           <span>à</span>
@@ -114,7 +114,7 @@ const Payments = () => {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#4E96E1" }}>
+                <tr style={{ background: "#2b537e" }}>
                   <th style={th}>Candidat</th>
                   <th style={th}>Date de paiement</th>
                   <th style={th}>Montant</th>
@@ -150,7 +150,7 @@ const Payments = () => {
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelected(item); setShowModal(true); }}
-                          style={{ background: "#4E96E1", color: "#fff", border: "none", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}
+                          style={{ background: "#2b537e", color: "#fff", border: "none", padding: "6px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12px" }}
                         >
                           Gérer
                         </button>

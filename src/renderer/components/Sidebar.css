@@ -1,112 +1,167 @@
-/* STRUCTURE GÉNÉRALE */
+:root {
+  --sidebar-bg: #2b537e; /* Bleu très sombre / Noir */
+  --active-color: #4E96E1;
+  --text-gray: #94a3b8;
+  --hover-bg: rgba(255, 255, 255, 0.05);
+}
+
 .sidebar {
-  width: 250px;
+  width: 260px;
   height: 100vh;
-  background: #4E96E1; /* Ton bleu d'origine */
+  background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 20px 12px;
+  padding: 30px 0;
   color: white;
   position: relative;
-  overflow: hidden; /* Empêche l'image de dépasser des bords */
+  overflow: hidden;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
 }
 
-/* LOGO */
-.logo {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 25px;
-  padding-left: 10px;
-}
-.logo-pro {
-  color: #FFD700; /* Jaune/Or pour le "Pro" */
-}
-
-/* MENU & LIENS */
-.menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.menu-link {
-  text-decoration: none;
-  color: inherit;
-}
-
-.menu-item {
+/* BRAND / LOGO */
+.sidebar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-bottom: 8px;
-  transition: 0.2s;
+  padding: 0 25px;
+  margin-bottom: 40px;
 }
 
-.menu-item:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* ÉTAT ACTIF (Dashboard, Candidats, etc.) */
-.menu-item.active {
-  background: #2F2F2F; /* Ton noir d'origine pour l'actif */
-  color: white;
-}
-
-.param {
-  margin-top: 30px;
-}
-
-/* SECTION BAS DE SIDEBAR */
-.sidebar-bottom {
-  position: relative;
-  width: 100%;
-  padding-bottom: 10px;
-  z-index: 5; /* Assure que ce conteneur est en avant */
-}
-
-/* BOUTON DÉCONNEXION ROUGE */
-.logout {
-  background: #E44C3C; /* Rouge de ton image dashboard.PNG */
-  padding: 10px 15px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  position: relative;
-  z-index: 10; /* FORCE LE BOUTON AU-DESSUS DE TOUT */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s;
-}
-
-.logout:hover {
-  background: #c0392b;
-  transform: scale(1.02);
-}
-
-.logout-icon-bg {
+.brand-icon {
+  background: var(--active-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 6px;
-  border-radius: 6px;
+  font-weight: bold;
+  font-size: 18px;
 }
 
-/* IMAGE EN ARRIÈRE-PLAN */
-.sidebar-image {
+.logo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.logo span { color: var(--active-color); }
+
+/* MENU */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu-link { text-decoration: none; color: inherit; }
+
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 14px 25px;
+  color: var(--text-gray);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+/* L'indicateur flottant à gauche */
+.active-indicator {
   position: absolute;
-  bottom: -15px; /* Aligné tout en bas */
-  left: -12px;
-  width: 115%; /* Déborde légèrement pour l'effet visuel */
-  pointer-events: none; /* Les clics passent à travers l'image vers le bouton */
-  z-index: 1; /* Reste sous le bouton (z-index 10) */
-  opacity: 0.9;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: var(--active-color);
+  transition: width 0.3s ease;
+}
+
+/* Hover effect */
+.menu-item:hover {
+  color: white;
+  background: var(--hover-bg);
+  padding-left: 30px; /* Petit décalage interactif */
+}
+
+/* Active effect */
+.menu-item.active {
+  color: white;
+  background: rgba(78, 150, 225, 0.1); /* Teinte bleutée légère */
+}
+
+.menu-item.active .active-indicator {
+  width: 5px;
+}
+
+.menu-item.active .icon {
+  color: var(--active-color);
+  transform: scale(1.1);
+}
+
+.icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.separator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 20px 25px;
+}
+
+/* FOOTER & LOGOUT */
+.sidebar-footer {
+  position: relative;
+  margin-top: auto;
+  padding: 0 20px;
+  height: 180px; /* Espace pour l'image */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.logout-card {
+  background: rgba(228, 76, 60, 0.1);
+  border: 1px solid rgba(228, 76, 60, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #E44C3C;
+  font-weight: 600;
+}
+
+.logout-card:hover {
+  background: #E44C3C;
+}
+
+.logout-card:hover .logout-btn {
+  color: white;
+}
+
+.footer-bg-img {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  opacity: 0.6;
+  z-index: 1;
+  pointer-events: none;
+  filter: grayscale(100%) brightness(0.5); /* Pour qu'elle se fonde dans le noir */
 }
