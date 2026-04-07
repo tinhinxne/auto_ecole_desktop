@@ -1,51 +1,84 @@
 import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
-import AddButton from "../components/Button";
+import Button from "../components/Button";
 import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
-import { SquarePen, Trash, Search, UserRound, Camera, Phone } from "lucide-react";
-import { TbBackground } from "react-icons/tb";
+import { SquarePen, Trash, Search, Phone } from "lucide-react";
+import AddCandidatModal from "../components/addCondidat";
+
+// ── données initiales ────────────────────────────────────────────────────────
+const initialCandidats = [
+  { id: 1, nom: "Belarbi",    prenom: "Tinhinane", tel: "06 12 34 56 78", inscription: "2025-01-15", sessions: 18, moniteur: "Jean Dupont",    status: "active",  sexe: "femme", dob: "", photo: null },
+  { id: 2, nom: "Azil",       prenom: "Melissa",   tel: "06 23 45 67 89", inscription: "2025-02-01", sessions: 12, moniteur: "Sophie Laurent", status: "active",  sexe: "femme", dob: "", photo: null },
+  { id: 3, nom: "Bouariche",  prenom: "Nadine",    tel: "06 34 56 78 90", inscription: "2025-03-10", sessions: 25, moniteur: "Jean Dupont",    status: "pending", sexe: "femme", dob: "", photo: null },
+  { id: 4, nom: "Benazzouz", prenom: "Sonia",     tel: "06 34 56 78 90", inscription: "2025-03-10", sessions: 22, moniteur: "Jean Dupont",    status: "pending", sexe: "femme", dob: "", photo: null },
+  { id: 5, nom: "Albane",     prenom: "Amina",     tel: "06 34 56 78 90", inscription: "2025-03-10", sessions: 29, moniteur: "Jean Dupont",    status: "active",  sexe: "femme", dob: "", photo: null },
+];
 
 const Condidats = () => {
-  const [showModal, setShowModal] = useState(false);
+  const [candidats, setCandidats]     = useState(initialCandidats);
+  const [showModal, setShowModal]     = useState(false);
+  const [editCandidat, setEditCandidat] = useState(null); // null = ajout, objet = édition
+
+  // ouvrir en mode édition
+  const handleEdit = (candidat) => {
+    setEditCandidat(candidat);
+    setShowModal(true);
+  };
+
+  // ouvrir en mode ajout
+  const handleAdd = () => {
+    setEditCandidat(null);
+    setShowModal(true);
+  };
+
+  // supprimer
+  const handleDelete = (id) => {
+    if (window.confirm("Supprimer ce candidat ?"))
+      setCandidats(prev => prev.filter(c => c.id !== id));
+  };
+
+  // sauvegarder (ajout ou édition)
+  const handleSave = (data) => {
+    if (data.id) {
+      // édition
+      setCandidats(prev => prev.map(c => c.id === data.id ? { ...c, ...data } : c));
+    } else {
+      // ajout
+      setCandidats(prev => [...prev, { ...data, id: Date.now(), sessions: 0, moniteur: "", status: "pending" }]);
+    }
+    setShowModal(false);
+  };
 
   return (
     <div className="container">
       <div className="main">
-        {/* HEADER identique à Dashboard */}
         <div className="header">
           <img src={ConnexionImg} alt="illustration" className="header-img" />
-          <h1>
-            <img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école
-          </h1>
+          <h1><img src={SmallCar} alt="" width={40} /> Panneau de contrôle de l'auto-école</h1>
           <p>Gérer les étudiants, les leçons et les examens</p>
         </div>
 
-        {/* SECTION CANDIDATS */}
         <div className="card">
           <div className="card-header">
             <div>
               <h2>Candidats</h2>
               <p>Gérer et suivre tous les candidats de l'auto-école</p>
             </div>
-            <AddButton text="Ajouter candidat" onClick={() => setShowModal(true)} />
+            <Button text="+ Ajouter candidat" onClick={handleAdd} showPlusIcon={false} />
           </div>
 
           <div className="search-bar">
             <div className="search-wrapper">
               <Search size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search candidates..."
-                className="search"
-              />
+              <input type="text" placeholder="Search candidates..." className="search" />
             </div>
           </div>
 
-           <table>
+          <table>
             <thead>
-               <tr>
+              <tr>
                 <th>Candidat</th>
                 <th>Contact</th>
                 <th>Date d'inscription</th>
@@ -53,139 +86,39 @@ const Condidats = () => {
                 <th>Moniteur</th>
                 <th>Status</th>
                 <th>Actions</th>
-               </tr>
+              </tr>
             </thead>
             <tbody>
-               <tr>
-                <td>Belarbi Tinhinane</td>
-                <td><Phone size={15}/> 06 12 34 56 78</td>
-                <td>2025-01-15</td>
-                <td>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: "60%" }}></div>
-                  </div>
-                  <span className="progress-text">18/30 sessions</span>
-                </td>
-                <td>Jean Dupont</td>
-                <td><span className="status active">Active</span></td>
-                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
-               </tr>
-               <tr>
-                <td>Azil Melissa</td>
-                <td><Phone size={15}/> 06 23 45 67 89</td>
-                <td>2025-02-01</td>
-                <td>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: "60%" }}></div>
-                  </div>
-                  <span className="progress-text">12/30 sessions</span>
-                </td>
-                <td>Sophie Laurent</td>
-                <td><span className="status active">Active</span></td>
-                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
-               </tr>
-               <tr>
-                <td>Bouariche Nadine</td>
-                <td><Phone size={15}/> 06 34 56 78 90</td>
-                <td>2025-03-10</td>
-                <td>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: "60%" }}></div>
-                  </div>
-                  <span className="progress-text">25/30 sessions</span>
-                </td>
-                <td>Jean Dupont</td>
-                <td><span className="status pending">Pending</span></td>
-                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
-               </tr>
-               <tr>
-                <td>Benazzouz Sonia</td>
-                <td><Phone size={15}/> 06 34 56 78 90</td>
-                <td>2025-03-10</td>
-                <td>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: "60%" }}></div>
-                  </div>
-                  <span className="progress-text">22/30 sessions</span>
-                </td>
-                <td>Jean Dupont</td>
-                <td><span className="status pending">Pending</span></td>
-                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
-               </tr>
-               <tr>
-                <td>Albane Amina</td>
-                <td><Phone size={15}/> 06 34 56 78 90</td>
-                <td>2025-03-10</td>
-                <td>
-                  <div className="progress-container">
-                    <div className="progress-bar" style={{ width: "60%" }}></div>
-                  </div>
-                  <span className="progress-text">129/30 sessions</span>
-                </td>
-                <td>Jean Dupont</td>
-                <td><span className="status active">Active</span></td>
-                <td className="actions"><SquarePen size={17} color="blue"/><Trash size={17} color="red"/></td>
-               </tr>
+              {candidats.map(c => (
+                <tr key={c.id}>
+                  <td>{c.nom} {c.prenom}</td>
+                  <td><Phone size={15} /> {c.tel}</td>
+                  <td>{c.inscription}</td>
+                  <td>
+                    <div className="progress-container">
+                      <div className="progress-bar" style={{ width: `${Math.min((c.sessions / 30) * 100, 100)}%` }} />
+                    </div>
+                    <span className="progress-text">{c.sessions}/30 sessions</span>
+                  </td>
+                  <td>{c.moniteur}</td>
+                  <td><span className={`status ${c.status}`}>{c.status}</span></td>
+                  <td className="actions">
+                    <SquarePen size={17} color="blue" style={{ cursor: "pointer" }} onClick={() => handleEdit(c)} />
+                    <Trash     size={17} color="red"  style={{ cursor: "pointer" }} onClick={() => handleDelete(c.id)} />
+                  </td>
+                </tr>
+              ))}
             </tbody>
-           </table>
+          </table>
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Ajouter un candidat</h2>
-              <span className="close" onClick={() => setShowModal(false)}>✕</span>
-            </div>
-            <hr />
-            <div className="modal-body">
-              <div className="form-left">
-                <label>Nom du candidat <span>*</span></label>
-                <input type="text" placeholder="Saisir le nom" />
-                <label>Prénom du candidat <span>*</span></label>
-                <input type="text" placeholder="Saisir le prénom" />
-                <div className="row">
-                  <div>
-                    <label>Date de naissance <span>*</span></label>
-                    <input type="date" />
-                  </div>
-                  <div>
-                    <label>Date d'inscription <span>*</span></label>
-                    <input type="date" />
-                  </div>
-                </div>
-                <label>Numéro de téléphone <span>*</span></label>
-                <input type="text" placeholder="Saisir le numéro" />
-                <label>Sexe <span>*</span></label>
-                <div className="gender">
-                  <input type="radio" name="sexe" value="homme" id="homme" />
-                  <label htmlFor="homme">Homme</label>
-                  <input type="radio" name="sexe" value="femme" id="femme" />
-                  <label htmlFor="femme">Femme</label>
-                </div>
-              </div>
-              <div className="form-right">
-                <div className="avatar">
-                  <UserRound size={40} className="avatar-icon" fill="1E2940" color="1E2940" />
-                  <div className="avatar-upload">
-                    <Camera size={14} />
-                  </div>
-                </div>
-                <button className="upload-btn">Photo du candidat</button>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn cancel" onClick={() => setShowModal(false)}>
-                Annuler
-              </button>
-              <button className="btn primary">
-                Sauvegarder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddCandidatModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        candidat={editCandidat}   // ← pré-remplissage
+        onSave={handleSave}        // ← callback save
+      />
     </div>
   );
 };

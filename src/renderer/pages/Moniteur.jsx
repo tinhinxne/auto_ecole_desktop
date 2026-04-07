@@ -3,6 +3,8 @@ import { UserRound, Camera } from "lucide-react";
 import "../../styles/Moniteur.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
+import Button from "../components/Button";
+import AddMoniteurModal from "../components/addMoniteur";
 
 const INITIAL_MONITEURS = [
   { id: 1, prenom: "Jean", nom: "Dupont", email: "jean.dupont@autoecole.com", telephone: "06 11 22 33 44", statut: "actif", nbEtudiants: 15, rating: 4.8 },
@@ -70,6 +72,24 @@ const Moniteur = () => {
     setSelectedMoniteur(null);
     setShowModal(true);
   };
+  const handleSave = (newMoniteur) => {
+  if (newMoniteur.id) {
+    // MODE EDIT
+    setMoniteurs((prev) =>
+      prev.map((m) => (m.id === newMoniteur.id ? newMoniteur : m))
+    );
+  } else {
+    // MODE AJOUT
+    const newId = moniteurs.length
+      ? Math.max(...moniteurs.map((m) => m.id)) + 1
+      : 1;
+
+    setMoniteurs((prev) => [
+      ...prev,
+      { ...newMoniteur, id: newId, nbEtudiants: 0, rating: 0 },
+    ]);
+  }
+};
 
   // Ouvrir la modale pour l'édition
   const handleEditClick = (moniteur) => {
@@ -98,9 +118,7 @@ const Moniteur = () => {
               <h2>Moniteurs</h2>
               <p>Gérer et suivre tous les moniteurs</p>
             </div>
-            <button className="btn-add-main-proto" onClick={handleAddClick}>
-                + Ajouter moniteur
-            </button>
+            <Button text="  + Ajouter moniteur" onClick={handleAddClick} />
           </div>
 
           {/* ... Toolbar (recherche & filtres) reste inchangée ... */}
@@ -130,70 +148,12 @@ const Moniteur = () => {
       </div>
 
       {/* MODALE UNIQUE (AJOUT & EDIT) */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>{selectedMoniteur ? "Modifier le moniteur" : "Ajouter un moniteur"}</h2>
-              <span className="close" onClick={() => setShowModal(false)}>✕</span>
-            </div>
-            <hr />
-            <div className="modal-body">
-              <div className="form-left">
-                <label>Nom <span>*</span></label>
-                <input type="text" defaultValue={selectedMoniteur?.nom || ""} placeholder="Saisir le nom" />
-                
-                <label>Prénom <span>*</span></label>
-                <input type="text" defaultValue={selectedMoniteur?.prenom || ""} placeholder="Saisir le prénom" />
-                
-                <label>Email <span>*</span></label>
-                <input type="email" defaultValue={selectedMoniteur?.email || ""} placeholder="exemple@autoecole.com" />
-
-                <label>Téléphone <span>*</span></label>
-                <input type="text" defaultValue={selectedMoniteur?.telephone || ""} placeholder="06 XX XX XX XX" />
-                
-                <div className="row">
-                  <div style={{ flex: 1 }}>
-                    <label>Statut <span>*</span></label>
-                    <select 
-                      defaultValue={selectedMoniteur?.statut || "actif"}
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '5px' }}
-                    >
-                      <option value="actif">Actif</option>
-                      <option value="inactif">Inactif</option>
-                    </select>
-                  </div>
-
-                  <div style={{ flex: 1, marginLeft: '15px' }}>
-                    <label>Sexe <span>*</span></label>
-                    <div className="gender" style={{ marginTop: '10px' }}>
-                      <input type="radio" name="sexe" id="homme" defaultChecked={true} />
-                      <label htmlFor="homme" style={{ marginRight: '10px' }}>H</label>
-                      <input type="radio" name="sexe" id="femme" />
-                      <label htmlFor="femme">F</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-right">
-                <div className="avatar">
-                  <UserRound size={40} className="avatar-icon" color="#1E2940" />
-                  <div className="avatar-upload"><Camera size={14} color="#fff" /></div>
-                </div>
-                <button className="upload-btn">Photo du moniteur</button>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn cancel" onClick={() => setShowModal(false)}>Annuler</button>
-              <button className="btn primary">
-                {selectedMoniteur ? "Mettre à jour" : "Sauvegarder"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    <AddMoniteurModal
+  showModal={showModal}
+  setShowModal={setShowModal}
+  selectedMoniteur={selectedMoniteur}
+  onSave={handleSave}
+/>
     </div>
   );
 };
