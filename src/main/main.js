@@ -1,3 +1,41 @@
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const db = require('./db'); // Import de ta connexion MySQL
+
+// --- GESTION DE LA FENÊTRE ---
+
+function createWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    webPreferences: {
+      // Ces constantes sont générées automatiquement par le plugin Webpack d'Electron Forge
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  // Charge l'URL de ton interface (React, Vue ou HTML)
+  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+
+  // Ouvre l'inspecteur si tu veux debugger
+  // mainWindow.webContents.openDevTools();
+}
+
+// Lancement de l'app
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
 // ══════════════════════════════════════════════
 //  FONCTIONS DE COMMUNICATION (IPC) - BACKEND
 // ══════════════════════════════════════════════
@@ -10,13 +48,13 @@ ipcMain.handle('login', async (event, credentials) => {
   return new Promise((resolve) => {
     db.query(sql, [email, password], (err, result) => {
       if (err) resolve({ success: false, message: "Erreur Base de données" });
-      if (result.length > 0) resolve({ success: true, user: result[0] });
+      if (result && result.length > 0) resolve({ success: true, user: result[0] });
       else resolve({ success: false, message: "Identifiants incorrects" });
     });
   });
 });
 
-// 2. CANDIDATS (Lecture et Ajout)
+// 2. CANDIDATS
 ipcMain.handle('get-candidats', async () => {
   return new Promise((resolve) => {
     const sql = `SELECT * FROM Candidat ORDER BY idCandidat DESC`;
@@ -48,7 +86,7 @@ ipcMain.handle('get-moniteurs', async () => {
   });
 });
 
-// 4. DASHBOARD STATS (Le moteur des graphiques)
+// 4. DASHBOARD STATS
 ipcMain.handle('get-dashboard-stats', async () => {
   return new Promise((resolve) => {
     const sql = `
@@ -58,7 +96,7 @@ ipcMain.handle('get-dashboard-stats', async () => {
         (SELECT SUM(montantVersement) FROM Versement WHERE MONTH(dateVersement) = MONTH(CURDATE())) as revenuMois
     `;
     db.query(sql, (err, res) => {
-      if (err) resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
+      if (err || !res) resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
       resolve(res[0]);
     });
   });
