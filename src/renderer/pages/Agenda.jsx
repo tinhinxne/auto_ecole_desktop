@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import ConnexionImg from "../../assets/Connexion.png";
+import Sidebar from "../components/Sidebar";
+import Button from "../components/Button";
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
 const HOURS      = [7,8,9,10,11,12,13,14,15,16,17,18];
@@ -492,10 +494,8 @@ export default function AgendaPage() {
           </div>
 
           {/* Add button */}
-          <button onClick={() => { setEditing(null); setShowModal(true); }} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", borderRadius:8, background:"#2563eb", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.83rem", fontWeight:600, cursor:"pointer", boxShadow:"0 4px 14px rgba(37,99,235,0.35)" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            + Ajouter Séance
-          </button>
+        
+           <Button text="  + Ajouter Séance" onClick={() => setShowModal(true)} />
         </div>
 
         {/* ── FILTERS ── */}

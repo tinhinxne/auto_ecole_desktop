@@ -192,9 +192,3 @@
   background-color: #EF4444; color: white; border: none;
   width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
 }
-
-.btn-add-main-proto {
-  background: var(--primary-blue); color: white;
-  border: none; padding: 10px 20px; border-radius: 10px;
-  font-weight: 700; cursor: pointer;
-}

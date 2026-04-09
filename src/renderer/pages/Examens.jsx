@@ -8,6 +8,7 @@ import ExamenModal from "../components/Examenmodal";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import "../../styles/Examens.css";
+import Button from "../components/Button";
 
 /* ──────────────────────────────────────────────
    DATA & CONFIG
@@ -67,9 +68,7 @@ const Examens = () => {
             <h2 className="examens-page-title">Examens</h2>
             <p className="examens-page-sub">Gérer et suivre les examens de conduite</p>
           </div>
-          <button className="examens-btn-planifier">
-            <FaPlus style={{ marginRight: 6 }} /> Planifier un examen
-          </button>
+         <Button text="  + Planifier un examen" onClick={() => setShowModal(true)} />
         </div>
 
         {/* SECTION STATS STYLE DASHBOARD (GRID 4 COLONNES) */}

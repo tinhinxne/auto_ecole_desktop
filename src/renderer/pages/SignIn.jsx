@@ -57,10 +57,26 @@ export default function SignIn() {
   
   const navigate = useNavigate(); 
 
-  const handleSubmit = (e) => {
+ const handleSubmit = async (e) => { // Ajout de async
     e.preventDefault();
-    console.log('Connexion :', { email, password });
-    navigate("/access");
+
+    try {
+      // 1. On appelle la fonction login définie dans ton preload.js
+      const response = await window.electron.login({ email, password });
+
+      // 2. On vérifie si la BDD a trouvé l'utilisateur
+      if (response.success) {
+        console.log('Succès !', response.user);
+        // On n'autorise l'accès QUE si success est true
+        navigate("/access"); 
+      } else {
+        // Si c'est faux, on affiche une alerte et on ne bouge pas !
+        alert(response.message || "Identifiants invalides");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la tentative de connexion :", error);
+      alert("Impossible de contacter la base de données.");
+    }
   };
 
   return (
