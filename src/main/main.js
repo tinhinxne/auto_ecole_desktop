@@ -1,32 +1,28 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const db = require('./db'); // Import de ta connexion MySQL
+const db   = require('./db');
 
-// --- GESTION DE LA FENÊTRE ---
+// ── Handlers modulaires ──────────────────────────────────────────────────────
+const registerPaymentHandlers = require('./paymentHandlers');
 
+// ─── FENÊTRE ────────────────────────────────────────────────────────────────
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     webPreferences: {
-      // Ces constantes sont générées automatiquement par le plugin Webpack d'Electron Forge
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
 
-  // Charge l'URL de ton interface (React, Vue ou HTML)
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-
-  // Ouvre l'inspecteur si tu veux debugger
   // mainWindow.webContents.openDevTools();
 }
 
-// Lancement de l'app
 app.whenReady().then(() => {
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -36,20 +32,19 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ══════════════════════════════════════════════
-//  FONCTIONS DE COMMUNICATION (IPC) - BACKEND
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+//  IPC HANDLERS
+// ════════════════════════════════════════════════════════════════════
 
 // 1. LOGIN
-ipcMain.handle('login', async (event, credentials) => {
+ipcMain.handle('login', async (_event, credentials) => {
   const { email, password } = credentials;
   const sql = 'SELECT id, nom, type_utilisateur FROM Utilisateur WHERE mail = ? AND mot_de_passe = ?';
-  
   return new Promise((resolve) => {
     db.query(sql, [email, password], (err, result) => {
-      if (err) resolve({ success: false, message: "Erreur Base de données" });
+      if (err) return resolve({ success: false, message: 'Erreur base de données' });
       if (result && result.length > 0) resolve({ success: true, user: result[0] });
-      else resolve({ success: false, message: "Identifiants incorrects" });
+      else resolve({ success: false, message: 'Identifiants incorrects' });
     });
   });
 });
@@ -57,19 +52,18 @@ ipcMain.handle('login', async (event, credentials) => {
 // 2. CANDIDATS
 ipcMain.handle('get-candidats', async () => {
   return new Promise((resolve) => {
-    const sql = `SELECT * FROM Candidat ORDER BY idCandidat DESC`;
-    db.query(sql, (err, res) => {
-      if (err) resolve([]);
+    db.query('SELECT * FROM Candidat ORDER BY idCandidat DESC', (err, res) => {
+      if (err) return resolve([]);
       resolve(res);
     });
   });
 });
 
-ipcMain.handle('add-candidat', async (event, c) => {
+ipcMain.handle('add-candidat', async (_event, c) => {
   return new Promise((resolve) => {
-    const sql = 'INSERT INTO Candidat (nom, prenom, tel, date_inscription, sexe) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [c.nom, c.prenom, c.tel, c.date_inscription, c.sexe], (err, res) => {
-      if (err) resolve({ success: false });
+    const sql = 'INSERT INTO Candidat (nom, prenom, telephone, date_naissance, sexe) VALUES (?, ?, ?, ?, ?)';
+    db.query(sql, [c.nom, c.prenom, c.tel, c.date_naissance, c.sexe], (err, res) => {
+      if (err) return resolve({ success: false, error: err.message });
       resolve({ success: true, id: res.insertId });
     });
   });
@@ -78,9 +72,8 @@ ipcMain.handle('add-candidat', async (event, c) => {
 // 3. MONITEURS
 ipcMain.handle('get-moniteurs', async () => {
   return new Promise((resolve) => {
-    const sql = 'SELECT * FROM Moniteur';
-    db.query(sql, (err, res) => {
-      if (err) resolve([]);
+    db.query('SELECT * FROM Moniteur', (err, res) => {
+      if (err) return resolve([]);
       resolve(res);
     });
   });
@@ -90,29 +83,17 @@ ipcMain.handle('get-moniteurs', async () => {
 ipcMain.handle('get-dashboard-stats', async () => {
   return new Promise((resolve) => {
     const sql = `
-      SELECT 
-        (SELECT COUNT(*) FROM Candidat) as totalCandidats,
-        (SELECT COUNT(*) FROM Seance WHERE dateSeance = CURDATE()) as sessionsToday,
-        (SELECT SUM(montantVersement) FROM Versement WHERE MONTH(dateVersement) = MONTH(CURDATE())) as revenuMois
+      SELECT
+        (SELECT COUNT(*)                   FROM Candidat)                                                AS totalCandidats,
+        (SELECT COUNT(*)                   FROM Seance   WHERE dateSeance = CURDATE())                   AS sessionsToday,
+        (SELECT SUM(montant)               FROM Versement WHERE MONTH(dateVersement) = MONTH(CURDATE())) AS revenuMois
     `;
     db.query(sql, (err, res) => {
-      if (err || !res) resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
+      if (err || !res) return resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
       resolve(res[0]);
     });
   });
 });
 
-// 5. PAIEMENTS
-ipcMain.handle('get-payments', async () => {
-  return new Promise((resolve) => {
-    const sql = `
-      SELECT v.*, c.nom, c.prenom 
-      FROM Versement v 
-      JOIN Candidat c ON v.idCandidat = c.idCandidat 
-      ORDER BY v.dateVersement DESC`;
-    db.query(sql, (err, res) => {
-      if (err) resolve([]);
-      resolve(res);
-    });
-  });
-});
+// 5. PAIEMENTS  (délégué au module dédié)
+registerPaymentHandlers(ipcMain, db);
