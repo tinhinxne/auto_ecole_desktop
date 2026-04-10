@@ -262,12 +262,21 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   };
 
   // ── save ──────────────────────────────────────────────────────────────────
-  const handleSave = () => {
-    const data = { ...form, photo, ...(isEdit ? { id: candidat.id } : {}) };
-    onSave?.(data);
-    setToast(true);
-    setTimeout(() => setToast(false), 1800);
+const handleSave = () => {
+  const data = {
+    idCandidat: candidat?.id,
+    nom: form.nom,
+    prenom: form.prenom,
+    telephone: form.tel,
+    date_naissance: form.dob,
+    date_inscription: form.inscription,
+    sexe: form.sexe === "homme" ? "M" : "F",
+    photo: photo, // <-- on envoie juste le dataURL
+    statut: "actif"
   };
+
+  onSave?.(data);
+};
 
   if (!showModal) return null;
 

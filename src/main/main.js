@@ -55,26 +55,83 @@ ipcMain.handle('login', async (event, credentials) => {
 });
 
 // 2. CANDIDATS
+// 2. CANDIDATS — version corrigée + complète
+
 ipcMain.handle('get-candidats', async () => {
   return new Promise((resolve) => {
     const sql = `SELECT * FROM Candidat ORDER BY idCandidat DESC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
-      resolve(res);
+      else resolve(res);
     });
   });
 });
 
-ipcMain.handle('add-candidat', async (event, c) => {
+ipcMain.handle('add-candidat', async (event, data) => {
+  const { nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut } = data;
+
+  let photoBuffer = null;
+  if (photo && photo.startsWith("data:image")) {
+    const base64 = photo.split(",")[1];
+    photoBuffer = Buffer.from(base64, "base64"); // <-- ici Node.js peut utiliser Buffer
+  }
+
+  const sql = `
+    INSERT INTO Candidat
+      (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  await db.execute(sql, [
+    nom,
+    prenom,
+    telephone,
+    date_naissance,
+    date_inscription,
+    sexe,
+    photoBuffer,
+    statut
+  ]);
+
+  return true;
+});
+
+ipcMain.handle('update-candidat', async (event, c) => {
   return new Promise((resolve) => {
-    const sql = 'INSERT INTO Candidat (nom, prenom, tel, date_inscription, sexe) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [c.nom, c.prenom, c.tel, c.date_inscription, c.sexe], (err, res) => {
-      if (err) resolve({ success: false });
-      resolve({ success: true, id: res.insertId });
-    });
+    const sql = `UPDATE Candidat 
+      SET nom=?, prenom=?, telephone=?, date_naissance=?, date_inscription=?, sexe=?, photo=?, statut=?
+      WHERE idCandidat=?`;
+
+    db.query(
+      sql,
+      [
+        c.nom,
+        c.prenom,
+        c.telephone,
+        c.date_naissance,
+        c.date_inscription, // 👈 AJOUT
+        c.sexe,
+        c.photo || null,
+        c.statut,
+        c.idCandidat
+      ],
+      (err) => {
+        if (err) resolve({ success: false, error: err.message });
+        else resolve({ success: true });
+      }
+    );
   });
 });
 
+ipcMain.handle('delete-candidat', async (event, id) => {
+  return new Promise((resolve) => {
+    const sql = `DELETE FROM Candidat WHERE idCandidat = ?`;
+    db.query(sql, [id], (err) => {
+      if (err) resolve({ success: false, error: err.message });
+      else resolve({ success: true });
+    });
+  });
+});
 // 3. MONITEURS
 ipcMain.handle('get-moniteurs', async () => {
   return new Promise((resolve) => {
