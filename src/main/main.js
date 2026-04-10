@@ -77,21 +77,20 @@ ipcMain.handle('add-candidat', async (event, data) => {
   }
 
   const sql = `
-    INSERT INTO Candidat
-      (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  INSERT INTO Candidat
+  (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut)
+  VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?)
+`;
 
-  await db.execute(sql, [
-    nom,
-    prenom,
-    telephone,
-    date_naissance,
-    date_inscription,
-    sexe,
-    photoBuffer,
-    statut
-  ]);
+await db.execute(sql, [
+  nom,
+  prenom,
+  telephone,
+  date_naissance,
+  sexe,
+  photoBuffer,
+  statut
+]);
 
   return true;
 });

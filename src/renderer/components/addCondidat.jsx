@@ -209,22 +209,28 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   const streamRef    = useRef(null);
 
   // ── pré-remplir quand candidat change ────────────────────────────────────
-  useEffect(() => {
-    if (candidat) {
-      setForm({
-        nom:         candidat.nom         || "",
-        prenom:      candidat.prenom      || "",
-        dob:         candidat.dob         || "",
-        inscription: candidat.inscription || "",
-        tel:         candidat.tel         || "",
-        sexe:        candidat.sexe        || "",
-      });
-      setPhoto(candidat.photo || null);
-    } else {
-      setForm(emptyForm);
-      setPhoto(null);
-    }
-  }, [candidat, showModal]);
+useEffect(() => {
+  if (candidat) {
+    setForm({
+      nom: candidat.nom || "",
+      prenom: candidat.prenom || "",
+      dob: candidat.dob || "",
+      inscription: candidat.inscription || "",
+      tel: candidat.tel || "",
+      sexe: candidat.sexe || "",
+    });
+    setPhoto(candidat.photo || null);
+  } else {
+    const today = new Date().toISOString().split("T")[0];
+
+    setForm({
+      ...emptyForm,
+      inscription: today
+    });
+
+    setPhoto(null);
+  }
+}, [candidat, showModal]);
 
   // ── upload fichier ────────────────────────────────────────────────────────
   const handleFileChange = (e) => {
