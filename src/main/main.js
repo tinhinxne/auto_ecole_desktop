@@ -76,16 +76,64 @@ ipcMain.handle('add-candidat', async (event, c) => {
 });
 
 // 3. MONITEURS
+// RÉCUPÉRER (On ajoute m.photo)
 ipcMain.handle('get-moniteurs', async () => {
   return new Promise((resolve) => {
-    const sql = 'SELECT * FROM Moniteur';
+    const sql = `
+      SELECT u.id, u.nom, u.prenom, u.mail as email, m.numeroTelephone as telephone, 
+             m.photo, IF(m.actif, 'actif', 'inactif') as statut
+      FROM Utilisateur u
+      JOIN Moniteur m ON u.id = m.id
+    `;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
-      resolve(res);
+      else resolve(res);
     });
   });
 });
 
+// AJOUTER (On inclut m.photo)
+ipcMain.handle('add-moniteur', async (event, m) => {
+  return new Promise((resolve) => {
+    const sqlUser = 'INSERT INTO Utilisateur (nom, prenom, mail, mot_de_passe, type_utilisateur) VALUES (?, ?, ?, "123456", "moniteur")';
+    db.query(sqlUser, [m.nom, m.prenom, m.email], (err, res) => {
+      if (err) return resolve({ success: false });
+
+      const newId = res.insertId;
+      const sqlMoniteur = 'INSERT INTO Moniteur (id, numeroTelephone, actif, photo) VALUES (?, ?, ?, ?)';
+      db.query(sqlMoniteur, [newId, m.telephone, m.statut === 'actif', m.photo], (err2) => {
+        if (err2) resolve({ success: false });
+        else resolve({ success: true, id: newId });
+      });
+    });
+  });
+});
+
+// MODIFIER (On inclut m.photo)
+ipcMain.handle('update-moniteur', async (event, m) => {
+  return new Promise((resolve) => {
+    const sqlUser = 'UPDATE Utilisateur SET nom = ?, prenom = ?, mail = ? WHERE id = ?';
+    db.query(sqlUser, [m.nom, m.prenom, m.email, m.id], (err) => {
+      if (err) return resolve({ success: false });
+
+      const sqlMoniteur = 'UPDATE Moniteur SET numeroTelephone = ?, actif = ?, photo = ? WHERE id = ?';
+      db.query(sqlMoniteur, [m.telephone, m.statut === 'actif', m.photo, m.id], (err2) => {
+        if (err2) resolve({ success: false });
+        else resolve({ success: true });
+      });
+    });
+  });
+});
+// SUPPRIMER UN MONITEUR
+ipcMain.handle('delete-moniteur', async (event, id) => {
+  return new Promise((resolve) => {
+    const sql = 'DELETE FROM Utilisateur WHERE id = ?';
+    db.query(sql, [id], (err) => {
+      if (err) resolve({ success: false });
+      else resolve({ success: true });
+    });
+  });
+});
 // 4. DASHBOARD STATS
 ipcMain.handle('get-dashboard-stats', async () => {
   return new Promise((resolve) => {

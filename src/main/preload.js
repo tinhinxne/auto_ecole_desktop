@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('electron', {
   
   // Moniteurs
   getMoniteurs: () => ipcRenderer.invoke('get-moniteurs'),
+  addMoniteur: (data) => ipcRenderer.invoke('add-moniteur', data),
+  updateMoniteur: (data) => ipcRenderer.invoke('update-moniteur', data),
+  deleteMoniteur: (id) => ipcRenderer.invoke('delete-moniteur', id),
   
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
