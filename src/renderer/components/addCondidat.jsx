@@ -209,22 +209,28 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   const streamRef    = useRef(null);
 
   // ── pré-remplir quand candidat change ────────────────────────────────────
-  useEffect(() => {
-    if (candidat) {
-      setForm({
-        nom:         candidat.nom         || "",
-        prenom:      candidat.prenom      || "",
-        dob:         candidat.dob         || "",
-        inscription: candidat.inscription || "",
-        tel:         candidat.tel         || "",
-        sexe:        candidat.sexe        || "",
-      });
-      setPhoto(candidat.photo || null);
-    } else {
-      setForm(emptyForm);
-      setPhoto(null);
-    }
-  }, [candidat, showModal]);
+useEffect(() => {
+  if (candidat) {
+    setForm({
+      nom: candidat.nom || "",
+      prenom: candidat.prenom || "",
+      dob: candidat.dob || "",
+      inscription: candidat.inscription || "",
+      tel: candidat.tel || "",
+      sexe: candidat.sexe || "",
+    });
+    setPhoto(candidat.photo || null);
+  } else {
+    const today = new Date().toISOString().split("T")[0];
+
+    setForm({
+      ...emptyForm,
+      inscription: today
+    });
+
+    setPhoto(null);
+  }
+}, [candidat, showModal]);
 
   // ── upload fichier ────────────────────────────────────────────────────────
   const handleFileChange = (e) => {
@@ -262,12 +268,21 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   };
 
   // ── save ──────────────────────────────────────────────────────────────────
-  const handleSave = () => {
-    const data = { ...form, photo, ...(isEdit ? { id: candidat.id } : {}) };
-    onSave?.(data);
-    setToast(true);
-    setTimeout(() => setToast(false), 1800);
+const handleSave = () => {
+  const data = {
+    idCandidat: candidat?.id,
+    nom: form.nom,
+    prenom: form.prenom,
+    telephone: form.tel,
+    date_naissance: form.dob,
+    date_inscription: form.inscription,
+    sexe: form.sexe === "homme" ? "M" : "F",
+    photo: photo, // <-- on envoie juste le dataURL
+    statut: "actif"
   };
+
+  onSave?.(data);
+};
 
   if (!showModal) return null;
 
