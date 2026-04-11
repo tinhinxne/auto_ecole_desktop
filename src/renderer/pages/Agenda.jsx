@@ -52,6 +52,11 @@ const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).joi
  *     moniteurNom, candidatsNoms, candidatsIds }
  */
 // Ajoute cette fonction en haut du fichier, avec les autres helpers
+function floatToHHMM(h) {
+  const hours   = Math.floor(h);
+  const minutes = Math.round((h % 1) * 60);
+  return `${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}`;
+}
 function toLocalISO(dateVal) {
   if (!dateVal) return "";
   const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
@@ -64,9 +69,11 @@ function dbRowToSession(row) {
   const rawDate   = toLocalISO(row.date);
   const dateObj   = new Date(rawDate + "T12:00:00");
   const dayOfWeek = dateObj.getDay();
-  const startH    = parseInt((row.heure || "08:00").split(":")[0]);
 
-  // ✅ Utilise le bon séparateur ', ' et prend le premier candidat
+  // ✅ Prend heures ET minutes → 07:45 = 7.75
+  const parts  = (row.heure || "08:00").split(":");
+  const startH = parseInt(parts[0]) + (parseInt(parts[1] || 0) / 60);
+
   const firstName = row.candidatsNoms
     ? row.candidatsNoms.split(", ")[0].trim()
     : "—";
@@ -83,7 +90,6 @@ function dbRowToSession(row) {
     _raw:    row,
   };
 }
-
 /**
  * Construit l'objet seanceData attendu par add-seance / update-seance
  * à partir du formulaire du modal.
@@ -235,7 +241,8 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
 }
 
 // ── CREATE / EDIT MODAL ───────────────────────────────────────────────────────
-function CreateModal({ onClose, onCreate, weekDates, editing, saving }) {
+// Ligne des props :
+function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }) {
   const toISO = d => d.toISOString().split("T")[0];
   const [candidats, setCandidats] = useState([]);
 const [moniteurs, setMoniteurs] = useState([]);
@@ -266,7 +273,7 @@ useEffect(() => {
   }
   loadData();
 }, []);
-cconst [form, setForm] = React.useState(editing ? {
+const [form, setForm] = React.useState(editing ? {
   candidat:    editing.name,
   candidatId:  editing._raw?.candidatsIds
                  ? String(editing._raw.candidatsIds.split(",")[0].trim())
@@ -324,8 +331,8 @@ cconst [form, setForm] = React.useState(editing ? {
   moniteur_id: form.moniteur_id && form.moniteur_id !== ""
                  ? parseInt(form.moniteur_id)
                  : null,
-  candidatId:  form.candidatId,
-  duree:       parseFloat(form.dur) || 1,
+  candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],  // ✅ était "candidatId" avant
+    duree:       parseFloat(form.dur) || 1,
 },
   });
 };
@@ -410,9 +417,59 @@ cconst [form, setForm] = React.useState(editing ? {
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
-              <input style={inpS} type="time" value={form.heure} onChange={e=>set("heure",e.target.value)} />
-            </div>
+  <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
+  <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
+    <option value="">Choisir un créneau...</option>
+    {(() => {
+      const duree = parseFloat(form.dur) || 1;
+      // Tous les slots de 30min entre 7h et 18h30
+      const allSlots = [];
+        for (let h = 7; h < 19; h++) {
+          allSlots.push(h);
+          allSlots.push(h + 0.25);
+          allSlots.push(h + 0.5);
+          allSlots.push(h + 0.75);
+        }
+
+      // Intervalles occupés ce jour-là
+      const occupiedIntervals = (sessions || [])
+        .filter(s => {
+          const sDate = toLocalISO(s._raw?.date);
+          const isOther = editing ? s.id !== editing.id : true;
+          return sDate === form.date && isOther;
+        })
+        .map(s => ({ start: s.startH, end: s.startH + s.dur }));
+
+      const formatSlot = slot => {
+            const h = Math.floor(slot);
+            const m = Math.round((slot % 1) * 60);
+            return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+          };
+
+      return allSlots.map(slot => {
+          const slotEnd = slot + duree;
+          if (slotEnd > 19) return null;
+
+          // Filtre les slots selon la durée choisie
+          const minutes = Math.round((slot % 1) * 60);
+          const isValid = duree === 0.75
+            ? [0, 15, 30, 45].includes(minutes)  // 45min → quarts d'heure
+            : [0, 30].includes(minutes);          // autres → demi-heures
+          if (!isValid) return null;
+
+          const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
+          const startStr = formatSlot(slot);
+          const endStr   = formatSlot(slotEnd);
+          return (
+            <option key={slot} value={startStr} disabled={!!conflict}
+              style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
+              {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
+            </option>
+          );
+        });
+    })()}
+  </select>
+</div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
               <select style={inpS} value={form.statut} onChange={e=>set("statut",e.target.value)}>
@@ -527,19 +584,20 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
               })}
 
               {daySessions.map(s => {
-                const idx = HOURS.indexOf(s.startH);
-                if (idx < 0) return null;
-                const col = COLORS[s.type] || COLORS.code;
-                const isDragging = dragging === s.id;
-                return (
-                  <div key={s.id}
+                  const firstHour = HOURS[0];
+                  const topPx = (s.startH - firstHour) * CELL_H;
+                  if (s.startH < firstHour || s.startH >= firstHour + HOURS.length) return null;
+                  const col = COLORS[s.type] || COLORS.code;
+                  const isDragging = dragging === s.id;
+                  return (
+                    <div key={s.id}
                     draggable
                     onDragStart={e => handleDragStart(e, s)}
                     onDragEnd={handleDragEnd}
                     onClick={e => { e.stopPropagation(); onSessionClick(s, e.currentTarget.getBoundingClientRect()); }}
                     style={{
                       position:"absolute", left:3, right:3,
-                      top: idx*CELL_H+3, height: s.dur*CELL_H-6,
+                      top: topPx+3, height: s.dur*CELL_H-6,
                       borderRadius:8, padding:"5px 8px",
                       cursor: isDragging ? "grabbing" : "grab",
                       userSelect:"none",
@@ -653,8 +711,7 @@ const filtered = sessions.filter(s => {
   setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
 
   const newDate  = toLocalISO(weekDates[day]);
-  const newHeure = `${String(hour).padStart(2, "0")}:00`;
-
+const newHeure = floatToHHMM(hour);
   if (api?.updateSeance) {
     try {
       await api.updateSeance({
@@ -712,6 +769,7 @@ const filtered = sessions.filter(s => {
         statut:      _formData.statut,
         moniteur_id: _formData.moniteur_id,
         duree:       _formData.duree,
+        candidatId:  _formData.candidatIds?.[0] || null,
       });
       // Recharge depuis la DB pour avoir les données propres
       await loadSeances();
@@ -931,6 +989,7 @@ const filtered = sessions.filter(s => {
           weekDates={weekDates}
           editing={editing}
           saving={saving}
+          sessions={sessions} 
         />
       )}
       {toast && (

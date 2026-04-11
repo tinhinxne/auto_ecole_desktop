@@ -209,14 +209,41 @@ ipcMain.handle('delete-seance', async (event, id) => {
 });
 
 ipcMain.handle('update-seance', async (event, data) => {
-  const { id, date, heure, type, statut, moniteur_id, duree } = data;
+  const { id, date, heure, type, statut, moniteur_id, duree, candidatId } = data;
   return new Promise((resolve) => {
+    // 1. Met à jour la séance
     db.query(
       'UPDATE Seance SET date=?, heure=?, type=?, statut=?, moniteur_id=?, duree=? WHERE idSeance=?',
       [date, heure, type, statut, moniteur_id, duree || 1, id],
       (err) => {
-        if (err) { console.error('update-seance error:', err); return resolve(false); }
-        resolve(true);
+        if (err) {
+          console.error('update-seance error:', err);
+          return resolve(false);
+        }
+
+        // 2. Si pas de candidatId → on s'arrête
+        if (!candidatId) return resolve(true);
+
+        // 3. Supprime l'ancien lien candidat
+        db.query('DELETE FROM CandidatSeance WHERE idSeance = ?', [id], (err2) => {
+          if (err2) {
+            console.error('delete CandidatSeance error:', err2);
+            return resolve(false);
+          }
+
+          // 4. Insère le nouveau lien
+          db.query(
+            'INSERT INTO CandidatSeance (idCandidat, idSeance) VALUES (?, ?)',
+            [parseInt(candidatId), id],
+            (err3) => {
+              if (err3) {
+                console.error('insert CandidatSeance error:', err3);
+                return resolve(false);
+              }
+              resolve(true);
+            }
+          );
+        });
       }
     );
   });
