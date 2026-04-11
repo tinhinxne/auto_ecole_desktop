@@ -16,5 +16,11 @@ contextBridge.exposeInMainWorld('electron', {
   
   // Paiements
   getPayments: () => ipcRenderer.invoke('get-payments'),
-  addPayment: (data) => ipcRenderer.invoke('add-payment', data)
+  addPayment: (data) => ipcRenderer.invoke('add-payment', data),
+
+  //Seances
+  getSeances: () => ipcRenderer.invoke('get-seances'),
+addSeance:  (data) => ipcRenderer.invoke('add-seance', data),
+deleteSeance: (id)   => ipcRenderer.invoke('delete-seance', id),
+  updateSeance: (data) => ipcRenderer.invoke('update-seance', data),
 });

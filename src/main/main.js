@@ -55,36 +55,45 @@ ipcMain.handle('login', async (event, credentials) => {
 });
 
 // 2. CANDIDATS
+
 ipcMain.handle('get-candidats', async () => {
   return new Promise((resolve) => {
     const sql = `SELECT * FROM Candidat ORDER BY idCandidat DESC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
-      resolve(res);
+      else resolve(res);
     });
   });
 });
+ipcMain.handle('add-candidat', async (event, data) => {
+  const { nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut } = data;
 
-ipcMain.handle('add-candidat', async (event, c) => {
+  let photoBuffer = null;
+  if (photo && photo.startsWith("data:image")) {
+    photoBuffer = Buffer.from(photo.split(",")[1], "base64");
+  }
+
+  const sql = `
+    INSERT INTO Candidat (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
   return new Promise((resolve) => {
-    const sql = 'INSERT INTO Candidat (nom, prenom, tel, date_inscription, sexe) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [c.nom, c.prenom, c.tel, c.date_inscription, c.sexe], (err, res) => {
-      if (err) resolve({ success: false });
-      resolve({ success: true, id: res.insertId });
+    db.query(sql, [nom, prenom, telephone, date_naissance, date_inscription, sexe, photoBuffer, statut], (err) => {
+      if (err) { console.error('add-candidat error:', err); return resolve(false); }
+      resolve(true);
     });
   });
 });
-
 // 3. MONITEURS
-ipcMain.handle('get-moniteurs', async () => {
-  return new Promise((resolve) => {
-    const sql = 'SELECT * FROM Moniteur';
-    db.query(sql, (err, res) => {
-      if (err) resolve([]);
-      resolve(res);
-    });
-  });
-});
+// ipcMain.handle("getMoniteurs", async () => {
+//   const [rows] = await db.query(`
+//     SELECT m.id, u.nom, u.prenom
+//     FROM Moniteur m
+//     JOIN Utilisateur u ON m.id = u.id
+//   `);
+//   return rows;
+// });
 
 // 4. DASHBOARD STATS
 ipcMain.handle('get-dashboard-stats', async () => {
@@ -112,6 +121,128 @@ ipcMain.handle('get-payments', async () => {
       ORDER BY v.dateVersement DESC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
+      resolve(res);
+    });
+  });
+});
+
+// 6. SÉANCES - Récupérer toutes les séances avec candidat(s) et moniteur
+ipcMain.handle('get-seances', async () => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT 
+        s.idSeance,
+        s.date,
+        s.heure,
+        s.duree,
+        s.type,
+        s.statut,
+        s.moniteur_id,
+        CONCAT(u.prenom, ' ', u.nom) AS moniteurNom,
+        GROUP_CONCAT(CONCAT(c.prenom, ' ', c.nom) SEPARATOR ', ') AS candidatsNoms,
+        GROUP_CONCAT(c.idCandidat SEPARATOR ',') AS candidatsIds
+      FROM Seance s
+      JOIN Moniteur m ON s.moniteur_id = m.id
+      JOIN Utilisateur u ON m.id = u.id
+      LEFT JOIN CandidatSeance cs ON s.idSeance = cs.idSeance
+      LEFT JOIN Candidat c ON cs.idCandidat = c.idCandidat
+      GROUP BY s.idSeance
+      ORDER BY s.date DESC, s.heure ASC
+    `;
+    db.query(sql, (err, res) => {
+      if (err) {
+        console.error('get-seances error:', err);
+        resolve([]);
+      } else {
+        resolve(res);
+      }
+    });
+  });
+});
+
+// 7. SÉANCES - Ajouter une nouvelle séance avec son/ses candidat(s)
+// APRÈS ✅
+ipcMain.handle('add-seance', async (event, seanceData) => {
+    console.log("seanceData reçu:", seanceData);
+  const { date, heure, type, statut, moniteur_id, candidatIds, duree } = seanceData; // ✅
+
+  return new Promise((resolve) => {
+    const sqlSeance = `
+      INSERT INTO Seance (date, heure, type, statut, moniteur_id, duree)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    db.query(sqlSeance, [date, heure, type, statut || 'planifiée', moniteur_id, duree || 1], (err, res) => {
+      if (err) {
+        console.error('add-seance insert error:', err);
+        return resolve({ success: false, message: 'Erreur lors de la création de la séance.' });
+      }
+
+      const newSeanceId = res.insertId;
+
+      if (!candidatIds || candidatIds.length === 0) {
+        return resolve({ success: true, id: newSeanceId });
+      }
+
+      const values = candidatIds.map(cid => [cid, newSeanceId]);
+      const sqlLink = `INSERT INTO CandidatSeance (idCandidat, idSeance) VALUES ?`;
+
+      db.query(sqlLink, [values], (err2) => {
+        if (err2) {
+          console.error('add-seance link error:', err2);
+          return resolve({ success: false, id: newSeanceId, message: 'Séance créée mais erreur association candidats.' });
+        }
+        resolve({ success: true, id: newSeanceId });
+      });
+    });
+  });
+});
+
+
+
+ipcMain.handle('delete-seance', async (event, id) => {
+  return new Promise((resolve) => {
+    db.query('DELETE FROM Seance WHERE idSeance = ?', [id], (err) => {
+      if (err) { console.error('delete-seance error:', err); return resolve(false); }
+      resolve(true);
+    });
+  });
+});
+
+ipcMain.handle('update-seance', async (event, data) => {
+  const { id, date, heure, type, statut, moniteur_id, duree } = data;
+  return new Promise((resolve) => {
+    db.query(
+      'UPDATE Seance SET date=?, heure=?, type=?, statut=?, moniteur_id=?, duree=? WHERE idSeance=?',
+      [date, heure, type, statut, moniteur_id, duree || 1, id],
+      (err) => {
+        if (err) { console.error('update-seance error:', err); return resolve(false); }
+        resolve(true);
+      }
+    );
+  });
+});
+
+
+ipcMain.handle('get-moniteurs', async () => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT 
+        m.id,
+        m.numeroTelephone,
+        m.actif,
+        u.nom,
+        u.prenom,
+        u.mail
+      FROM Moniteur m
+      JOIN Utilisateur u ON u.id = m.id
+      ORDER BY u.nom ASC
+    `;
+
+    db.query(sql, (err, res) => {
+      if (err) {
+        console.error('get-moniteurs error:', err);
+        return resolve([]);
+      }
       resolve(res);
     });
   });
