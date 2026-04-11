@@ -1,6 +1,5 @@
-// App.jsx
 import React from "react";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate} from "react-router-dom";
 
 import SignIn from "./pages/SignIn";
 import Access from "./pages/Access";
