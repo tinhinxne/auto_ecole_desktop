@@ -1,9 +1,11 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const db = require('./db'); // Import de ta connexion MySQL
+const db   = require('./db');
 
-// --- GESTION DE LA FENÊTRE ---
+// ── Handlers modulaires ──────────────────────────────────────────────────────
+const registerPaymentHandlers = require('./paymentHandlers');
 
+// ─── FENÊTRE ────────────────────────────────────────────────────────────────
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -16,11 +18,11 @@ function createWindow() {
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  // mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -30,20 +32,19 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ══════════════════════════════════════════════
-//  FONCTIONS DE COMMUNICATION (IPC) - BACKEND
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+//  IPC HANDLERS
+// ════════════════════════════════════════════════════════════════════
 
 // 1. LOGIN
-ipcMain.handle('login', async (event, credentials) => {
+ipcMain.handle('login', async (_event, credentials) => {
   const { email, password } = credentials;
   const sql = 'SELECT id, nom, type_utilisateur FROM Utilisateur WHERE mail = ? AND mot_de_passe = ?';
-  
   return new Promise((resolve) => {
     db.query(sql, [email, password], (err, result) => {
-      if (err) resolve({ success: false, message: "Erreur Base de données" });
+      if (err) return resolve({ success: false, message: 'Erreur base de données' });
       if (result && result.length > 0) resolve({ success: true, user: result[0] });
-      else resolve({ success: false, message: "Identifiants incorrects" });
+      else resolve({ success: false, message: 'Identifiants incorrects' });
     });
   });
 });
@@ -182,7 +183,7 @@ ipcMain.handle('get-dashboard-stats', async () => {
         (SELECT SUM(montant) FROM Versement WHERE MONTH(dateVersement) = MONTH(CURDATE())) as revenuMois
     `;
     db.query(sql, (err, res) => {
-      if (err || !res) resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
+      if (err || !res) return resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
       resolve(res[0]);
     });
   });

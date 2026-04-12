@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('electron', {
   
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
-  
+
   // Paiements
   getPayments: () => ipcRenderer.invoke('get-payments'),
   addPayment: (data) => ipcRenderer.invoke('add-payment', data),
@@ -28,4 +28,8 @@ contextBridge.exposeInMainWorld('electron', {
   addSeance:  (data) => ipcRenderer.invoke('add-seance', data),
   deleteSeance: (id)   => ipcRenderer.invoke('delete-seance', id),
   updateSeance: (data) => ipcRenderer.invoke('update-seance', data),
+  //getPayments:       ()       => ipcRenderer.invoke('get-payments'),
+  getPaymentHistory: (idCandidat) => ipcRenderer.invoke('get-payment-history', idCandidat),
+  //addPayment:        (data)   => ipcRenderer.invoke('add-payment', data),
+  createPaiement:    (data)   => ipcRenderer.invoke('create-paiement', data),
 });

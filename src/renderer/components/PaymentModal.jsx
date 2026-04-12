@@ -191,9 +191,18 @@ const PaymentModal = ({ candidate, onClose, onAddPayment }) => {
 
         <div style={modalBody}>
           <div style={candidateName}>{candidate?.name}</div>
-          
-          <div style={infoText}>Total : {candidate?.total?.toLocaleString()} DA</div>
-          <div style={infoText}>Total Payé : {candidate?.paid?.toLocaleString()} DA</div>
+  
+          <div style={{ display: 'flex', gap: '5px', flexDirection:"column",  marginBottom: '20px' }}>
+            <div style={infoText}>
+              <strong>Total Contrat :</strong> {Number(candidate?.total).toLocaleString('fr-DZ')} DA
+            </div>
+            <div style={infoText}>
+              <strong>Déjà Payé :</strong> <span style={{ color: '#166534' }}>{Number(candidate?.paid).toLocaleString('fr-DZ')} DA</span>
+            </div>
+            <div style={infoText}>
+              <strong>Reste :</strong> <span style={{ color: '#9B2C1D' }}>{Number(candidate?.total - candidate?.paid).toLocaleString('fr-DZ')} DA</span>
+            </div>
+          </div>
 
           <div style={sectionTitle}>Ajouter un paiement</div>
           
@@ -246,30 +255,31 @@ const PaymentModal = ({ candidate, onClose, onAddPayment }) => {
             </Button>
           </div>
 
-          <div style={sectionTitle}>Historique des paiements</div>
-          <div style={{ maxHeight: "250px", overflowY: "auto" }}>
+          <div style={sectionTitle}>Historique des versements</div>
+          <div style={{ maxHeight: "250px", overflowY: "auto", border: '1px solid #E5E7EB', borderRadius: '12px' }}>
             <table style={historyTable}>
               <thead>
                 <tr>
                   <th style={tableHeader}>Date</th>
-                  <th style={tableHeader}>Type de paiement</th>
+                  <th style={tableHeader}>Méthode</th>
                   <th style={tableHeader}>Montant</th>
                   <th style={tableHeader}>Remarque</th>
                 </tr>
               </thead>
               <tbody>
-                {candidate?.history?.map((payment, index) => (
-                  <tr key={payment.id || index}>
-                    <td style={tableCell}>{payment.date}</td>
-                    <td style={tableCell}>{payment.method}</td>
-                    <td style={tableCell}>{payment.amount}</td>
-                    <td style={tableCell}>{payment.remark}</td>
-                  </tr>
-                ))}
-                {(!candidate?.history || candidate.history.length === 0) && (
+                {candidate?.history?.length > 0 ? (
+                  candidate.history.map((payment) => (
+                    <tr key={payment.id}>
+                      <td style={tableCell}>{payment.date}</td>
+                      <td style={tableCell}>{payment.method}</td>
+                      <td style={tableCell}>{payment.amount}</td>
+                      <td style={tableCell}>{payment.remark}</td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
-                    <td colSpan="4" style={{ ...tableCell, textAlign: "center", color: "#9CA3AF" }}>
-                      Aucun paiement enregistré
+                    <td colSpan="4" style={{ ...tableCell, textAlign: "center", color: "#9CA3AF", padding: '20px' }}>
+                      Aucun versement trouvé pour ce candidat.
                     </td>
                   </tr>
                 )}
