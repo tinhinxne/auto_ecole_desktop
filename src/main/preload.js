@@ -19,6 +19,12 @@ contextBridge.exposeInMainWorld('electron', {
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
   
+  //Seances
+  getSeances: () => ipcRenderer.invoke('get-seances'),
+  addSeance:  (data) => ipcRenderer.invoke('add-seance', data),
+  deleteSeance: (id)   => ipcRenderer.invoke('delete-seance', id),
+  updateSeance: (data) => ipcRenderer.invoke('update-seance', data),
+  
   // Paiements
   getPayments: () => ipcRenderer.invoke('get-payments'),
   addPayment: (data) => ipcRenderer.invoke('add-payment', data)
