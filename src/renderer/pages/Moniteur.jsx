@@ -65,42 +65,51 @@ const Moniteur = () => {
     loadMoniteurs();
   }, []);
 
-  // 2. AJOUTER OU MODIFIER
-  const handleSave = async (data) => {
-    try {
-      let result;
-      if (data.id) {
-        // Mode Edition
-        result = await window.electron.updateMoniteur(data);
-      } else {
-        // Mode Ajout
-        result = await window.electron.addMoniteur(data);
-      }
-
-      if (result.success) {
-        await loadMoniteurs(); // Recharger la liste depuis la BDD
-        setShowModal(false);
-      } else {
-        alert("Erreur: " + (result.error || "Opération échouée"));
-      }
-    } catch (err) {
-      console.error("Erreur save:", err);
+const handleSave = async (data) => {
+  try {
+    let result;
+    if (data.id) {
+      result = await window.electron.updateMoniteur(data);
+    } else {
+      result = await window.electron.addMoniteur(data);
     }
-  };
+
+    if (result?.success) {
+      await loadMoniteurs();
+      // Ne PAS fermer la modal ici pour le mode ajout
+      // (la modal se gère elle-même après avoir affiché le mdp)
+      if (data.id) setShowModal(false);
+    }
+
+    return result; // ← important : retourner le résultat à la modal
+  } catch (err) {
+    console.error("Erreur save:", err);
+    return { success: false, error: err.message };
+  }
+};
 
   // 3. SUPPRIMER
   const handleDelete = async (id) => {
-    if (window.confirm("Supprimer ce moniteur définitivement ?")) {
-      try {
-        const result = await window.electron.deleteMoniteur(id);
-        if (result.success) {
-          loadMoniteurs();
-        }
-      } catch (err) {
-        console.error("Erreur delete:", err);
+  console.log("Tentative de suppression de l'ID:", id); // Vérifie la console ici
+  if (!id) {
+    alert("Erreur : ID introuvable");
+    return;
+  }
+
+  if (window.confirm("Supprimer ce moniteur définitivement ?")) {
+    try {
+      const result = await window.electron.deleteMoniteur(id);
+      if (result.success) {
+        console.log("Suppression réussie côté BDD");
+        await loadMoniteurs(); // On recharge la liste
+      } else {
+        alert("Erreur BDD : " + result.error);
       }
+    } catch (err) {
+      console.error("Erreur appel IPC delete:", err);
     }
-  };
+  }
+};
 
   const handleEditClick = (moniteur) => {
     setSelectedMoniteur(moniteur);

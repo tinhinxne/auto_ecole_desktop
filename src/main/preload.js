@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Moniteurs
   getMoniteurs: () => ipcRenderer.invoke('get-moniteurs'),
   addMoniteur: (data) => ipcRenderer.invoke('add-moniteur', data),
+  resetMoniteurPassword: (data) => ipcRenderer.invoke('reset-moniteur-password', data),
   updateMoniteur: (data) => ipcRenderer.invoke('update-moniteur', data),
   deleteMoniteur: (id) => ipcRenderer.invoke('delete-moniteur', id),
   
@@ -27,5 +28,6 @@ contextBridge.exposeInMainWorld('electron', {
   
   // Paiements
   getPayments: () => ipcRenderer.invoke('get-payments'),
-  addPayment: (data) => ipcRenderer.invoke('add-payment', data)
+  addPayment: (data) => ipcRenderer.invoke('add-payment', data),
+  getCandidatsDebiteurs:  ()     => ipcRenderer.invoke('get-candidats-debiteurs'), 
 });

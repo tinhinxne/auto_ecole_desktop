@@ -33,9 +33,24 @@ const IconSnap = ({ size = 16 }) => (
     <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" />
   </svg>
 );
+const IconKey = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7.5" cy="15.5" r="5.5"/>
+    <path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/>
+  </svg>
+);
+const IconCopy = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+);
+const IconMail = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
+  </svg>
+);
 
-/* ── CSS (même style que le modal candidat) ── */
-// ── styles ────────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
   :root {
@@ -43,7 +58,9 @@ const css = `
     --red: #DC2626; --red-light: #FEE2E2;
     --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0;
     --gray-400: #94A3B8; --gray-600: #475569; --gray-900: #0F172A;
-    --green: #10B981; --orange: #F59E0B; --orange-light: #FEF3C7;
+    --green: #10B981; --green-light: #D1FAE5;
+    --orange: #F59E0B; --orange-light: #FEF3C7;
+    --purple: #8B5CF6; --purple-light: #EDE9FE;
     --radius: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -64,7 +81,6 @@ const css = `
   }
   @keyframes slideUp { from { transform:translateY(24px);opacity:0 } to { transform:translateY(0);opacity:1 } }
 
-  /* ── mode badge ── */
   .modal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 5px 20px 1px;
@@ -88,39 +104,14 @@ const css = `
   .modal-divider { border: none; border-top: 1px solid var(--gray-200); margin: 0 24px; }
 
   .modal-body { display: flex; gap: 24px; padding: 14px; }
+
   .field select {
-  height: 40px;
-  padding: 0 12px;
-  border: 1.5px solid var(--gray-200);
-  border-radius: 9px;
-  font-family: 'Sora', sans-serif;
-  font-size: 13px;
-  color: var(--gray-900);
-  background: var(--gray-50);
-  outline: none;
-  transition: all .2s;
-  cursor: pointer;
-}
-
-.field select:focus {
-  border-color: var(--blue);
-  background: #fff;
-}
-
-.field select option {
-  padding: 8px;
-}
-
-/* Ajouter couleur selon la valeur choisie */
-.field select.actif {
-  color: var(--green);
-  font-weight: 600;
-}
-
-.field select.inactif {
-  color: var(--red);
-  font-weight: 600;
-}
+    height: 40px; padding: 0 12px;
+    border: 1.5px solid var(--gray-200); border-radius: 9px;
+    font-family: 'Sora', sans-serif; font-size: 13px; color: var(--gray-900);
+    background: var(--gray-50); outline: none; transition: all .2s; cursor: pointer;
+  }
+  .field select:focus { border-color: var(--blue); background: #fff; }
 
   .form-left { flex: 1; display: flex; flex-direction: column; gap: 14px; }
   .field { display: flex; flex-direction: column; gap: 5px; }
@@ -134,12 +125,59 @@ const css = `
     background: var(--gray-50); outline: none; transition: border .15s;
   }
   .field input:focus { border-color: var(--blue); background: #fff; }
-  .row-2 { display: flex; gap: 12px; }
-  .row-2 .field { flex: 1; }
   .gender-group { display: flex; gap: 20px; align-items: center; }
   .gender-option { display: flex; align-items: center; gap: 7px; cursor: pointer; }
   .gender-option input[type="radio"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
   .gender-option label { font-size: 13px; color: var(--gray-900); cursor: pointer; font-weight: 500; }
+
+  /* ── Bloc mot de passe ── */
+  .password-block {
+    background: var(--green-light); border: 1.5px solid var(--green);
+    border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .password-block.reset-block {
+    background: var(--purple-light); border-color: var(--purple);
+  }
+  .password-block-title {
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--green);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .reset-block .password-block-title { color: var(--purple); }
+  .password-row { display: flex; align-items: center; gap: 8px; }
+  .password-value {
+    flex: 1; height: 36px; padding: 0 12px;
+    background: #fff; border: 1.5px solid var(--green);
+    border-radius: 8px; font-family: monospace; font-size: 15px;
+    font-weight: 700; color: var(--gray-900); letter-spacing: 1.5px;
+    display: flex; align-items: center;
+  }
+  .reset-block .password-value { border-color: var(--purple); }
+  .btn-copy {
+    height: 36px; padding: 0 12px; border-radius: 8px;
+    background: var(--green); color: #fff; border: none;
+    font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn-copy:hover { filter: brightness(1.1); }
+  .reset-block .btn-copy { background: var(--purple); }
+  .password-note {
+    font-size: 11.5px; color: #059669; display: flex; align-items: center; gap: 5px;
+  }
+  .reset-block .password-note { color: var(--purple); }
+  .password-note.warn { color: #d97706; }
+
+  /* ── Bouton reset mot de passe ── */
+  .btn-reset-pwd {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; padding: 9px 0; border-radius: 9px;
+    background: var(--purple-light); color: var(--purple);
+    border: 1.5px solid var(--purple); font-family: 'Sora', sans-serif;
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+  }
+  .btn-reset-pwd:hover { background: var(--purple); color: #fff; }
+  .btn-reset-pwd:disabled { opacity: .6; cursor: not-allowed; }
 
   .form-right {
     width: 160px; display: flex; flex-direction: column;
@@ -167,7 +205,6 @@ const css = `
   .photo-btn.remove { background: var(--red-light); color: var(--red); }
   .photo-btn.remove:hover { background: var(--red); color: #fff; }
 
-  /* webcam */
   .webcam-overlay {
     position: fixed; inset: 0; z-index: 1100;
     background: rgba(0,0,0,.85);
@@ -187,10 +224,9 @@ const css = `
   .wc-btn.cancel-wc { background: rgba(255,255,255,.12); color: #fff; }
   .wc-btn.cancel-wc:hover { background: rgba(255,255,255,.22); }
 
-  /* footer */
   .modal-footer {
     display: flex; justify-content: flex-end; gap: 10px;
-    padding: 11px 24px 0px; border-top: 1px solid var(--gray-200);
+    padding: 11px 24px 14px; border-top: 1px solid var(--gray-200);
   }
   .btn-cancel {
     padding: 10px 22px; border-radius: 10px; background: var(--gray-100);
@@ -206,13 +242,17 @@ const css = `
   .btn-save:hover { background: var(--blue-dark); }
   .btn-save.edit-mode { background: var(--orange); }
   .btn-save.edit-mode:hover { background: #d97706; }
+  .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
   .toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    background: var(--green); color: #fff; padding: 10px 20px; border-radius: 10px;
+    color: #fff; padding: 10px 20px; border-radius: 10px;
     font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
-    box-shadow: 0 4px 0px rgba(16,185,129,.35); animation: fadeIn .2s ease; z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2); animation: fadeIn .2s ease; z-index: 2000;
   }
+  .toast.success { background: var(--green); }
+  .toast.error   { background: var(--red); }
+  .toast.warn    { background: var(--orange); }
 `;
 
 /* ── COMPONENT ───────────────────────── */
@@ -220,16 +260,30 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
   const isEdit = !!selectedMoniteur;
 
   const emptyForm = { nom: "", prenom: "", email: "", telephone: "", statut: "actif", sexe: "homme" };
-  const [form, setForm] = useState(emptyForm);
-  const [photo, setPhoto] = useState(null);
+  const [form, setForm]             = useState(emptyForm);
+  const [photo, setPhoto]           = useState(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
-  const [toast, setToast] = useState(false);
+  const [saving, setSaving]         = useState(false);
+
+  // ── Mot de passe ──
+  const [generatedPwd, setGeneratedPwd] = useState(null);  // affiché après ajout
+  const [resetPwd, setResetPwd]         = useState(null);  // affiché après reset
+  const [resetting, setResetting]       = useState(false);
+  const [copied, setCopied]             = useState(false);
+
+  // ── Toast ──
+  const [toast, setToast] = useState(null); // { msg, type }
 
   const fileInputRef = useRef(null);
   const videoRef     = useRef(null);
   const streamRef    = useRef(null);
 
-  // ── pré-remplissage ──
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  // ── Pré-remplissage ──
   useEffect(() => {
     if (selectedMoniteur) {
       setForm({
@@ -245,9 +299,13 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
       setForm(emptyForm);
       setPhoto(null);
     }
+    // Réinitialiser les états liés aux mots de passe à chaque ouverture
+    setGeneratedPwd(null);
+    setResetPwd(null);
+    setCopied(false);
   }, [selectedMoniteur, showModal]);
 
-  // ── upload fichier ──
+  // ── Upload fichier ──
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -255,7 +313,7 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
     e.target.value = "";
   };
 
-  // ── webcam ──
+  // ── Webcam ──
   const openWebcam = async () => {
     setWebcamOpen(true);
     try {
@@ -282,13 +340,75 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
     closeWebcam();
   };
 
-  // ── save ──
-  const handleSave = () => {
-    const data = { ...form, photo, ...(isEdit ? { id: selectedMoniteur.id } : {}) };
-    onSave?.(data);
-    setToast(true);
-      setShowModal(false); 
-    setTimeout(() => setToast(false), 1800);
+  // ── Copier mot de passe ──
+  const copyToClipboard = (pwd) => {
+    navigator.clipboard.writeText(pwd).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
+
+  // ── Sauvegarde ──
+  const handleSave = async () => {
+    if (!form.nom || !form.prenom || !form.email) {
+      showToast("Veuillez remplir tous les champs obligatoires.", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const data = { ...form, photo, ...(isEdit ? { id: selectedMoniteur.id } : {}) };
+      const result = await onSave(data); // onSave doit maintenant retourner le résultat
+
+      if (result?.success) {
+        if (!isEdit && result.password) {
+          // Afficher le mot de passe généré
+          setGeneratedPwd(result.password);
+          if (result.emailSent) {
+            showToast("✓ Moniteur ajouté — email envoyé !", "success");
+          } else {
+            showToast("✓ Moniteur ajouté (email non envoyé, notez le mdp)", "warn");
+          }
+        } else if (isEdit) {
+          showToast("✓ Moniteur mis à jour avec succès", "success");
+          setTimeout(() => setShowModal(false), 1200);
+        }
+      } else {
+        showToast("Erreur : " + (result?.error || "Opération échouée"), "error");
+      }
+    } catch (err) {
+      showToast("Erreur inattendue.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Réinitialiser mot de passe (mode édition) ──
+  const handleResetPassword = async () => {
+    if (!window.confirm(`Réinitialiser le mot de passe de ${form.prenom} ${form.nom} et lui envoyer par email ?`)) return;
+    setResetting(true);
+    setResetPwd(null);
+    try {
+      const result = await window.electron.resetMoniteurPassword({
+        id: selectedMoniteur.id,
+        email: form.email,
+        nom: form.nom,
+        prenom: form.prenom,
+      });
+      if (result?.success) {
+        setResetPwd(result.password);
+        if (result.emailSent) {
+          showToast("✓ Nouveau mot de passe envoyé par email", "success");
+        } else {
+          showToast("Mot de passe réinitialisé (email non envoyé)", "warn");
+        }
+      } else {
+        showToast("Erreur lors de la réinitialisation.", "error");
+      }
+    } catch (err) {
+      showToast("Erreur inattendue.", "error");
+    } finally {
+      setResetting(false);
+    }
   };
 
   if (!showModal) return null;
@@ -299,7 +419,7 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
       <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
         <div className="modal">
 
-          {/* header */}
+          {/* Header */}
           <div className="modal-header">
             <div className="modal-title-wrap">
               <h2>{isEdit ? "Modifier le moniteur" : "Ajouter un moniteur"}</h2>
@@ -311,13 +431,18 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
           </div>
           <hr className="modal-divider" />
 
-          {/* body */}
+          {/* Body */}
           <div className="modal-body">
             <div className="form-left">
               {["nom","prenom","email","telephone"].map(field => (
                 <div className="field" key={field}>
                   <label>{field.charAt(0).toUpperCase()+field.slice(1)} <span>*</span></label>
-                  <input type="text" placeholder={`Saisir ${field}`} value={form[field]} onChange={e => setForm(f => ({...f, [field]: e.target.value}))} />
+                  <input
+                    type="text"
+                    placeholder={`Saisir ${field}`}
+                    value={form[field]}
+                    onChange={e => setForm(f => ({...f, [field]: e.target.value}))}
+                  />
                 </div>
               ))}
 
@@ -334,14 +459,68 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                 <div className="gender-group">
                   {["homme", "femme"].map(s => (
                     <div className="gender-option" key={s}>
-                      <input type="radio" name="sexe" id={s} value={s} checked={form.sexe===s} onChange={() => setForm(f => ({...f, sexe: s}))} />
+                      <input type="radio" name="sexe" id={s} value={s}
+                        checked={form.sexe === s}
+                        onChange={() => setForm(f => ({...f, sexe: s}))} />
                       <label htmlFor={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</label>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* ── Mot de passe généré (mode ajout, après sauvegarde) ── */}
+              {!isEdit && generatedPwd && (
+                <div className="password-block">
+                  <div className="password-block-title">
+                    <IconKey size={13} /> Mot de passe généré
+                  </div>
+                  <div className="password-row">
+                    <div className="password-value">{generatedPwd}</div>
+                    <button className="btn-copy" onClick={() => copyToClipboard(generatedPwd)}>
+                      <IconCopy size={13} /> {copied ? "Copié !" : "Copier"}
+                    </button>
+                  </div>
+                  <div className={`password-note ${generatedPwd ? "" : "warn"}`}>
+                    <IconMail size={13} />
+                    Email envoyé à {form.email} — conservez ce mot de passe.
+                  </div>
+                </div>
+              )}
+
+              {/* ── Reset mot de passe (mode édition) ── */}
+              {isEdit && (
+                <>
+                  <button
+                    className="btn-reset-pwd"
+                    onClick={handleResetPassword}
+                    disabled={resetting}
+                  >
+                    <IconKey size={14} />
+                    {resetting ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+                  </button>
+
+                  {resetPwd && (
+                    <div className="password-block reset-block">
+                      <div className="password-block-title">
+                        <IconKey size={13} /> Nouveau mot de passe
+                      </div>
+                      <div className="password-row">
+                        <div className="password-value">{resetPwd}</div>
+                        <button className="btn-copy" onClick={() => copyToClipboard(resetPwd)}>
+                          <IconCopy size={13} /> {copied ? "Copié !" : "Copier"}
+                        </button>
+                      </div>
+                      <div className="password-note">
+                        <IconMail size={13} />
+                        Email envoyé à {form.email}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
+            {/* Photo */}
             <div className="form-right">
               <div className={`avatar-wrap ${photo ? "has-photo" : ""}`}>
                 {photo ? <img src={photo} alt="moniteur" /> : <IconUserRound />}
@@ -355,10 +534,21 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
             </div>
           </div>
 
-          {/* footer */}
+          {/* Footer */}
           <div className="modal-footer">
-            <button className="btn-cancel" onClick={() => setShowModal(false)}>Annuler</button>
-            <button className={`btn-save ${isEdit ? "edit-mode" : ""}`} onClick={handleSave}>{isEdit ? "Mettre à jour" : "Sauvegarder"}</button>
+            <button className="btn-cancel" onClick={() => setShowModal(false)}>
+              {generatedPwd ? "Fermer" : "Annuler"}
+            </button>
+            {/* Masquer le bouton Sauvegarder après la création réussie */}
+            {!generatedPwd && (
+              <button
+                className={`btn-save ${isEdit ? "edit-mode" : ""}`}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "En cours..." : isEdit ? "Mettre à jour" : "Sauvegarder"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -376,7 +566,7 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
       )}
 
       {toast && (
-        <div className="toast">{isEdit ? "✓ Moniteur mis à jour" : "✓ Moniteur ajouté avec succès"}</div>
+        <div className={`toast ${toast.type}`}>{toast.msg}</div>
       )}
     </>
   );

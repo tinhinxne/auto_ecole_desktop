@@ -57,27 +57,31 @@ export default function SignIn() {
   
   const navigate = useNavigate(); 
 
- const handleSubmit = async (e) => { // Ajout de async
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      // 1. On appelle la fonction login définie dans ton preload.js
-      const response = await window.electron.login({ email, password });
+  try {
+    const response = await window.electron.login({ email, password });
 
-      // 2. On vérifie si la BDD a trouvé l'utilisateur
-      if (response.success) {
-        console.log('Succès !', response.user);
-        // On n'autorise l'accès QUE si success est true
-        navigate("/access"); 
+    if (response.success) {
+      // ← Stocker l'utilisateur connecté
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // ← Rediriger selon le rôle
+      if (response.user.type_utilisateur === "moniteur") {
+        navigate("/moniteur/dashboard");
       } else {
-        // Si c'est faux, on affiche une alerte et on ne bouge pas !
-        alert(response.message || "Identifiants invalides");
+        navigate("/dashboard"); // administrateur
       }
-    } catch (error) {
-      console.error("Erreur lors de la tentative de connexion :", error);
-      alert("Impossible de contacter la base de données.");
+    } else {
+      alert(response.message || "Identifiants invalides");
     }
-  };
+  } catch (error) {
+    console.error("Erreur lors de la tentative de connexion :", error);
+    alert("Impossible de contacter la base de données.");
+  }
+};
+    
 
   return (
     <div className="signin-page" style={{ backgroundImage: `url(${CarImage})` }}>

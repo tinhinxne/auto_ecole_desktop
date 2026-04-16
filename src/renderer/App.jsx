@@ -27,7 +27,7 @@ const App = () => {
         <Route path="/" element={<Navigate to="/connexion" replace />} />
         {/* ── Page connexion — sans sidebar ── */}
         <Route path="/connexion" element={<SignIn />} />
-        <Route path="/access" element={<Access />} />
+        <Route path="/access" element={<Access />} /> 
          {/* ── ROUTES ADMIN / GÉRANT ── */}
         {/* ── Pages protégées — avec sidebar via Layout ── */}
         <Route element={<Layout />}>
