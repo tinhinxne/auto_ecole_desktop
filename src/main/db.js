@@ -1,10 +1,9 @@
 const mysql = require('mysql2');
 
-// On crée une connexion à la base de données
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'root',
-  password: 'Fitmanager@2026', // Mets ici le mot de passe que tu as tapé dans le terminal
+  user: 'appuser',
+  password: '1234',
   database: 'auto_ecole_db'
 });
 
@@ -16,4 +15,4 @@ db.connect((err) => {
   }
 });
 
-module.exports = db;
+module.exports = db;   // ← on garde l'export original, main.js ne change pas
