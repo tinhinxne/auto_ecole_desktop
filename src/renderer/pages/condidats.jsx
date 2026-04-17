@@ -31,10 +31,22 @@ const Condidats = () => {
   // ─────────────────────────────────────────────
   // 🔥 LOAD DATA FROM MYSQL
   // ─────────────────────────────────────────────
-  const loadCandidats = async () => {
-    try {
-      const data = await window.electron.getCandidats();
-      const formatted = data.map((c) => ({
+const loadCandidats = async () => {
+  try {
+    const data = await window.electron.getCandidats();
+
+    // Récupérer les séances une seule fois
+    const seances = await window.electron.getSeances();
+
+    const formatted = data.map((c) => {
+      // Compter les séances de ce candidat
+      const nbSessions = seances.filter((s) => {
+        if (!s.candidatsIds) return false;
+        const ids = String(s.candidatsIds).split(",").map((id) => parseInt(id.trim()));
+        return ids.includes(c.idCandidat);
+      }).length;
+
+      return {
         id: c.idCandidat,
         nom: c.nom,
         prenom: c.prenom,
@@ -45,18 +57,20 @@ const Condidats = () => {
         dob: c.date_naissance
           ? new Date(c.date_naissance).toISOString().split("T")[0]
           : "",
-        sessions: 0,
+        sessions: nbSessions,   // ← nombre réel de séances
         moniteur: "",
         status: c.statut,
         sexe: c.sexe,
         photo: c.photo || null,
-      }));
-      setCandidats(formatted);
-    } catch (error) {
-      console.error("Erreur lors du chargement des candidats :", error);
-      setCandidats([]);
-    }
-  };
+      };
+    });
+
+    setCandidats(formatted);
+  } catch (error) {
+    console.error("Erreur lors du chargement des candidats :", error);
+    setCandidats([]);
+  }
+};
 
   useEffect(() => {
     loadCandidats();
