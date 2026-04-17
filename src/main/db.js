@@ -2,8 +2,8 @@ const mysql = require('mysql2');
 
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'appuser',
-  password: '1234',
+  user: 'root',
+  password: 'Fitmanager@2026',
   database: 'auto_ecole_db'
 });
 
