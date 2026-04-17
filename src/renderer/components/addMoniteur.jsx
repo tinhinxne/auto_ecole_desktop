@@ -2,52 +2,139 @@ import React, { useState, useRef, useEffect } from "react";
 
 /* ── ICONS ───────────────────────── */
 const IconUserRound = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+  <svg
+    width="48"
+    height="48"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
   </svg>
 );
 const IconCamera = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
     <circle cx="12" cy="13" r="4" />
   </svg>
 );
 const IconUpload = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" />
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="16 16 12 12 8 16" />
+    <line x1="12" y1="12" x2="12" y2="21" />
   </svg>
 );
 const IconX = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 const IconTrash = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
-    <path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14H6L5 6" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M9 6V4h6v2" />
   </svg>
 );
 const IconSnap = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" />
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="12" cy="12" r="8" />
   </svg>
 );
 const IconKey = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="7.5" cy="15.5" r="5.5"/>
-    <path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/>
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="7.5" cy="15.5" r="5.5" />
+    <path d="M21 2l-9.6 9.6M15.5 7.5l3 3" />
   </svg>
 );
 const IconCopy = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
   </svg>
 );
 const IconMail = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-    <polyline points="22,6 12,13 2,6"/>
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <polyline points="22,6 12,13 2,6" />
   </svg>
 );
 
@@ -256,27 +343,39 @@ const css = `
 `;
 
 /* ── COMPONENT ───────────────────────── */
-export default function AddMoniteurModal({ showModal, setShowModal, selectedMoniteur = null, onSave }) {
+export default function AddMoniteurModal({
+  showModal,
+  setShowModal,
+  selectedMoniteur = null,
+  onSave,
+}) {
   const isEdit = !!selectedMoniteur;
 
-  const emptyForm = { nom: "", prenom: "", email: "", telephone: "", statut: "actif", sexe: "homme" };
-  const [form, setForm]             = useState(emptyForm);
-  const [photo, setPhoto]           = useState(null);
+  const emptyForm = {
+    nom: "",
+    prenom: "",
+    email: "",
+    telephone: "",
+    statut: "actif",
+    sexe: "homme",
+  };
+  const [form, setForm] = useState(emptyForm);
+  const [photo, setPhoto] = useState(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
-  const [saving, setSaving]         = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // ── Mot de passe ──
-  const [generatedPwd, setGeneratedPwd] = useState(null);  // affiché après ajout
-  const [resetPwd, setResetPwd]         = useState(null);  // affiché après reset
-  const [resetting, setResetting]       = useState(false);
-  const [copied, setCopied]             = useState(false);
+  const [generatedPwd, setGeneratedPwd] = useState(null); // affiché après ajout
+  const [resetPwd, setResetPwd] = useState(null); // affiché après reset
+  const [resetting, setResetting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // ── Toast ──
   const [toast, setToast] = useState(null); // { msg, type }
 
   const fileInputRef = useRef(null);
-  const videoRef     = useRef(null);
-  const streamRef    = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -306,11 +405,22 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
   }, [selectedMoniteur, showModal]);
 
   // ── Upload fichier ──
+  // const handleFileChange = (e) => {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+  //   setPhoto(URL.createObjectURL(file));
+  //   e.target.value = "";
+  // };
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setPhoto(URL.createObjectURL(file));
-    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // This gives you a data:image/jpeg;base64,... string
+      setPhoto(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   // ── Webcam ──
@@ -326,7 +436,7 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
     }
   };
   const closeWebcam = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setWebcamOpen(false);
   };
@@ -334,7 +444,8 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
     const video = videoRef.current;
     if (!video) return;
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
     setPhoto(canvas.toDataURL("image/jpeg"));
     closeWebcam();
@@ -356,7 +467,11 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
     }
     setSaving(true);
     try {
-      const data = { ...form, photo, ...(isEdit ? { id: selectedMoniteur.id } : {}) };
+      const data = {
+        ...form,
+        photo,
+        ...(isEdit ? { id: selectedMoniteur.id } : {}),
+      };
       const result = await onSave(data); // onSave doit maintenant retourner le résultat
 
       if (result?.success) {
@@ -366,14 +481,20 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
           if (result.emailSent) {
             showToast("✓ Moniteur ajouté — email envoyé !", "success");
           } else {
-            showToast("✓ Moniteur ajouté (email non envoyé, notez le mdp)", "warn");
+            showToast(
+              "✓ Moniteur ajouté (email non envoyé, notez le mdp)",
+              "warn",
+            );
           }
         } else if (isEdit) {
           showToast("✓ Moniteur mis à jour avec succès", "success");
           setTimeout(() => setShowModal(false), 1200);
         }
       } else {
-        showToast("Erreur : " + (result?.error || "Opération échouée"), "error");
+        showToast(
+          "Erreur : " + (result?.error || "Opération échouée"),
+          "error",
+        );
       }
     } catch (err) {
       showToast("Erreur inattendue.", "error");
@@ -384,7 +505,12 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
 
   // ── Réinitialiser mot de passe (mode édition) ──
   const handleResetPassword = async () => {
-    if (!window.confirm(`Réinitialiser le mot de passe de ${form.prenom} ${form.nom} et lui envoyer par email ?`)) return;
+    if (
+      !window.confirm(
+        `Réinitialiser le mot de passe de ${form.prenom} ${form.nom} et lui envoyer par email ?`,
+      )
+    )
+      return;
     setResetting(true);
     setResetPwd(null);
     try {
@@ -416,9 +542,11 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
   return (
     <>
       <style>{css}</style>
-      <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
+      <div
+        className="modal-overlay"
+        onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+      >
         <div className="modal">
-
           {/* Header */}
           <div className="modal-header">
             <div className="modal-title-wrap">
@@ -427,42 +555,65 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                 {isEdit ? "Édition" : "Nouveau"}
               </span>
             </div>
-            <button className="modal-close" onClick={() => setShowModal(false)}><IconX /></button>
+            <button className="modal-close" onClick={() => setShowModal(false)}>
+              <IconX />
+            </button>
           </div>
           <hr className="modal-divider" />
 
           {/* Body */}
           <div className="modal-body">
             <div className="form-left">
-              {["nom","prenom","email","telephone"].map(field => (
+              {["nom", "prenom", "email", "telephone"].map((field) => (
                 <div className="field" key={field}>
-                  <label>{field.charAt(0).toUpperCase()+field.slice(1)} <span>*</span></label>
+                  <label>
+                    {field.charAt(0).toUpperCase() + field.slice(1)}{" "}
+                    <span>*</span>
+                  </label>
                   <input
                     type="text"
                     placeholder={`Saisir ${field}`}
                     value={form[field]}
-                    onChange={e => setForm(f => ({...f, [field]: e.target.value}))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, [field]: e.target.value }))
+                    }
                   />
                 </div>
               ))}
 
               <div className="field">
-                <label>Statut <span>*</span></label>
-                <select value={form.statut} onChange={e => setForm(f => ({...f, statut: e.target.value}))}>
+                <label>
+                  Statut <span>*</span>
+                </label>
+                <select
+                  value={form.statut}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, statut: e.target.value }))
+                  }
+                >
                   <option value="actif">Actif</option>
                   <option value="inactif">Inactif</option>
                 </select>
               </div>
 
               <div className="field">
-                <label>Sexe <span>*</span></label>
+                <label>
+                  Sexe <span>*</span>
+                </label>
                 <div className="gender-group">
-                  {["homme", "femme"].map(s => (
+                  {["homme", "femme"].map((s) => (
                     <div className="gender-option" key={s}>
-                      <input type="radio" name="sexe" id={s} value={s}
+                      <input
+                        type="radio"
+                        name="sexe"
+                        id={s}
+                        value={s}
                         checked={form.sexe === s}
-                        onChange={() => setForm(f => ({...f, sexe: s}))} />
-                      <label htmlFor={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</label>
+                        onChange={() => setForm((f) => ({ ...f, sexe: s }))}
+                      />
+                      <label htmlFor={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </label>
                     </div>
                   ))}
                 </div>
@@ -476,11 +627,16 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                   </div>
                   <div className="password-row">
                     <div className="password-value">{generatedPwd}</div>
-                    <button className="btn-copy" onClick={() => copyToClipboard(generatedPwd)}>
+                    <button
+                      className="btn-copy"
+                      onClick={() => copyToClipboard(generatedPwd)}
+                    >
                       <IconCopy size={13} /> {copied ? "Copié !" : "Copier"}
                     </button>
                   </div>
-                  <div className={`password-note ${generatedPwd ? "" : "warn"}`}>
+                  <div
+                    className={`password-note ${generatedPwd ? "" : "warn"}`}
+                  >
                     <IconMail size={13} />
                     Email envoyé à {form.email} — conservez ce mot de passe.
                   </div>
@@ -496,7 +652,9 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                     disabled={resetting}
                   >
                     <IconKey size={14} />
-                    {resetting ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+                    {resetting
+                      ? "Réinitialisation..."
+                      : "Réinitialiser le mot de passe"}
                   </button>
 
                   {resetPwd && (
@@ -506,7 +664,10 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                       </div>
                       <div className="password-row">
                         <div className="password-value">{resetPwd}</div>
-                        <button className="btn-copy" onClick={() => copyToClipboard(resetPwd)}>
+                        <button
+                          className="btn-copy"
+                          onClick={() => copyToClipboard(resetPwd)}
+                        >
                           <IconCopy size={13} /> {copied ? "Copié !" : "Copier"}
                         </button>
                       </div>
@@ -526,10 +687,30 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                 {photo ? <img src={photo} alt="moniteur" /> : <IconUserRound />}
               </div>
               <div className="avatar-actions">
-                <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFileChange} />
-                <button className="photo-btn upload" onClick={() => fileInputRef.current.click()}><IconUpload size={13}/> Télécharger</button>
-                <button className="photo-btn webcam" onClick={openWebcam}><IconCamera size={13}/> Prendre photo</button>
-                {photo && <button className="photo-btn remove" onClick={() => setPhoto(null)}><IconTrash size={13}/> Supprimer</button>}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                />
+                <button
+                  className="photo-btn upload"
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <IconUpload size={13} /> Télécharger
+                </button>
+                <button className="photo-btn webcam" onClick={openWebcam}>
+                  <IconCamera size={13} /> Prendre photo
+                </button>
+                {photo && (
+                  <button
+                    className="photo-btn remove"
+                    onClick={() => setPhoto(null)}
+                  >
+                    <IconTrash size={13} /> Supprimer
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -546,7 +727,11 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? "En cours..." : isEdit ? "Mettre à jour" : "Sauvegarder"}
+                {saving
+                  ? "En cours..."
+                  : isEdit
+                    ? "Mettre à jour"
+                    : "Sauvegarder"}
               </button>
             )}
           </div>
@@ -559,15 +744,17 @@ export default function AddMoniteurModal({ showModal, setShowModal, selectedMoni
             <video ref={videoRef} autoPlay playsInline />
           </div>
           <div className="webcam-controls">
-            <button className="wc-btn snap" onClick={takeSnapshot}><IconSnap size={16}/> Capturer</button>
-            <button className="wc-btn cancel-wc" onClick={closeWebcam}><IconX size={14}/> Annuler</button>
+            <button className="wc-btn snap" onClick={takeSnapshot}>
+              <IconSnap size={16} /> Capturer
+            </button>
+            <button className="wc-btn cancel-wc" onClick={closeWebcam}>
+              <IconX size={14} /> Annuler
+            </button>
           </div>
         </div>
       )}
 
-      {toast && (
-        <div className={`toast ${toast.type}`}>{toast.msg}</div>
-      )}
+      {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
     </>
   );
 }

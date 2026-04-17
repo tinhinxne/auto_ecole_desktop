@@ -12,7 +12,17 @@ const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
   return (
     <div className="moniteur-card-proto">
       <div className="card-header-proto">
-        <div className="avatar-proto">{initials}</div>
+        <div className="avatar-proto">
+          {moniteur.photo ? (
+            <img 
+              src={moniteur.photo} 
+              alt={`${moniteur.prenom} ${moniteur.nom}`} 
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            initials
+          )}
+        </div>
         <span className={`status-pill-proto ${moniteur.statut}`}>
           {moniteur.statut === "actif" ? "Active" : "Inactive"}
         </span>

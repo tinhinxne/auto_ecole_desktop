@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+const mysql = require("mysql2");
 
 const db = mysql.createConnection({
   host: 'localhost',
@@ -9,9 +9,9 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error('❌ Erreur de connexion à MySQL:', err.message);
+    console.error("❌ Erreur de connexion à MySQL:", err.message);
   } else {
-    console.log('✅ Connecté à la base de données Auto-École !');
+    console.log("✅ Connecté à la base de données Auto-École !");
   }
 });
 
