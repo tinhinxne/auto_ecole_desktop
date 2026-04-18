@@ -1,4 +1,3 @@
-// App.jsx
 import React from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -17,6 +16,8 @@ import LayoutMoniteur from "./layout/LayoutMoniteur";
 import DashboardMoniteur from "./pages/DashboardMoniteur"
 import MesCandidats from "./pages/MesCandidats";
 import AgendaMoniteur from "./pages/AgendaMoniteur";
+import ExamensMoniteur from "./pages/ExamenMoniteur"
+import PaiementsMoniteur from "./pages/PaiementMoniteur"
 
 const App = () => {
   return (
@@ -44,6 +45,10 @@ const App = () => {
           <Route path="/moniteur/dashboard" element={<DashboardMoniteur />} />
           <Route path="/moniteur/candidat" element={<MesCandidats />} />
           <Route path="/moniteur/agenda"element={<AgendaMoniteur />} />
+            <Route path="/moniteur/paiements"element={<PaiementsMoniteur />} />
+          <Route path="/moniteur/examens"element={<ExamensMoniteur />} />
+
+
         </Route>
       </Routes>
     </HashRouter>
