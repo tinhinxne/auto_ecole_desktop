@@ -23,7 +23,6 @@ const Condidats = () => {
       c.nom.toLowerCase().includes(q) ||
       c.prenom.toLowerCase().includes(q) ||
       c.tel.toLowerCase().includes(q) ||
-      (c.moniteur && c.moniteur.toLowerCase().includes(q)) ||
       (c.status && c.status.toLowerCase().includes(q))
     );
   });
@@ -58,7 +57,7 @@ const loadCandidats = async () => {
           ? new Date(c.date_naissance).toISOString().split("T")[0]
           : "",
         sessions: nbSessions,   // ← nombre réel de séances
-        moniteur: "",
+        
         status: c.statut,
         sexe: c.sexe,
         photo: c.photo || null,
@@ -155,7 +154,6 @@ const loadCandidats = async () => {
                 <th>Contact</th>
                 <th>Date d'inscription</th>
                 <th>Progress</th>
-                <th>Moniteur</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -183,7 +181,6 @@ const loadCandidats = async () => {
                       </div>
                       <span className="progress-text">{c.sessions}/30 sessions</span>
                     </td>
-                    <td>{c.moniteur || "-"}</td>
                     <td>
                       <span className={`status ${c.status}`}>{c.status}</span>
                     </td>

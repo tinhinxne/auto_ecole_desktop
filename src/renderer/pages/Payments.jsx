@@ -113,11 +113,7 @@ const Payments = () => {
     return matchesSearch && matchesDate;
   });
 
-  const date = p.date; 
-  const matchDate = date >= startDate && date <= endDate;
 
-  return matchName && matchDate;
-});
 
 
   // ── Styles inline réutilisables ───────────────────────────────
@@ -125,11 +121,11 @@ const Payments = () => {
   const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
   // ── Stats dérivées du state (remplace les valeurs codées en dur) ─
-  const totalRevenu    = payments.reduce((acc, p) => acc + (p.paid || 0), 0);
-  const totalPrevision = payments.reduce((acc, p) => acc + ((p.total || 0) - (p.paid || 0)), 0);
-  const tauxRecouvrement = payments.length
-    ? Math.round((payments.filter((p) => p.statutPaiement === 'solde').length / payments.length) * 100)
-    : 0;
+  const totalRevenu = paymentsData.reduce((acc, p) => acc + (p.montant || 0), 0);
+const totalPrevision = paymentsData.reduce((acc, p) => acc + (p.montantRestant || 0), 0);
+const tauxRecouvrement = paymentsData.length
+  ? Math.round((paymentsData.filter((p) => p.statutPaiement === 'solde').length / paymentsData.length) * 100)
+  : 0;
 
   // ─────────────────────────────────────────────────────────────
   return (
@@ -243,7 +239,7 @@ const Payments = () => {
                           {item.montantRestant} DA
                         </span>
                       </td>
-                      <td style={td} style={{ textTransform: "capitalize" }}>{item.methode}</td>
+                      <td style={{td, textTransform: "capitalize" }}>{item.methode}</td>
                       <td style={td}>
                         <button 
                           onClick={() => { setSelected(item); setShowModal(true); }} 
