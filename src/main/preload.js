@@ -13,23 +13,21 @@ contextBridge.exposeInMainWorld('electron', {
   // Moniteurs
   getMoniteurs: () => ipcRenderer.invoke('get-moniteurs'),
   addMoniteur: (data) => ipcRenderer.invoke('add-moniteur', data),
+  resetMoniteurPassword: (data) => ipcRenderer.invoke('reset-moniteur-password', data),
   updateMoniteur: (data) => ipcRenderer.invoke('update-moniteur', data),
   deleteMoniteur: (id) => ipcRenderer.invoke('delete-moniteur', id),
   
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
-
-  // Paiements
-  getPayments: () => ipcRenderer.invoke('get-payments'),
-  addPayment: (data) => ipcRenderer.invoke('add-payment', data),
-
+  
   //Seances
   getSeances: () => ipcRenderer.invoke('get-seances'),
   addSeance:  (data) => ipcRenderer.invoke('add-seance', data),
   deleteSeance: (id)   => ipcRenderer.invoke('delete-seance', id),
   updateSeance: (data) => ipcRenderer.invoke('update-seance', data),
-  //getPayments:       ()       => ipcRenderer.invoke('get-payments'),
-  getPaymentHistory: (idCandidat) => ipcRenderer.invoke('get-payment-history', idCandidat),
-  //addPayment:        (data)   => ipcRenderer.invoke('add-payment', data),
-  createPaiement:    (data)   => ipcRenderer.invoke('create-paiement', data),
+  
+  // Paiements
+  getPayments: () => ipcRenderer.invoke('get-payments'),
+  addPayment: (data) => ipcRenderer.invoke('add-payment', data),
+  getCandidatsDebiteurs:  ()     => ipcRenderer.invoke('get-candidats-debiteurs'), 
 });

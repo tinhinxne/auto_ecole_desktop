@@ -4,6 +4,8 @@ import {
   FaThLarge,
   FaUserFriends,
   FaCalendarAlt,
+  FaMoneyBillWave,
+  FaClipboardList,
   FaSignOutAlt,
   FaCog
 } from "react-icons/fa";
@@ -18,9 +20,11 @@ const SidebarMoniteur = () => {
   };
 
   const menu = [
-    { name: "Dashboard", icon: <FaThLarge />, path: "/moniteur/dashboard" },
-    { name: "Mes Candidats", icon: <FaUserFriends />, path: "/moniteur/candidat" },
-    { name: "Mes Séances", icon: <FaCalendarAlt />, path: "/moniteur/agenda" },
+    { name: "Dashboard",    icon: <FaThLarge />,        path: "/moniteur/dashboard" },
+    { name: "Mes Candidats",icon: <FaUserFriends />,    path: "/moniteur/candidat"  },
+    { name: "Mes Séances",  icon: <FaCalendarAlt />,    path: "/moniteur/agenda"    },
+    { name: "Paiements",    icon: <FaMoneyBillWave />,  path: "/moniteur/paiements" },
+    { name: "Examens",      icon: <FaClipboardList />,  path: "/moniteur/examens"   },
   ];
 
   return (
@@ -72,7 +76,7 @@ const SidebarMoniteur = () => {
       <style>{`
         :root {
           --sidebar-bg: #1e293b; 
-          --active-blue: #4da3ff; /* Le bleu de tes pages */
+          --active-blue: #4da3ff;
           --text-gray: #94a3b8;
         }
 
@@ -120,6 +124,7 @@ const SidebarMoniteur = () => {
 
         .sidebar-nav {
           flex: 1;
+          overflow-y: auto;
         }
 
         .menu {

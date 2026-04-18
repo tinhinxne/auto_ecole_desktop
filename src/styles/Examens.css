@@ -8,7 +8,7 @@
 }
 
 .stat-card-modern {
-  background: #DDE2EF; /* Gris bleuté identique au dashboard */
+  background: #DDE2EF; 
   border-radius: 18px;
   padding: 20px;
   display: flex;
@@ -16,7 +16,7 @@
   align-items: center;
   cursor: pointer;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .stat-left {
@@ -42,13 +42,11 @@
   font-weight: 600;
 }
 
-/* Couleurs de texte pour les trends */
 .stat-trend.blue { color: #2563EB; }
 .stat-trend.green { color: #10B981; }
 .stat-trend.red { color: #EF4444; }
 .stat-trend.orange { color: #F59E0B; }
 
-/* Icônes à droite */
 .stat-icon {
   width: 48px;
   height: 48px;
@@ -69,11 +67,55 @@
 .examens-content {
   padding: 20px 0;
 }
-.examens-page-header{
-   display: flex;
+
+.examens-page-header {
+  display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   padding: 0 5px;
+}
 
+/* --- AJOUTS POUR ACTIONS --- */
+
+.status-clickable {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.status-clickable:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+
+.btn-remove {
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: all 0.2s;
+}
+
+.btn-remove:hover {
+  background: #e53e3e;
+  color: white;
+}
+
+.examens-table__actions {
+  width: 100px;
+  text-align: center;
 }

@@ -1,295 +1,507 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import Button from "./Button";
+
 import Input from "./Input";
+
 import Select from "./Select";
 
-const PaymentModal = ({ candidate, onClose, onAddPayment }) => {
-  const [paymentType, setPaymentType] = useState("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [remark, setRemark] = useState("");
-  const [errors, setErrors] = useState({});
 
-  const paymentMethods = [
-    { value: "", label: "Type de Paiement" },
-    { value: "Espèces", label: "Espèces" },
-    { value: "Carte bancaire", label: "Carte bancaire" },
-    { value: "Virement", label: "Virement" },
-    { value: "Chèque", label: "Chèque" },
-    { value: "Par tranche", label: "Par tranche" },
+
+const PRIX_PERMIS = 30000;
+
+
+
+const PaymentModal = ({ candidate, allCandidates, onClose, onAddPayment }) => {
+
+  const [selectedCandidate, setSelectedCandidate] = useState(candidate || null);
+
+  const [candidatesList, setCandidatesList]       = useState([]);
+
+  const [paymentType, setPaymentType]             = useState("");
+
+  const [amount, setAmount]                       = useState("");
+
+  const [date, setDate]                           = useState(new Date().toISOString().split("T")[0]);
+
+  const [remark, setRemark]                       = useState("");
+
+  const [errors, setErrors]                       = useState({});
+
+  const [loading, setLoading]                     = useState(false);
+
+
+
+  // ✅ Charger les candidats directement depuis l'IPC au montage
+
+  // → On essaie getCandidatsDebiteurs en premier, sinon fallback sur getCandidats
+
+  useEffect(() => {
+
+    const loadCandidates = async () => {
+
+      setLoading(true);
+
+      try {
+
+        // Essai 1 : getCandidatsDebiteurs (candidats avec reste > 0)
+
+        if (window.electron.getCandidatsDebiteurs) {
+
+          const debiteurs = await window.electron.getCandidatsDebiteurs();
+
+          if (debiteurs && debiteurs.length > 0) {
+
+            setCandidatesList(debiteurs);
+
+            setLoading(false);
+
+            return;
+
+          }
+
+        }
+
+        // Fallback : tous les candidats si la liste débiteurs est vide ou inexistante
+
+        if (window.electron.getCandidats) {
+
+          const tous = await window.electron.getCandidats();
+
+          const normalises = (tous || []).map(c => ({
+
+            idCandidat:     c.idCandidat || c.id,
+
+            nom:            c.nom,
+
+            prenom:         c.prenom,
+
+            telephone:      c.telephone || c.tel,
+
+            montantRestant: c.montantRestant ?? PRIX_PERMIS,
+
+            statutPaiement: c.statutPaiement || "en_attente",
+
+          }));
+
+          setCandidatesList(normalises);
+
+        }
+
+      } catch (err) {
+
+        console.error("Erreur chargement candidats dans PaymentModal :", err);
+
+        setCandidatesList(allCandidates || []);
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
+
+
+    if (!candidate) loadCandidates();
+
+  }, []);
+
+
+
+  const currentRemaining = selectedCandidate
+
+    ? parseFloat(selectedCandidate.montantRestant ?? PRIX_PERMIS)
+
+    : 0;
+
+
+
+  const liveRemaining = Math.max(0, currentRemaining - (parseFloat(amount) || 0));
+
+  const pctPaye       = PRIX_PERMIS > 0
+
+    ? Math.round(((PRIX_PERMIS - currentRemaining) / PRIX_PERMIS) * 100)
+
+    : 0;
+
+
+
+  const candidateOptions = [
+
+    { value: "", label: loading ? "Chargement..." : "── Choisir un candidat ──" },
+
+    ...candidatesList.map(c => ({
+
+      value: String(c.idCandidat),
+
+      label: `${c.prenom} ${c.nom}  —  Reste : ${parseFloat(c.montantRestant ?? PRIX_PERMIS).toLocaleString("fr-DZ")} DA`
+
+    }))
+
   ];
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!paymentType) newErrors.paymentType = "Le type de paiement est requis";
-    if (!amount) newErrors.amount = "Le montant est requis";
-    else if (parseFloat(amount) <= 0) newErrors.amount = "Le montant doit être supérieur à 0";
-    if (!date) newErrors.date = "La date est requise";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+
+  const paymentMethods = [
+
+    { value: "",        label: "Méthode de paiement" },
+
+    { value: "especes", label: "Espèces"              },
+
+    { value: "ccp",     label: "CCP"                  },
+
+    { value: "carte",   label: "Carte"                },
+
+  ];
+
+
+
+  const handleCandidateChange = (e) => {
+
+    const id = e.target.value;
+
+    if (!id) { setSelectedCandidate(null); return; }
+
+    const found = candidatesList.find(c => String(c.idCandidat) === id);
+
+    setSelectedCandidate(found || null);
+
+    setAmount("");
+
+    setErrors({});
+
   };
+
+
+
+  const validateForm = () => {
+
+    const newErrors = {};
+
+    if (!selectedCandidate)                    newErrors.candidate   = "Veuillez choisir un candidat";
+
+    if (!paymentType)                          newErrors.paymentType = "La méthode est requise";
+
+    if (!amount || parseFloat(amount) <= 0)    newErrors.amount      = "Montant invalide";
+
+    if (parseFloat(amount) > currentRemaining) newErrors.amount      = `Maximum autorisé : ${currentRemaining} DA`;
+
+    if (!date)                                 newErrors.date        = "La date est requise";
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+
+  };
+
+
 
   const handleSubmit = () => {
+
     if (validateForm()) {
+
       onAddPayment({
-        type: paymentType,
-        amount: parseFloat(amount),
-        date: date,
-        remark: remark,
+
+        idCandidat:    selectedCandidate.idCandidat,
+
+        montant:       parseFloat(amount),
+
+        methode:       paymentType,
+
+        dateVersement: date,
+
+        remarque:      remark,
+
+        typeVersement: "seance",
+
       });
-      setPaymentType("");
-      setAmount("");
-      setRemark("");
-      onClose();
+
     }
+
   };
 
-  const handleDelete = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce paiement ?")) {
-      onClose();
-    }
+
+
+  const s = {
+
+    overlay:  { position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",justifyContent:"center",alignItems:"center",zIndex:1000 },
+
+    modal:    { background:"#fff",borderRadius:"20px",width:"90%",maxWidth:"550px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)" },
+
+    header:   { display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 24px",borderBottom:"1px solid #E5E7EB",background:"#F9FAFB",borderRadius:"20px 20px 0 0" },
+
+    body:     { padding:"24px" },
+
+    title:    { fontSize:"16px",fontWeight:"600",color:"#374151",marginBottom:"16px",marginTop:"24px" },
+
+    badge:    { padding:"14px",background:"#EBF5FF",borderRadius:"12px",border:"1px solid #4E96E1",marginBottom:"15px" },
+
+    closeBtn: { background:"none",border:"none",fontSize:"20px",cursor:"pointer" },
+
   };
 
-  const modalOverlay = {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: "rgba(0, 0, 0, 0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  };
 
-  const modalContent = {
-    background: "#fff",
-    borderRadius: "20px",
-    width: "90%",
-    maxWidth: "550px",
-    maxHeight: "85vh",
-    overflowY: "auto",
-    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-  };
-
-  const modalHeader = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "20px 24px",
-    borderBottom: "1px solid #E5E7EB",
-    background: "#F9FAFB",
-    borderRadius: "20px 20px 0 0",
-  };
-
-  const modalTitle = {
-    fontSize: "20px",
-    fontWeight: "600",
-    color: "#111827",
-    margin: 0,
-  };
-
-  const closeButton = {
-    background: "none",
-    border: "none",
-    fontSize: "24px",
-    cursor: "pointer",
-    color: "#6B7280",
-    padding: "0",
-    width: "32px",
-    height: "32px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "8px",
-    transition: "all 0.2s",
-  };
-
-  const modalBody = {
-    padding: "24px",
-  };
-
-  const candidateName = {
-    fontSize: "18px",
-    fontWeight: "600",
-    color: "#4E96E1",
-    marginBottom: "12px",
-  };
-
-  const infoText = {
-    fontSize: "14px",
-    color: "#374151",
-    marginBottom: "8px",
-  };
-
-  const sectionTitle = {
-    fontSize: "16px",
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: "16px",
-    marginTop: "24px",
-  };
-
-  const formRow = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "16px",
-    marginBottom: "16px",
-  };
-
-  const buttonGroup = {
-    display: "flex",
-    gap: "12px",
-    marginTop: "24px",
-  };
-
-  const historyTable = {
-    width: "100%",
-    borderCollapse: "collapse",
-    marginTop: "12px",
-  };
-
-  const tableHeader = {
-    background: "#F9FAFB",
-    padding: "10px 12px",
-    textAlign: "left",
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#6B7280",
-    borderBottom: "1px solid #E5E7EB",
-  };
-
-  const tableCell = {
-    padding: "10px 12px",
-    fontSize: "13px",
-    color: "#374151",
-    borderBottom: "1px solid #F3F4F6",
-  };
 
   return (
-    <div style={modalOverlay} onClick={onClose}>
-      <div style={modalContent} onClick={(e) => e.stopPropagation()}>
-        <div style={modalHeader}>
-          <h3 style={modalTitle}>Détails du paiement de {candidate?.name}</h3>
-          <button
-            style={closeButton}
-            onClick={onClose}
-            onMouseEnter={(e) => {
-              e.target.style.background = "#F3F4F6";
-              e.target.style.color = "#111827";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "none";
-              e.target.style.color = "#6B7280";
-            }}
-          >
-            ✕
-          </button>
+
+    <div style={s.overlay} onClick={onClose}>
+
+      <div style={s.modal} onClick={e => e.stopPropagation()}>
+
+
+
+        <div style={s.header}>
+
+          <h3 style={{ margin:0 }}>{candidate ? "Détails du paiement" : "Nouveau Versement"}</h3>
+
+          <button style={s.closeBtn} onClick={onClose}>✕</button>
+
         </div>
 
-        <div style={modalBody}>
-          <div style={candidateName}>{candidate?.name}</div>
-  
-          <div style={{ display: 'flex', gap: '5px', flexDirection:"column",  marginBottom: '20px' }}>
-            <div style={infoText}>
-              <strong>Total Contrat :</strong> {Number(candidate?.total).toLocaleString('fr-DZ')} DA
+
+
+        <div style={s.body}>
+
+
+
+          {/* SELECT CANDIDAT */}
+
+          {!candidate && (
+
+            <div style={{ marginBottom:"4px" }}>
+
+              <Select
+
+                label="Candidat *"
+
+                value={selectedCandidate ? String(selectedCandidate.idCandidat) : ""}
+
+                onChange={handleCandidateChange}
+
+                options={candidateOptions}
+
+                error={errors.candidate}
+
+              />
+
+              <p style={{ fontSize:"11px",color: loading?"#4E96E1":"#94A3B8",marginTop:"4px" }}>
+
+                {loading
+
+                  ? "⏳ Chargement de la liste..."
+
+                  : `${candidatesList.length} candidat(s) avec solde en attente`}
+
+              </p>
+
             </div>
-            <div style={infoText}>
-              <strong>Déjà Payé :</strong> <span style={{ color: '#166534' }}>{Number(candidate?.paid).toLocaleString('fr-DZ')} DA</span>
-            </div>
-            <div style={infoText}>
-              <strong>Reste :</strong> <span style={{ color: '#9B2C1D' }}>{Number(candidate?.total - candidate?.paid).toLocaleString('fr-DZ')} DA</span>
-            </div>
-          </div>
 
-          <div style={sectionTitle}>Ajouter un paiement</div>
-          
-          <div style={formRow}>
-            <Select
-              label="Type de paiement *"
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value)}
-              options={paymentMethods}
-              placeholder="Type de Paiement"
-              required
-              error={errors.paymentType}
-            />
-            <Input
-              label="Montant *"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0 DA"
-              required
-              error={errors.amount}
-            />
-          </div>
+          )}
 
-          <Input
-            label="Date *"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-            error={errors.date}
-          />
 
-          <Input
-            label="Remarque"
-            type="text"
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-            placeholder="Ajouter une remarque..."
-            textarea
-            rows={3}
-          />
 
-          <div style={buttonGroup}>
-            <Button variant="secondary" onClick={handleDelete}>
-              Supprimer
-            </Button>
-            <Button variant="primary" onClick={handleSubmit}>
-              Enregistrer
-            </Button>
-          </div>
+          {/* BADGE CANDIDAT */}
 
-          <div style={sectionTitle}>Historique des versements</div>
-          <div style={{ maxHeight: "250px", overflowY: "auto", border: '1px solid #E5E7EB', borderRadius: '12px' }}>
-            <table style={historyTable}>
-              <thead>
-                <tr>
-                  <th style={tableHeader}>Date</th>
-                  <th style={tableHeader}>Méthode</th>
-                  <th style={tableHeader}>Montant</th>
-                  <th style={tableHeader}>Remarque</th>
-                </tr>
-              </thead>
-              <tbody>
-                {candidate?.history?.length > 0 ? (
-                  candidate.history.map((payment) => (
-                    <tr key={payment.id}>
-                      <td style={tableCell}>{payment.date}</td>
-                      <td style={tableCell}>{payment.method}</td>
-                      <td style={tableCell}>{payment.amount}</td>
-                      <td style={tableCell}>{payment.remark}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" style={{ ...tableCell, textAlign: "center", color: "#9CA3AF", padding: '20px' }}>
-                      Aucun versement trouvé pour ce candidat.
-                    </td>
-                  </tr>
+          {selectedCandidate && (
+
+            <div style={s.badge}>
+
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+
+                <div>
+
+                  <div style={{ fontWeight:"700",color:"#2b537e",fontSize:"15px" }}>
+
+                    {selectedCandidate.prenom} {selectedCandidate.nom}
+
+                  </div>
+
+                  <div style={{ fontSize:"13px",color:"#475569",marginTop:"4px" }}>
+
+                    Reste actuel :&nbsp;
+
+                    <strong style={{ color:"#b91c1c" }}>
+
+                      {currentRemaining.toLocaleString("fr-DZ")} DA
+
+                    </strong>
+
+                    &nbsp;/&nbsp;
+
+                    <span style={{ color:"#64748b" }}>Total : {PRIX_PERMIS.toLocaleString("fr-DZ")} DA</span>
+
+                  </div>
+
+                </div>
+
+                {amount && parseFloat(amount) > 0 && (
+
+                  <div style={{ textAlign:"right" }}>
+
+                    <div style={{ fontSize:"11px",color:"#64748b" }}>Après versement :</div>
+
+                    <div style={{ fontWeight:"800",fontSize:"18px",color:liveRemaining<=0?"#166534":"#b91c1c" }}>
+
+                      {liveRemaining.toLocaleString("fr-DZ")} DA
+
+                    </div>
+
+                    {liveRemaining <= 0 && (
+
+                      <div style={{ fontSize:"11px",color:"#166534",fontWeight:"600" }}>✅ Dossier soldé !</div>
+
+                    )}
+
+                  </div>
+
                 )}
-              </tbody>
-            </table>
+
+              </div>
+
+              <div style={{ marginTop:"12px" }}>
+
+                <div style={{ height:"6px",background:"#CBD5E0",borderRadius:"4px",overflow:"hidden" }}>
+
+                  <div style={{
+
+                    height:"100%",width:`${pctPaye}%`,
+
+                    background:pctPaye>=100?"#166534":"#4E96E1",
+
+                    borderRadius:"4px",transition:"width 0.3s ease"
+
+                  }} />
+
+                </div>
+
+                <div style={{ display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#94A3B8",marginTop:"4px" }}>
+
+                  <span>Déjà payé : {(PRIX_PERMIS - currentRemaining).toLocaleString("fr-DZ")} DA</span>
+
+                  <span>{pctPaye}%</span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          )}
+
+
+
+          {/* FORMULAIRE */}
+
+          <div style={s.title}>Informations du versement</div>
+
+
+
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px",marginBottom:"16px" }}>
+
+            <Select
+
+              label="Méthode *"
+
+              value={paymentType}
+
+              onChange={e => setPaymentType(e.target.value)}
+
+              options={paymentMethods}
+
+              error={errors.paymentType}
+
+            />
+
+            <Input
+
+              label="Montant (DA) *"
+
+              type="number"
+
+              value={amount}
+
+              onChange={e => setAmount(e.target.value)}
+
+              placeholder={selectedCandidate ? `Max : ${currentRemaining.toLocaleString("fr-DZ")} DA` : "0"}
+
+              error={errors.amount}
+
+            />
+
           </div>
+
+
+
+          <Input
+
+            label="Date du versement *"
+
+            type="date"
+
+            value={date}
+
+            onChange={e => setDate(e.target.value)}
+
+            error={errors.date}
+
+          />
+
+          <Input
+
+            label="Remarque"
+
+            type="text"
+
+            value={remark}
+
+            onChange={e => setRemark(e.target.value)}
+
+            placeholder="Ex: Tranche 2, règlement partiel..."
+
+            textarea
+
+            rows={2}
+
+          />
+
+
+
+          <div style={{ display:"flex",gap:"12px",marginTop:"24px" }}>
+
+            <Button variant="secondary" onClick={onClose} style={{ flex:1 }}>Annuler</Button>
+
+            <Button
+
+              variant="primary"
+
+              onClick={handleSubmit}
+
+              style={{ flex:2 }}
+
+              disabled={!selectedCandidate || loading}
+
+            >
+
+              Enregistrer le paiement
+
+            </Button>
+
+          </div>
+
+
+
         </div>
+
       </div>
+
     </div>
+
   );
+
 };
+
+
 
 export default PaymentModal;

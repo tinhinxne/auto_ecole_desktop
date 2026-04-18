@@ -917,7 +917,6 @@ const newHeure = floatToHHMM(hour);
             <option value="code">Code</option>
             <option value="circulation">Circulation</option>
             <option value="creneau">Créneau</option>
-            <option value="boxing">Boxing</option>
           </select>
 
           <span style={{ fontSize:"0.75rem", color:"#94a3b8", fontWeight:500 }}>Moniteur :</span>

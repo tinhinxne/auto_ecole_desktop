@@ -16,6 +16,8 @@ import LayoutMoniteur from "./layout/LayoutMoniteur";
 import DashboardMoniteur from "./pages/DashboardMoniteur"
 import MesCandidats from "./pages/MesCandidats";
 import AgendaMoniteur from "./pages/AgendaMoniteur";
+import ExamensMoniteur from "./pages/ExamenMoniteur"
+import PaiementsMoniteur from "./pages/PaiementMoniteur"
 
 const App = () => {
   return (
@@ -26,7 +28,7 @@ const App = () => {
         <Route path="/" element={<Navigate to="/connexion" replace />} />
         {/* ── Page connexion — sans sidebar ── */}
         <Route path="/connexion" element={<SignIn />} />
-        <Route path="/access" element={<Access />} />
+        <Route path="/access" element={<Access />} /> 
          {/* ── ROUTES ADMIN / GÉRANT ── */}
         {/* ── Pages protégées — avec sidebar via Layout ── */}
         <Route element={<Layout />}>
@@ -43,6 +45,10 @@ const App = () => {
           <Route path="/moniteur/dashboard" element={<DashboardMoniteur />} />
           <Route path="/moniteur/candidat" element={<MesCandidats />} />
           <Route path="/moniteur/agenda"element={<AgendaMoniteur />} />
+            <Route path="/moniteur/paiements"element={<PaiementsMoniteur />} />
+          <Route path="/moniteur/examens"element={<ExamensMoniteur />} />
+
+
         </Route>
       </Routes>
     </HashRouter>
