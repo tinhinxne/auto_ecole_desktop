@@ -82,13 +82,31 @@ app.on("window-all-closed", () => {
 // 1. LOGIN
 ipcMain.handle("login", async (event, credentials) => {
   const { email, password } = credentials;
-  const sql = 'SELECT id, nom, type_utilisateur FROM Utilisateur WHERE mail = ? AND mot_de_passe = ?';
+
+  // JOIN with Moniteur to also fetch the `actif` flag when applicable
+  const sql = `
+    SELECT u.id, u.nom, u.type_utilisateur, m.actif
+    FROM Utilisateur u
+    LEFT JOIN Moniteur m ON u.id = m.id
+    WHERE u.mail = ? AND u.mot_de_passe = ?
+  `;
+
   return new Promise((resolve) => {
     db.query(sql, [email, password], (err, result) => {
-      if (err) resolve({ success: false, message: "Erreur Base de données" });
-      if (result && result.length > 0)
-        resolve({ success: true, user: result[0] });
-      else resolve({ success: false, message: "Identifiants incorrects" });
+      if (err) return resolve({ success: false, message: "Erreur Base de données" });
+
+      if (result && result.length > 0) {
+        const user = result[0];
+
+        // Block inactive moniteurs
+        if (user.type_utilisateur === 'moniteur' && user.actif === 0) {
+          return resolve({ success: false, inactive: true });
+        }
+
+        resolve({ success: true, user });
+      } else {
+        resolve({ success: false, message: "Identifiants incorrects" });
+      }
     });
   });
 });
@@ -166,7 +184,6 @@ ipcMain.handle("get-moniteurs", async () => {
 ipcMain.handle("add-moniteur", async (event, m) => {
   const password = generatePassword();
   return new Promise((resolve) => {
-    // 1. Insert into Utilisateur table
     const sqlUser = `
       INSERT INTO Utilisateur (nom, prenom, mail, mot_de_passe, type_utilisateur)
       VALUES (?, ?, ?, ?, 'moniteur')
@@ -180,8 +197,6 @@ ipcMain.handle("add-moniteur", async (event, m) => {
 
       const newId = res.insertId;
 
-      // 2. Insert into Moniteur table
-      // We send m.photo directly as a string because the column is LONGTEXT
       const sqlMoniteur = `
         INSERT INTO Moniteur (id, numeroTelephone, actif, photo)
         VALUES (?, ?, ?, ?)
@@ -189,14 +204,13 @@ ipcMain.handle("add-moniteur", async (event, m) => {
 
       db.query(
         sqlMoniteur,
-        [newId, m.telephone, m.statut === "actif" ? 1 : 0, m.photo], // photo is the base64 string
+        [newId, m.telephone, m.statut === "actif" ? 1 : 0, m.photo],
         async (err2) => {
           if (err2) {
             console.error("Moniteur Insert Error:", err2.message);
             return resolve({ success: false, error: err2.message });
           }
 
-          // 3. Email sending
           let emailSent = false;
           try {
             await transporter.sendMail({
@@ -216,39 +230,44 @@ ipcMain.handle("add-moniteur", async (event, m) => {
           }
 
           resolve({ success: true, id: newId, password, emailSent });
-        },
+        }
       );
     });
   });
 });
 
-ipcMain.handle('reset-moniteur-password', async (event, { id, email, nom, prenom }) => {
-  const password = generatePassword();
+ipcMain.handle("reset-moniteur-password", async (event, data) => {
+  const { id, email, prenom, nom } = data;
+  const newPassword = generatePassword();
   return new Promise((resolve) => {
-    db.query('UPDATE Utilisateur SET mot_de_passe = ? WHERE id = ?', [password, id], async (err) => {
-      if (err) return resolve({ success: false, error: err.message });
-      let emailSent = false;
-      try {
-        await transporter.sendMail({
-          from: '"Auto-École 🚗" <ton-email@gmail.com>',
-          to: email,
-          subject: 'Réinitialisation de mot de passe – Auto-École',
-          html: buildEmailHtml({ prenom, nom, email, password, isReset: true }),
-        });
-        emailSent = true;
-      } catch (emailErr) {
-        console.error('Erreur envoi email reset:', emailErr.message);
+    db.query(
+      'UPDATE Utilisateur SET mot_de_passe = ? WHERE id = ?',
+      [newPassword, id],
+      async (err) => {
+        if (err) return resolve({ success: false });
+        try {
+          await transporter.sendMail({
+            from: '"Auto-École 🚗" <tinhinanethequeen@gmail.com>',
+            to: email,
+            subject: "Réinitialisation de votre mot de passe – Auto-École",
+            html: buildEmailHtml({ prenom, nom, email, password: newPassword, isReset: true }),
+          });
+        } catch (emailErr) {
+          console.error("Erreur envoi email reset:", emailErr.message);
+        }
+        resolve({ success: true });
       }
-      resolve({ success: true, password, emailSent });
-    });
+    );
   });
 });
 
-ipcMain.handle('update-moniteur', async (event, m) => {
+ipcMain.handle("update-moniteur", async (event, m) => {
   return new Promise((resolve) => {
-    db.query('UPDATE Utilisateur SET nom = ?, prenom = ?, mail = ? WHERE id = ?', [m.nom, m.prenom, m.email, m.id], (err) => {
+    const sqlUser = `UPDATE Utilisateur SET nom=?, prenom=?, mail=? WHERE id=?`;
+    db.query(sqlUser, [m.nom, m.prenom, m.email, m.id], (err) => {
       if (err) return resolve({ success: false });
-      db.query('UPDATE Moniteur SET numeroTelephone = ?, actif = ?, photo = ? WHERE id = ?', [m.telephone, m.statut === 'actif', m.photo, m.id], (err2) => {
+      const sqlMon = `UPDATE Moniteur SET numeroTelephone=?, actif=?, photo=? WHERE id=?`;
+      db.query(sqlMon, [m.telephone, m.statut === 'actif' ? 1 : 0, m.photo || null, m.id], (err2) => {
         if (err2) resolve({ success: false });
         else resolve({ success: true });
       });
@@ -268,19 +287,16 @@ ipcMain.handle("delete-moniteur", async (event, id) => {
 // 4. DASHBOARD
 ipcMain.handle("get-dashboard-stats", async () => {
   return new Promise((resolve) => {
-    // ① Total candidats
     db.query('SELECT COUNT(*) as total FROM Candidat', (err1, res1) => {
       if (err1) return resolve({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
 
       const totalCandidats = res1[0].total;
 
-      // ② Séances aujourd'hui
       db.query('SELECT COUNT(*) as total FROM Seance WHERE date = CURDATE()', (err2, res2) => {
         if (err2) return resolve({ totalCandidats, sessionsToday: 0, revenuMois: 0 });
 
         const sessionsToday = res2[0].total;
 
-        // ③ Revenu du mois
         db.query(
           `SELECT COALESCE(SUM(montant), 0) as total 
            FROM Versement 
@@ -418,8 +434,7 @@ ipcMain.handle("get-seances", async () => {
 });
 
 ipcMain.handle("add-seance", async (event, seanceData) => {
-  const { date, heure, type, statut, moniteur_id, candidatIds, duree } =
-    seanceData;
+  const { date, heure, type, statut, moniteur_id, candidatIds, duree } = seanceData;
   return new Promise((resolve) => {
     const sqlSeance = `INSERT INTO Seance (date, heure, type, statut, moniteur_id, duree) VALUES (?, ?, ?, ?, ?, ?)`;
     db.query(sqlSeance, [date, heure, type, statut || 'planifiée', moniteur_id, duree || 1], (err, res) => {
@@ -444,8 +459,7 @@ ipcMain.handle("delete-seance", async (event, id) => {
 });
 
 ipcMain.handle("update-seance", async (event, data) => {
-  const { id, date, heure, type, statut, moniteur_id, duree, candidatId } =
-    data;
+  const { id, date, heure, type, statut, moniteur_id, duree, candidatId } = data;
   return new Promise((resolve) => {
     db.query(
       "UPDATE Seance SET date=?, heure=?, type=?, statut=?, moniteur_id=?, duree=? WHERE idSeance=?",

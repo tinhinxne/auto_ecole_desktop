@@ -3,6 +3,9 @@ import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // ← AJOUT
+import { Ban } from 'lucide-react';
+
+
 
 const SteeringWheelIcon = () => (
   <svg className="signin-card__app-icon" viewBox="0 0 24 24" fill="none"
@@ -30,6 +33,68 @@ const LockIcon = () => (
   </svg>
 );
 
+// ── Popup compte inactif ──────────────────────────────────────────────────────
+const InactivePopup = ({ onClose }) => (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  }}>
+    <div style={{
+      backgroundColor: '#f7e5e4',
+      borderRadius: '12px',
+      padding: '36px 40px',
+      maxWidth: '380px',
+      width: '90%',
+      border: 'solid 3px #c0392b ',
+      textAlign: 'center',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    }}>
+      {/* Icône d'alerte */}
+      <div ><Ban color="#c0392b" size={32}/></div>
+
+      <h2 style={{
+        color: '#0d0a0a',
+        fontSize: '18px',
+        fontWeight: '700',
+        margin: '0 0 12px',
+      }}>
+        Compte inactif
+      </h2>
+
+      <p style={{
+        color: '#261816',
+        fontSize: '14px',
+        lineHeight: '1.6',
+        margin: '0 0 28px',
+      }}>
+        Votre compte est inactif.<br />
+        Impossible de vous connecter.
+      </p>
+
+      <button
+        onClick={onClose}
+        style={{
+          backgroundColor: '#fff',
+          color: '#c0392b',
+          border: 'solid 2px #c0392b',
+          borderRadius: '8px',
+          padding: '10px 28px',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+        }}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+);
+
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,11 +108,27 @@ export default function SignIn() {
 
       if (response.success) {
         login(response.user); // ← REMPLACE localStorage.setItem par ça
+  const [showInactivePopup, setShowInactivePopup] = useState(false);
+
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await window.electron.login({ email, password });
+
+      if (response.success) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+
         if (response.user.type_utilisateur === "moniteur") {
           navigate("/moniteur/dashboard");
         } else {
           navigate("/dashboard");
         }
+      } else if (response.inactive) {
+        // Moniteur inactif → afficher le popup rouge
+        setShowInactivePopup(true);
       } else {
         alert(response.message || "Identifiants invalides");
       }
@@ -57,8 +138,30 @@ export default function SignIn() {
     }
   };
 
+
   return (
     <div className="signin-page" style={{ backgroundImage: `url(${CarImage})` }}>
+
+      {/* ── Popup compte inactif ── */}
+      {showInactivePopup && (
+        <InactivePopup onClose={() => setShowInactivePopup(false)} />
+      )}
+
+      {/* ── Images de fond ── */}
+      <img
+        src="../../assets/Car.png"
+        alt=""
+        aria-hidden="true"
+        className="signin-page__bg-image signin-page__bg-image--instructor"
+      />
+      <img
+        src="../../assets/Car.png"
+        alt=""
+        aria-hidden="true"
+        className="signin-page__bg-image signin-page__bg-image--car"
+      />
+
+      {/* ── Carte de connexion ── */}
       <div className="signin-card">
         <div className="signin-card__app-header">
           <SteeringWheelIcon />
