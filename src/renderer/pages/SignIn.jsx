@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
+import { Ban } from 'lucide-react';
 
 
 
@@ -51,43 +52,111 @@ const LockIcon = () => (
   </svg>
 );
 
+// ── Popup compte inactif ──────────────────────────────────────────────────────
+const InactivePopup = ({ onClose }) => (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  }}>
+    <div style={{
+      backgroundColor: '#f7e5e4',
+      borderRadius: '12px',
+      padding: '36px 40px',
+      maxWidth: '380px',
+      width: '90%',
+      border: 'solid 3px #c0392b ',
+      textAlign: 'center',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    }}>
+      {/* Icône d'alerte */}
+      <div ><Ban color="#c0392b" size={32}/></div>
+
+      <h2 style={{
+        color: '#0d0a0a',
+        fontSize: '18px',
+        fontWeight: '700',
+        margin: '0 0 12px',
+      }}>
+        Compte inactif
+      </h2>
+
+      <p style={{
+        color: '#261816',
+        fontSize: '14px',
+        lineHeight: '1.6',
+        margin: '0 0 28px',
+      }}>
+        Votre compte est inactif.<br />
+        Impossible de vous connecter.
+      </p>
+
+      <button
+        onClick={onClose}
+        style={{
+          backgroundColor: '#fff',
+          color: '#c0392b',
+          border: 'solid 2px #c0392b',
+          borderRadius: '8px',
+          padding: '10px 28px',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+        }}
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+);
+
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  const navigate = useNavigate(); 
+  const [showInactivePopup, setShowInactivePopup] = useState(false);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const navigate = useNavigate();
 
-  try {
-    const response = await window.electron.login({ email, password });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    if (response.success) {
-      // ← Stocker l'utilisateur connecté
-      localStorage.setItem("user", JSON.stringify(response.user));
+    try {
+      const response = await window.electron.login({ email, password });
 
-      // ← Rediriger selon le rôle
-      if (response.user.type_utilisateur === "moniteur") {
-        navigate("/moniteur/dashboard");
+      if (response.success) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+
+        if (response.user.type_utilisateur === "moniteur") {
+          navigate("/moniteur/dashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      } else if (response.inactive) {
+        // Moniteur inactif → afficher le popup rouge
+        setShowInactivePopup(true);
       } else {
-        navigate("/dashboard"); // administrateur
+        alert(response.message || "Identifiants invalides");
       }
-    } else {
-      alert(response.message || "Identifiants invalides");
+    } catch (error) {
+      console.error("Erreur lors de la tentative de connexion :", error);
+      alert("Impossible de contacter la base de données.");
     }
-  } catch (error) {
-    console.error("Erreur lors de la tentative de connexion :", error);
-    alert("Impossible de contacter la base de données.");
-  }
-};
-    
+  };
+
 
   return (
     <div className="signin-page" style={{ backgroundImage: `url(${CarImage})` }}>
 
+      {/* ── Popup compte inactif ── */}
+      {showInactivePopup && (
+        <InactivePopup onClose={() => setShowInactivePopup(false)} />
+      )}
+
       {/* ── Images de fond ── */}
-      {/* Remplace les src par tes assets réels */}
       <img
         src="../../assets/Car.png"
         alt=""
