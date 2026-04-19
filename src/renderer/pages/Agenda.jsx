@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Button from "../components/Button";
@@ -23,7 +22,6 @@ const COLORS = {
   boxing:      { bg:"#ef4444", light:"rgba(239,68,68,0.18)",   border:"rgba(239,68,68,0.4)",   text:"#991b1b" },
 };
 
-// Données de fallback si l'API Electron n'est pas disponible
 const FALLBACK_SESSIONS = [
   { id:1,  name:"Sonia Benazzouz",   monitor:"Moniteur 1", type:"code",        day:0, startH:8,  dur:1, notes:"" },
   { id:2,  name:"Tinhinane Belarte", monitor:"Moniteur 2", type:"code",        day:1, startH:8,  dur:1, notes:"" },
@@ -38,26 +36,15 @@ const FALLBACK_SESSIONS = [
   { id:11, name:"Kaci Benazzouz",    monitor:"Moniteur 6", type:"boxing",      day:2, startH:14, dur:1, notes:"" },
 ];
 
-const CANDIDATES = ["Benacer Riham","Sonia Benazzouz","Wassim Benazzouz","Melissa Azil","Kaci Benazzouz","Tinhinane Belarte","Karima Alhane","Azidane Chahla"];
-const MONITORS   = ["Moniteur 1","Moniteur 2","Moniteur 3","Moniteur 4","Moniteur 5","Moniteur 6","Moniteur 7"];
-
 const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
 
 // ── HELPERS DB → calendrier ──────────────────────────────────────────────────
-/**
- * Convertit une ligne renvoyée par get-seances (format DB) en objet
- * utilisable par le calendrier.
- *
- * Format DB attendu :
- *   { idSeance, date:"2025-06-10", heure:"08:00:00", type, statut,
- *     moniteurNom, candidatsNoms, candidatsIds }
- */
-// Ajoute cette fonction en haut du fichier, avec les autres helpers
 function floatToHHMM(h) {
   const hours   = Math.floor(h);
   const minutes = Math.round((h % 1) * 60);
   return `${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}`;
 }
+
 function toLocalISO(dateVal) {
   if (!dateVal) return "";
   const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
@@ -66,12 +53,12 @@ function toLocalISO(dateVal) {
   const day   = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
 function dbRowToSession(row) {
   const rawDate   = toLocalISO(row.date);
   const dateObj   = new Date(rawDate + "T12:00:00");
   const dayOfWeek = dateObj.getDay();
 
-  // ✅ Prend heures ET minutes → 07:45 = 7.75
   const parts  = (row.heure || "08:00").split(":");
   const startH = parseInt(parts[0]) + (parseInt(parts[1] || 0) / 60);
 
@@ -91,20 +78,6 @@ function dbRowToSession(row) {
     _raw:    row,
   };
 }
-/**
- * Construit l'objet seanceData attendu par add-seance / update-seance
- * à partir du formulaire du modal.
- */
-function formToSeanceData(form) {
-  return {
-    date:        form.date,
-    heure:       form.heure,
-    type:        form.type,
-    statut:      form.statut || "planifiée",
-    moniteur_id: form.moniteur_id || null,
-    candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],
-  };
-}
 
 // ── DATE UTILS ───────────────────────────────────────────────────────────────
 function getMondayOfWeek(date) {
@@ -113,12 +86,14 @@ function getMondayOfWeek(date) {
   d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
   return d;
 }
+
 function getWeekDates(monday) {
   const sun = new Date(monday); sun.setDate(sun.getDate()-1);
   return Array.from({length:7}, (_,i) => {
     const d = new Date(sun); d.setDate(sun.getDate()+i); return d;
   });
 }
+
 function formatWeekLabel(dates) {
   const s = dates[0].toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
   const e = dates[6].toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
@@ -195,16 +170,15 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
       <div style={{ padding:"13px 15px 10px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <div>
           <div style={{ fontSize:"0.88rem", fontWeight:700, color:"#1e293b" }}>{cap(session.name)}</div>
-          
-<div style={{ fontSize:"0.68rem", color:"#94a3b8", marginTop:2 }}>
-  {(() => {
-    const endH  = session.startH + session.dur;
-    const endHH = Math.floor(endH);
-    const endMM = Math.round((endH - endHH) * 60);
-    const endStr = `${endHH}:${String(endMM).padStart(2,"0")}`;
-    return `${DAYS_SHORT[session.day]} • ${session.startH}:00 – ${endStr}`;
-  })()}
-</div>
+          <div style={{ fontSize:"0.68rem", color:"#94a3b8", marginTop:2 }}>
+            {(() => {
+              const endH  = session.startH + session.dur;
+              const endHH = Math.floor(endH);
+              const endMM = Math.round((endH - endHH) * 60);
+              const endStr = `${endHH}:${String(endMM).padStart(2,"0")}`;
+              return `${DAYS_SHORT[session.day]} • ${session.startH}:00 – ${endStr}`;
+            })()}
+          </div>
         </div>
         <button onClick={onClose} style={{ background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:16,lineHeight:1,padding:0 }}>✕</button>
       </div>
@@ -242,59 +216,48 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
 }
 
 // ── CREATE / EDIT MODAL ───────────────────────────────────────────────────────
-// Ligne des props :
 function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }) {
-  const toISO = d => d.toISOString().split("T")[0];
   const [candidats, setCandidats] = useState([]);
-const [moniteurs, setMoniteurs] = useState([]);
-useEffect(() => {
-  async function loadData() {
-    try {
-      console.log("=== loadData START ===");
-      console.log("window.electron:", window.electron);
-      
-      if (window.electron) {
-        console.log("getCandidats func:", window.electron.getCandidats);
-        console.log("getMoniteurs func:", window.electron.getMoniteurs);
-        
-        const c = await window.electron.getCandidats();
-        console.log("candidats reçus:", c);
-        
-        const m = await window.electron.getMoniteurs();
-        console.log("moniteurs reçus:", m);
-        
-        setCandidats(Array.isArray(c) ? c : []);
-        setMoniteurs(Array.isArray(m) ? m : []);
-      } else {
-        console.warn("window.electron est undefined !");
+  const [moniteurs, setMoniteurs] = useState([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        if (window.electron) {
+          const c = await window.electron.getCandidats();
+          const m = await window.electron.getMoniteurs();
+          setCandidats(Array.isArray(c) ? c : []);
+          setMoniteurs(Array.isArray(m) ? m : []);
+        }
+      } catch (err) {
+        console.error("Erreur loadData:", err);
       }
-    } catch (err) {
-      console.error("Erreur loadData:", err);
     }
-  }
-  loadData();
-}, []);
-const [form, setForm] = React.useState(editing ? {
-  candidat:    editing.name,
-  candidatId:  editing._raw?.candidatsIds
-                 ? String(editing._raw.candidatsIds.split(",")[0].trim())
-                 : "",
-  moniteur:    editing.monitor,
-  moniteur_id: editing._raw?.moniteur_id
-                 ? String(editing._raw.moniteur_id)
-                 : "",
-  type:        editing.type,
-  date:        toLocalISO(editing._raw?.date),
-  heure:       `${String(editing.startH).padStart(2,"0")}:00`,
-  statut:      editing._raw?.statut || "planifiée",
-  dur:         String(editing.dur || 1),
-  notes:       "",
-} : {
-  candidat:"", candidatId:"", moniteur:"", moniteur_id:"",
-  type:"code",
-  date: toLocalISO(new Date()),
-  heure:"08:00", statut:"planifiée", dur:"1", notes:"",
-});
+    loadData();
+  }, []);
+
+  const [form, setForm] = React.useState(editing ? {
+    candidat:    editing.name,
+    candidatId:  editing._raw?.candidatsIds
+                   ? String(editing._raw.candidatsIds.split(",")[0].trim())
+                   : "",
+    moniteur:    editing.monitor,
+    moniteur_id: editing._raw?.moniteur_id
+                   ? String(editing._raw.moniteur_id)
+                   : "",
+    type:        editing.type,
+    date:        toLocalISO(editing._raw?.date),
+    heure:       `${String(editing.startH).padStart(2,"0")}:00`,
+    statut:      editing._raw?.statut || "planifiée",
+    dur:         String(editing.dur || 1),
+    notes:       "",
+  } : {
+    candidat:"", candidatId:"", moniteur:"", moniteur_id:"",
+    type:"code",
+    date: toLocalISO(new Date()),
+    heure:"08:00", statut:"planifiée", dur:"1", notes:"",
+  });
+
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const inpS = {
@@ -306,41 +269,90 @@ const [form, setForm] = React.useState(editing ? {
   };
 
   const handleSubmit = () => {
-  if (!form.date || !form.heure || !form.type) return;
-  if (!form.candidatId || form.candidatId === "") {
-    alert("Veuillez sélectionner un candidat.");
-    return;
-  }
-  if (!form.moniteur_id || form.moniteur_id === "") {
-    alert("Veuillez sélectionner un moniteur.");
-    return;
-  }
-  onCreate({
-    id:      editing ? editing.id : Date.now(),
-    name:    form.candidat || "Nouveau Candidat",
-    monitor: form.moniteur || "Moniteur 1",
-    type:    form.type || "code",
-    day:     new Date(form.date + "T12:00:00").getDay(),
-    startH:  parseInt(form.heure.split(":")[0]),
-    dur:     parseFloat(form.dur) || 1,
-    notes:   form.statut,
-    _formData: {
-  date:        form.date,
-  heure:       form.heure,
-  type:        form.type,
-  statut:      form.statut,
-  moniteur_id: form.moniteur_id && form.moniteur_id !== ""
-                 ? parseInt(form.moniteur_id)
-                 : null,
-  candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],  // ✅ était "candidatId" avant
-    duree:       parseFloat(form.dur) || 1,
-},
-  });
-};
+    if (!form.date || !form.heure || !form.type) return;
+    if (!form.candidatId || form.candidatId === "") {
+      alert("Veuillez sélectionner un candidat.");
+      return;
+    }
+    if (!form.moniteur_id || form.moniteur_id === "") {
+      alert("Veuillez sélectionner un moniteur.");
+      return;
+    }
+    onCreate({
+      id:      editing ? editing.id : Date.now(),
+      name:    form.candidat || "Nouveau Candidat",
+      monitor: form.moniteur || "Moniteur 1",
+      type:    form.type || "code",
+      day:     new Date(form.date + "T12:00:00").getDay(),
+      startH:  parseInt(form.heure.split(":")[0]),
+      dur:     parseFloat(form.dur) || 1,
+      notes:   form.statut,
+      _formData: {
+        date:        form.date,
+        heure:       form.heure,
+        type:        form.type,
+        statut:      form.statut,
+        moniteur_id: form.moniteur_id && form.moniteur_id !== ""
+                       ? parseInt(form.moniteur_id)
+                       : null,
+        candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],
+        duree:       parseFloat(form.dur) || 1,
+      },
+    });
+  };
+
+  // Génère les options de créneaux horaires
+  const renderHeureOptions = () => {
+    const duree = parseFloat(form.dur) || 1;
+    const allSlots = [];
+    for (let h = 7; h < 19; h++) {
+      allSlots.push(h);
+      allSlots.push(h + 0.25);
+      allSlots.push(h + 0.5);
+      allSlots.push(h + 0.75);
+    }
+
+    const occupiedIntervals = (sessions || [])
+      .filter(s => {
+        const sDate = toLocalISO(s._raw?.date);
+        const isOther = editing ? s.id !== editing.id : true;
+        return sDate === form.date && isOther;
+      })
+      .map(s => ({ start: s.startH, end: s.startH + s.dur }));
+
+    const formatSlot = slot => {
+      const h = Math.floor(slot);
+      const m = Math.round((slot % 1) * 60);
+      return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+    };
+
+    return allSlots.map(slot => {
+      const slotEnd = slot + duree;
+      if (slotEnd > 19) return null;
+
+      const minutes = Math.round((slot % 1) * 60);
+      const isValid = duree === 0.75
+        ? [0, 15, 30, 45].includes(minutes)
+        : [0, 30].includes(minutes);
+      if (!isValid) return null;
+
+      const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
+      const startStr = formatSlot(slot);
+      const endStr   = formatSlot(slotEnd);
+      return (
+        <option key={slot} value={startStr} disabled={!!conflict}
+          style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
+          {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
+        </option>
+      );
+    });
+  };
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(15,23,42,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center" }}
-      onClick={e => e.target===e.currentTarget && onClose()}>
+    <div
+      style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(15,23,42,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center" }}
+      onClick={e => e.target===e.currentTarget && onClose()}
+    >
       <div style={{ background:"#fff", borderRadius:16, width:520, maxWidth:"96vw", maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 25px 60px rgba(0,0,0,0.2)", overflow:"hidden", fontFamily:"'Poppins',sans-serif", position:"relative" }}>
 
         {saving && <LoadingOverlay />}
@@ -356,54 +368,55 @@ const [form, setForm] = React.useState(editing ? {
 
         {/* Body */}
         <div style={{ padding:"18px 24px", overflowY:"auto", display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* Ligne 1 : Candidat | Moniteur */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            {/* Candidat */}
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Candidat <span style={{ color:"#ef4444" }}>*</span></label>
               <select
-  style={inpS}
-  value={form.candidatId}
-  onChange={e => {
-    const selected = candidats.find(c => c.idCandidat == e.target.value);
-    set("candidatId", e.target.value);
-    set("candidat", selected ? `${selected.nom} ${selected.prenom}` : "");
-  }}
->
-  <option value="">Sélectionner candidat...</option>
-  {candidats.map(c => (
-    <option key={c.idCandidat} value={c.idCandidat}>
-      {c.nom} {c.prenom}
-    </option>
-  ))}
-</select>
+                style={inpS}
+                value={form.candidatId}
+                onChange={e => {
+                  const selected = candidats.find(c => c.idCandidat == e.target.value);
+                  set("candidatId", e.target.value);
+                  set("candidat", selected ? `${selected.nom} ${selected.prenom}` : "");
+                }}
+              >
+                <option value="">Sélectionner candidat...</option>
+                {candidats.map(c => (
+                  <option key={c.idCandidat} value={c.idCandidat}>
+                    {c.nom} {c.prenom}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Moniteur */}
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Moniteur <span style={{ color:"#ef4444" }}>*</span></label>
               <select
-  style={inpS}
-  value={form.moniteur_id}
-  onChange={e => {
-    const selected = moniteurs.find(m => m.id == e.target.value);
-    set("moniteur_id", e.target.value);
-    set("moniteur", selected ? `${selected.nom} ${selected.prenom}` : "");
-  }}
->
-  <option value="">Sélectionner moniteur...</option>
-  {moniteurs.map(m => (
-    <option key={m.id} value={m.id}>
-      {m.nom} {m.prenom}
-    </option>
-  ))}
-</select>
+                style={inpS}
+                value={form.moniteur_id}
+                onChange={e => {
+                  const selected = moniteurs.find(m => m.id == e.target.value);
+                  set("moniteur_id", e.target.value);
+                  set("moniteur", selected ? `${selected.nom} ${selected.prenom}` : "");
+                }}
+              >
+                <option value="">Sélectionner moniteur...</option>
+                {moniteurs.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.nom} {m.prenom}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
+          {/* Ligne 2 : Type | Date */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Type <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.type} onChange={e=>set("type",e.target.value)}>
+              <select style={inpS} value={form.type} onChange={e => set("type", e.target.value)}>
                 <option value="code">Code</option>
                 <option value="circulation">Circulation</option>
                 <option value="creneau">Créneau</option>
@@ -412,92 +425,49 @@ const [form, setForm] = React.useState(editing ? {
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Date <span style={{ color:"#ef4444" }}>*</span></label>
-              <input style={inpS} type="date" value={form.date} onChange={e=>set("date",e.target.value)} />
+              <input style={inpS} type="date" value={form.date} onChange={e => set("date", e.target.value)} />
             </div>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-  <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
-  <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
-    <option value="">Choisir un créneau...</option>
-    {(() => {
-      const duree = parseFloat(form.dur) || 1;
-      // Tous les slots de 30min entre 7h et 18h30
-      const allSlots = [];
-        for (let h = 7; h < 19; h++) {
-          allSlots.push(h);
-          allSlots.push(h + 0.25);
-          allSlots.push(h + 0.5);
-          allSlots.push(h + 0.75);
-        }
+          {/* Ligne 3 : Durée | Heure */}
+<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Durée <span style={{ color:"#ef4444" }}>*</span></label>
+    <select style={inpS} value={form.dur} onChange={e => set("dur", e.target.value)}>
+      <option value="0.5">30 min</option>
+      <option value="0.75">45 min</option>
+      <option value="1">1h</option>
+      <option value="1.5">1h30</option>
+      <option value="2">2h</option>
+      <option value="3">3h</option>
+    </select>
+  </div>
 
-      // Intervalles occupés ce jour-là
-      const occupiedIntervals = (sessions || [])
-        .filter(s => {
-          const sDate = toLocalISO(s._raw?.date);
-          const isOther = editing ? s.id !== editing.id : true;
-          return sDate === form.date && isOther;
-        })
-        .map(s => ({ start: s.startH, end: s.startH + s.dur }));
-
-      const formatSlot = slot => {
-            const h = Math.floor(slot);
-            const m = Math.round((slot % 1) * 60);
-            return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
-          };
-
-      return allSlots.map(slot => {
-          const slotEnd = slot + duree;
-          if (slotEnd > 19) return null;
-
-          // Filtre les slots selon la durée choisie
-          const minutes = Math.round((slot % 1) * 60);
-          const isValid = duree === 0.75
-            ? [0, 15, 30, 45].includes(minutes)  // 45min → quarts d'heure
-            : [0, 30].includes(minutes);          // autres → demi-heures
-          if (!isValid) return null;
-
-          const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
-          const startStr = formatSlot(slot);
-          const endStr   = formatSlot(slotEnd);
-          return (
-            <option key={slot} value={startStr} disabled={!!conflict}
-              style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
-              {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
-            </option>
-          );
-        });
-    })()}
-  </select>
+  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
+    <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
+      <option value="">Choisir un créneau...</option>
+      {renderHeureOptions()}
+    </select>
+  </div>
 </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
-              <select style={inpS} value={form.statut} onChange={e=>set("statut",e.target.value)}>
-                <option value="planifiée">Planifiée</option>
-                <option value="confirmée">Confirmée</option>
-                <option value="annulée">Annulée</option>
-              </select>
-            </div>
-          </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Durée <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.dur} onChange={e => set("dur", e.target.value)}>
-  <option value="0.5">30 min</option>
-  <option value="0.75">45 min</option>
-  <option value="1">1h</option>
-  <option value="1.5">1h30</option>
-  <option value="2">2h</option>
-  <option value="3">3h</option>
-</select>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Notes</label>
-              <input style={inpS} type="text" placeholder="Notes rapides..." value={form.notes} onChange={e=>set("notes",e.target.value)} />
-            </div>
-          </div>
+{/* Ligne 4 : Statut | Notes */}
+<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
+    <select style={inpS} value={form.statut} onChange={e => set("statut", e.target.value)}>
+      <option value="planifiée">Planifiée</option>
+      <option value="confirmée">Confirmée</option>
+      <option value="annulée">Annulée</option>
+    </select>
+  </div>
+
+  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Notes</label>
+    <input style={inpS} type="text" placeholder="Notes rapides..." value={form.notes} onChange={e => set("notes", e.target.value)} />
+  </div>
+</div>
         </div>
 
         {/* Footer */}
@@ -585,13 +555,13 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
               })}
 
               {daySessions.map(s => {
-                  const firstHour = HOURS[0];
-                  const topPx = (s.startH - firstHour) * CELL_H;
-                  if (s.startH < firstHour || s.startH >= firstHour + HOURS.length) return null;
-                  const col = COLORS[s.type] || COLORS.code;
-                  const isDragging = dragging === s.id;
-                  return (
-                    <div key={s.id}
+                const firstHour = HOURS[0];
+                const topPx = (s.startH - firstHour) * CELL_H;
+                if (s.startH < firstHour || s.startH >= firstHour + HOURS.length) return null;
+                const col = COLORS[s.type] || COLORS.code;
+                const isDragging = dragging === s.id;
+                return (
+                  <div key={s.id}
                     draggable
                     onDragStart={e => handleDragStart(e, s)}
                     onDragEnd={handleDragEnd}
@@ -632,7 +602,7 @@ export default function AgendaPage() {
   const [sessions,   setSessions]   = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
-  const [toast,      setToast]      = useState(null); // { message, type }
+  const [toast,      setToast]      = useState(null);
 
   const [weekBase,   setWeekBase]   = useState(() => getMondayOfWeek(new Date()));
   const [showModal,  setShowModal]  = useState(false);
@@ -648,35 +618,29 @@ export default function AgendaPage() {
   const today = new Date(); today.setHours(0,0,0,0);
   const todayIdx = weekDates.findIndex(d => { const c=new Date(d); c.setHours(0,0,0,0); return c.getTime()===today.getTime(); });
 
-  // ── Electron API helper (graceful fallback) ──────────────────────────────
   const api = window.electron || null;
-
   const showToast = (message, type = "success") => setToast({ message, type });
 
-  // ── CHARGEMENT INITIAL DES SÉANCES ──────────────────────────────────────
+  // ── CHARGEMENT INITIAL ───────────────────────────────────────────────────
   useEffect(() => {
     loadSeances();
   }, []);
 
- async function loadSeances() {
-  setLoading(true);
-  try {
-    if (api?.getSeances) {
-      const rows = await api.getSeances();
-      console.log("=== rows bruts DB ===", rows);
-      
-      if (Array.isArray(rows) && rows.length > 0) {
-        const mapped = rows.map(dbRowToSession);
-        console.log("=== sessions mappées ===", mapped);
-        setSessions(mapped);
+  async function loadSeances() {
+    setLoading(true);
+    try {
+      if (api?.getSeances) {
+        const rows = await api.getSeances();
+        if (Array.isArray(rows) && rows.length > 0) {
+          setSessions(rows.map(dbRowToSession));
+        }
       }
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  } catch(err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
   }
-}
 
   // ── NAVIGATION ───────────────────────────────────────────────────────────
   const prevWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()-7); return n; });
@@ -687,124 +651,113 @@ export default function AgendaPage() {
   const hasFilters = search || filterType || filterMon;
   const resetFilters = () => { setSearch(""); setFilterType(""); setFilterMon(""); };
 
-  // Dans AgendaPage, remplace `filtered` par :
-const filtered = sessions.filter(s => {
-  // Filtre semaine courante
-  const sessionDate = s._raw?.date instanceof Date
-    ? s._raw.date
-    : new Date(String(s._raw?.date).split("T")[0] + "T12:00:00");
-  
-  const weekStart = weekDates[0];
-  const weekEnd   = weekDates[6];
-  const inWeek    = sessionDate >= weekStart && sessionDate <= weekEnd;
+  const filtered = sessions.filter(s => {
+    const sessionDate = s._raw?.date instanceof Date
+      ? s._raw.date
+      : new Date(String(s._raw?.date).split("T")[0] + "T12:00:00");
 
-  return inWeek &&
-    (!search     || s.name.toLowerCase().includes(search.toLowerCase()) || s.monitor.toLowerCase().includes(search.toLowerCase())) &&
-    (!filterType || s.type    === filterType) &&
-    (!filterMon  || s.monitor === filterMon);
-});
+    const weekStart = weekDates[0];
+    const weekEnd   = weekDates[6];
+    const inWeek    = sessionDate >= weekStart && sessionDate <= weekEnd;
 
-  // ── DRAG & DROP (déplacement local uniquement) ──────────────────────────
+    return inWeek &&
+      (!search     || s.name.toLowerCase().includes(search.toLowerCase()) || s.monitor.toLowerCase().includes(search.toLowerCase())) &&
+      (!filterType || s.type    === filterType) &&
+      (!filterMon  || s.monitor === filterMon);
+  });
+
+  // ── DRAG & DROP ──────────────────────────────────────────────────────────
   const handleDrop = useCallback(async (id, day, hour) => {
-  const session = sessions.find(s => s.id === id);
-  if (!session) return;
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
 
-  setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
+    setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
 
-  const newDate  = toLocalISO(weekDates[day]);
-const newHeure = floatToHHMM(hour);
-  if (api?.updateSeance) {
-    try {
-      await api.updateSeance({
-        id:          session.id,
-        date:        newDate,
-        heure:       newHeure,
-        type:        session.type,
-        statut:      session._raw?.statut || "planifiée",
-        moniteur_id: session._raw?.moniteur_id,
-        duree:       session.dur,
-      });
-      await loadSeances();
-      showToast("Séance déplacée avec succès.");
-    } catch (err) {
-      console.error("handleDrop error:", err);
-      showToast("Erreur lors du déplacement.", "error");
-      await loadSeances();
+    const newDate  = toLocalISO(weekDates[day]);
+    const newHeure = floatToHHMM(hour);
+    if (api?.updateSeance) {
+      try {
+        await api.updateSeance({
+          id:          session.id,
+          date:        newDate,
+          heure:       newHeure,
+          type:        session.type,
+          statut:      session._raw?.statut || "planifiée",
+          moniteur_id: session._raw?.moniteur_id,
+          duree:       session.dur,
+        });
+        await loadSeances();
+        showToast("Séance déplacée avec succès.");
+      } catch (err) {
+        console.error("handleDrop error:", err);
+        showToast("Erreur lors du déplacement.", "error");
+        await loadSeances();
+      }
     }
-  }
-}, [sessions, weekDates, api]);
+  }, [sessions, weekDates, api]);
 
   // ── SUPPRESSION ──────────────────────────────────────────────────────────
- const handleDelete = async (id) => {
-  setSessions(p => p.filter(s => s.id !== id));
-  if (api?.deleteSeance) {
-    try {
-      await api.deleteSeance(id);
-      showToast("Séance supprimée.", "success");
-    } catch (err) {
-      showToast("Erreur lors de la suppression.", "error");
+  const handleDelete = async (id) => {
+    setSessions(p => p.filter(s => s.id !== id));
+    if (api?.deleteSeance) {
+      try {
+        await api.deleteSeance(id);
+        showToast("Séance supprimée.", "success");
+      } catch (err) {
+        showToast("Erreur lors de la suppression.", "error");
+      }
+    } else {
+      showToast("Séance supprimée (mode démo).", "info");
     }
-  } else {
-    showToast("Séance supprimée (mode démo).", "info");
-  }
-};
+  };
 
   // ── CRÉATION / MODIFICATION ──────────────────────────────────────────────
-  /**
-   * `sessionObj` contient à la fois les champs calendrier (name, monitor, type,
-   * day, startH, dur, notes) et `_formData` (date, heure, type, statut,
-   * moniteur_id, candidatId) pour l'IPC.
-   */
   const handleSave = async (sessionObj) => {
-  setSaving(true);
-  try {
-    const { _formData, ...calendarFields } = sessionObj;
+    setSaving(true);
+    try {
+      const { _formData, ...calendarFields } = sessionObj;
 
-    if (api?.updateSeance && editing) {
-      // MODIFICATION
-      await api.updateSeance({
-        id:          editing.id,
-        date:        _formData.date,
-        heure:       _formData.heure,
-        type:        _formData.type,
-        statut:      _formData.statut,
-        moniteur_id: _formData.moniteur_id,
-        duree:       _formData.duree,
-        candidatId:  _formData.candidatIds?.[0] || null,
-      });
-      // Recharge depuis la DB pour avoir les données propres
-      await loadSeances();
-      showToast("Séance modifiée avec succès.");
-
-    } else if (api?.addSeance && !editing) {
-      // CRÉATION
-      const result = await api.addSeance(_formData);
-      if (result?.success) {
+      if (api?.updateSeance && editing) {
+        await api.updateSeance({
+          id:          editing.id,
+          date:        _formData.date,
+          heure:       _formData.heure,
+          type:        _formData.type,
+          statut:      _formData.statut,
+          moniteur_id: _formData.moniteur_id,
+          duree:       _formData.duree,
+          candidatId:  _formData.candidatIds?.[0] || null,
+        });
         await loadSeances();
-        showToast("Séance créée avec succès.");
+        showToast("Séance modifiée avec succès.");
+
+      } else if (api?.addSeance && !editing) {
+        const result = await api.addSeance(_formData);
+        if (result?.success) {
+          await loadSeances();
+          showToast("Séance créée avec succès.");
+        } else {
+          throw new Error(result?.message || "Erreur lors de la création.");
+        }
+
       } else {
-        throw new Error(result?.message || "Erreur lors de la création.");
+        if (editing) {
+          setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
+        } else {
+          setSessions(p => [...p, { ...calendarFields, id: Date.now() }]);
+        }
+        showToast(editing ? "Séance modifiée (mode démo)." : "Séance créée (mode démo).", "info");
       }
 
-    } else {
-      // MODE DÉMO sans Electron
-      if (editing) {
-        setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
-      } else {
-        setSessions(p => [...p, { ...calendarFields, id: Date.now() }]);
-      }
-      showToast(editing ? "Séance modifiée (mode démo)." : "Séance créée (mode démo).", "info");
+    } catch (err) {
+      console.error("handleSave error:", err);
+      showToast(err.message || "Une erreur est survenue.", "error");
+    } finally {
+      setSaving(false);
+      setShowModal(false);
+      setEditing(null);
     }
-
-  } catch (err) {
-    console.error("handleSave error:", err);
-    showToast(err.message || "Une erreur est survenue.", "error");
-  } finally {
-    setSaving(false);
-    setShowModal(false);
-    setEditing(null);
-  }
-};
+  };
 
   const monitors = [...new Set(sessions.map(s=>s.monitor))].sort();
 
@@ -889,7 +842,6 @@ const newHeure = floatToHHMM(hour);
             <button onClick={goToday} style={{ padding:"7px 14px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#3b82f6", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", fontWeight:600, cursor:"pointer" }}>
               Aujourd'hui
             </button>
-            {/* Bouton rafraîchir */}
             <button onClick={loadSeances} disabled={loading} title="Rafraîchir"
               style={{ width:30, height:30, borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#64748b", cursor: loading ? "not-allowed" : "pointer", display:"grid", placeItems:"center", opacity: loading ? 0.5 : 1 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -964,7 +916,6 @@ const newHeure = floatToHHMM(hour);
               {cap(type)}
             </div>
           ))}
-          {/* Indicateur mode connexion */}
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, fontSize:"0.7rem", color:"#94a3b8" }}>
             <div style={{ width:7, height:7, borderRadius:"50%", background: window.electronAPI ? "#22c55e" : "#f59e0b" }} />
             {window.electron ? "Connecté à la base de données" : "Mode démo (hors connexion)"}
@@ -989,7 +940,7 @@ const newHeure = floatToHHMM(hour);
           weekDates={weekDates}
           editing={editing}
           saving={saving}
-          sessions={sessions} 
+          sessions={sessions}
         />
       )}
       {toast && (

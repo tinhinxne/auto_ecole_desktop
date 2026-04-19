@@ -65,7 +65,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  //createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -96,7 +96,11 @@ ipcMain.handle("login", async (event, credentials) => {
 // 2. CANDIDATS
 ipcMain.handle("get-candidats", async () => {
   return new Promise((resolve) => {
-    const sql = `SELECT * FROM Candidat ORDER BY idCandidat DESC`;
+    const sql = `
+      SELECT c.*, p.montantTotal, p.montantRestant, p.statutPaiement 
+      FROM Candidat c
+      LEFT JOIN Paiement p ON c.idCandidat = p.idCandidat
+      ORDER BY c.idCandidat DESC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
       else resolve(res);

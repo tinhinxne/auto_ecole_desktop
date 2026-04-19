@@ -4,6 +4,44 @@ import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import "../../styles/payment.css";
 
+
+/**
+ * Transforme une ligne retournée par get-payments (JOIN Versement+Paiement+Candidat)
+ * en objet compatible avec le tableau et le modal.
+ */
+function rowToPayment(row) {
+  const montantPaye = (row.montantTotal || 0) - (row.montantRestant || 0);
+
+  let formattedDate = '';
+  if (row.dateVersement) {
+    const d = new Date(row.dateVersement);
+    // This ensures we get 2026-03-08 regardless of the input type
+    formattedDate = d.toISOString().split('T')[0];
+  }
+
+  return {
+    idVersement: row.idVersement,
+    idPaiement:  row.idPaiement,
+    idCandidat:  row.idCandidat,
+    name:   (row.name || '').trim(), // .trim() is crucial here
+    date:   formattedDate,
+    amount: `${Number(row.montant).toLocaleString('fr-DZ')} DA`,
+    type:   row.typePaiement === 'complet' ? 'Complet' : 'Par tranche',
+    method: methodeLabel(row.methode),
+    total:  row.montantTotal,
+    paid:   montantPaye,
+    statutPaiement: row.statutPaiement,
+    history: [],
+  };
+}
+
+function methodeLabel(methode) {
+  const map = { ccp: 'CCP', carte: 'Carte', especes: 'Espèces' };
+  return map[methode] ?? methode;
+}
+
+// ─── Composant ───────────────────────────────────────────────────────────────
+
 const Payments = () => {
   const [selected, setSelected] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -75,12 +113,25 @@ const Payments = () => {
     return matchesSearch && matchesDate;
   });
 
-  const th = { padding: "15px 16px", textAlign: "left", color: "#fff", fontWeight: "600", fontSize: "14px" };
-  const td = { padding: "14px 16px", borderBottom: "1px solid #E5E7EB", fontSize: "14px", color: "#1F2937" };
 
+
+
+  // ── Styles inline réutilisables ───────────────────────────────
+  const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
+  const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
+
+  // ── Stats dérivées du state (remplace les valeurs codées en dur) ─
+  const totalRevenu = paymentsData.reduce((acc, p) => acc + (p.montant || 0), 0);
+const totalPrevision = paymentsData.reduce((acc, p) => acc + (p.montantRestant || 0), 0);
+const tauxRecouvrement = paymentsData.length
+  ? Math.round((paymentsData.filter((p) => p.statutPaiement === 'solde').length / paymentsData.length) * 100)
+  : 0;
+
+  // ─────────────────────────────────────────────────────────────
   return (
     <div className="container">
       <div className="main">
+
         {/* HEADER */}
         <div className="header">
           <img src={ConnexionImg} alt="illustration" className="header-img" />
@@ -188,7 +239,7 @@ const Payments = () => {
                           {item.montantRestant} DA
                         </span>
                       </td>
-                      <td style={td} style={{ textTransform: "capitalize" }}>{item.methode}</td>
+                      <td style={{td, textTransform: "capitalize" }}>{item.methode}</td>
                       <td style={td}>
                         <button 
                           onClick={() => { setSelected(item); setShowModal(true); }} 
