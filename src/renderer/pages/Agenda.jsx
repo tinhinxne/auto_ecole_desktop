@@ -6,39 +6,15 @@ import Button from "../components/Button";
 const HOURS      = [7,8,9,10,11,12,13,14,15,16,17,18];
 const DAYS_SHORT = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 const CELL_H = 72;
-const DUREE_OPTIONS = [
-  { value: "0.5",  label: "30 min" },
-  { value: "0.75", label: "45 min" },
-  { value: "1",    label: "1h" },
-  { value: "1.5",  label: "1h30" },
-  { value: "2",    label: "2h" },
-  { value: "3",    label: "3h" },
-];
 
 const COLORS = {
   code:        { bg:"#3b82f6", light:"rgba(59,130,246,0.18)",  border:"rgba(59,130,246,0.4)",  text:"#1d4ed8" },
   creneau:     { bg:"#f59e0b", light:"rgba(245,158,11,0.18)",  border:"rgba(245,158,11,0.4)",  text:"#92400e" },
   circulation: { bg:"#10b981", light:"rgba(16,185,129,0.18)",  border:"rgba(16,185,129,0.4)",  text:"#065f46" },
-  boxing:      { bg:"#ef4444", light:"rgba(239,68,68,0.18)",   border:"rgba(239,68,68,0.4)",   text:"#991b1b" },
 };
-
-const FALLBACK_SESSIONS = [
-  { id:1,  name:"Sonia Benazzouz",   monitor:"Moniteur 1", type:"code",        day:0, startH:8,  dur:1, notes:"" },
-  { id:2,  name:"Tinhinane Belarte", monitor:"Moniteur 2", type:"code",        day:1, startH:8,  dur:1, notes:"" },
-  { id:3,  name:"Karima Alhane",     monitor:"Moniteur 3", type:"creneau",     day:2, startH:8,  dur:1, notes:"" },
-  { id:4,  name:"Melissa Azil",      monitor:"Moniteur 4", type:"code",        day:3, startH:8,  dur:1, notes:"" },
-  { id:5,  name:"Wassim Benazzouz",  monitor:"Moniteur 5", type:"code",        day:1, startH:9,  dur:1, notes:"" },
-  { id:6,  name:"Azidane Chahla",    monitor:"Moniteur 7", type:"circulation", day:4, startH:9,  dur:1, notes:"" },
-  { id:7,  name:"Bssad Omar",        monitor:"Moniteur 3", type:"code",        day:5, startH:9,  dur:1, notes:"" },
-  { id:8,  name:"Cherdi Feriel",     monitor:"Moniteur 5", type:"code",        day:0, startH:10, dur:1, notes:"" },
-  { id:9,  name:"Benacer Riham",     monitor:"Moniteur 7", type:"circulation", day:4, startH:10, dur:1, notes:"" },
-  { id:10, name:"Kaci Benazzouz",    monitor:"Moniteur 2", type:"creneau",     day:5, startH:10, dur:1, notes:"" },
-  { id:11, name:"Kaci Benazzouz",    monitor:"Moniteur 6", type:"boxing",      day:2, startH:14, dur:1, notes:"" },
-];
 
 const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
 
-// ── HELPERS DB → calendrier ──────────────────────────────────────────────────
 function floatToHHMM(h) {
   const hours   = Math.floor(h);
   const minutes = Math.round((h % 1) * 60);
@@ -58,14 +34,11 @@ function dbRowToSession(row) {
   const rawDate   = toLocalISO(row.date);
   const dateObj   = new Date(rawDate + "T12:00:00");
   const dayOfWeek = dateObj.getDay();
-
   const parts  = (row.heure || "08:00").split(":");
   const startH = parseInt(parts[0]) + (parseInt(parts[1] || 0) / 60);
-
   const firstName = row.candidatsNoms
     ? row.candidatsNoms.split(", ")[0].trim()
     : "—";
-
   return {
     id:      row.idSeance,
     name:    firstName,
@@ -79,7 +52,6 @@ function dbRowToSession(row) {
   };
 }
 
-// ── DATE UTILS ───────────────────────────────────────────────────────────────
 function getMondayOfWeek(date) {
   const d = new Date(date); d.setHours(0,0,0,0);
   const day = d.getDay();
@@ -108,7 +80,6 @@ function Toast({ message, type, onDone }) {
     const t = setTimeout(onDone, 3000);
     return () => clearTimeout(t);
   }, [onDone]);
-
   const bg = type === "success" ? "#22c55e" : type === "error" ? "#ef4444" : "#3b82f6";
   return (
     <div style={{
@@ -125,18 +96,16 @@ function Toast({ message, type, onDone }) {
   );
 }
 
-// ── LOADING SPINNER ───────────────────────────────────────────────────────────
 function LoadingOverlay() {
   return (
     <div style={{
       position:"absolute", inset:0, zIndex:50,
-      background:"rgba(248,250,252,0.75)", backdropFilter:"blur(2px)",
+      background:"rgba(248,250,252,0.75)",
       display:"flex", alignItems:"center", justifyContent:"center",
     }}>
       <div style={{
         width:36, height:36, borderRadius:"50%",
-        border:"3px solid #e2e8f0",
-        borderTop:"3px solid #2563eb",
+        border:"3px solid #e2e8f0", borderTop:"3px solid #2563eb",
         animation:"spin 0.75s linear infinite",
       }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -144,7 +113,167 @@ function LoadingOverlay() {
   );
 }
 
-// ── POPUP ─────────────────────────────────────────────────────────────────────
+// ── MODALE GROUPE DE SÉANCES (même créneau) ───────────────────────────────────
+function GroupModal({ sessions, onClose, onDelete, onEdit }) {
+  if (!sessions || sessions.length === 0) return null;
+  const first = sessions[0];
+  const endH  = first.startH + first.dur;
+
+  return (
+    <div
+      style={{
+        position:"fixed", inset:0, zIndex:400,
+        background:"rgba(15,23,42,0.55)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Poppins',sans-serif",
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background:"#fff", borderRadius:18,
+        width:640, maxWidth:"95vw",
+        maxHeight:"82vh", display:"flex", flexDirection:"column",
+        boxShadow:"0 30px 80px rgba(0,0,0,0.2)", overflow:"hidden",
+      }}>
+
+        {/* Header */}
+        <div style={{
+          padding:"20px 26px 16px",
+          background:"#f8fafc",
+          borderBottom:"1px solid #e2e8f0",
+          display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+          flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ fontSize:"1rem", fontWeight:700, color:"#1e293b" }}>
+              Séances du {DAYS_SHORT[first.day]} — {floatToHHMM(first.startH)} → {floatToHHMM(endH)}
+            </div>
+            <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>
+              {sessions.length} séance{sessions.length > 1 ? "s" : ""} sur ce créneau
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background:"#f1f5f9", border:"none", color:"#64748b",
+              width:32, height:32, borderRadius:8, cursor:"pointer",
+              fontSize:14, display:"grid", placeItems:"center",
+            }}
+          >✕</button>
+        </div>
+
+        {/* Liste des séances */}
+        <div style={{ overflowY:"auto", padding:"16px 24px", display:"flex", flexDirection:"column", gap:12 }}>
+          {sessions.map((s) => {
+            const col = COLORS[s.type] || COLORS.code;
+            const sEnd = s.startH + s.dur;
+            return (
+              <div key={s.id} style={{
+                border:`1px solid ${col.border}`,
+                borderLeft:`4px solid ${col.bg}`,
+                borderRadius:12,
+                padding:"14px 16px",
+                background: col.light,
+                display:"flex", alignItems:"center", gap:16,
+              }}>
+
+                {/* Icône type */}
+                <div style={{
+                  width:42, height:42, borderRadius:10,
+                  background:"white",
+                  border:`1px solid ${col.border}`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  flexShrink:0,
+                }}>
+                  <div style={{ width:14, height:14, borderRadius:3, background:col.bg }} />
+                </div>
+
+                {/* Infos */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{
+                      fontSize:"0.88rem", fontWeight:700, color:"#1e293b",
+                      whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
+                    }}>
+                      {cap(s.name)}
+                    </span>
+                    <span style={{
+                      fontSize:"0.68rem", fontWeight:600,
+                      padding:"2px 9px", borderRadius:20,
+                      background:"white", color:col.text,
+                      border:`1px solid ${col.border}`,
+                      textTransform:"capitalize", flexShrink:0,
+                    }}>
+                      {s.type}
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", gap:16, fontSize:"0.75rem", color:"#64748b" }}>
+                    <span>👤 <strong style={{ color:"#334155" }}>{s.monitor}</strong></span>
+                    <span>🕐 {floatToHHMM(s.startH)} – {floatToHHMM(sEnd)}</span>
+                    {s.notes && <span>📋 {s.notes}</span>}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                  <button
+                    onClick={() => { onEdit(s); onClose(); }}
+                    style={{
+                      padding:"7px 14px", borderRadius:8,
+                      background:"rgba(59,130,246,0.08)",
+                      border:"1px solid rgba(59,130,246,0.25)",
+                      color:"#3b82f6",
+                      fontFamily:"'Poppins',sans-serif",
+                      fontSize:"0.75rem", fontWeight:600, cursor:"pointer",
+                    }}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => onDelete(s.id)}
+                    style={{
+                      padding:"7px 14px", borderRadius:8,
+                      background:"rgba(239,68,68,0.08)",
+                      border:"1px solid rgba(239,68,68,0.25)",
+                      color:"#ef4444",
+                      fontFamily:"'Poppins',sans-serif",
+                      fontSize:"0.75rem", fontWeight:600, cursor:"pointer",
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding:"14px 24px",
+          borderTop:"1px solid #e2e8f0",
+          background:"#f8fafc",
+          display:"flex", justifyContent:"flex-end",
+          flexShrink:0,
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding:"9px 22px", borderRadius:8,
+              background:"#1e293b", border:"none",
+              color:"white", fontFamily:"'Poppins',sans-serif",
+              fontSize:"0.85rem", fontWeight:600, cursor:"pointer",
+            }}
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── POPUP simple (1 seule séance) ─────────────────────────────────────────────
 function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
   const ref = useRef();
   useEffect(() => {
@@ -166,24 +295,18 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
       boxShadow:"0 20px 60px rgba(0,0,0,0.15)", overflow:"hidden",
       fontFamily:"'Poppins',sans-serif",
     }}>
-      {/* Header */}
       <div style={{ padding:"13px 15px 10px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <div>
           <div style={{ fontSize:"0.88rem", fontWeight:700, color:"#1e293b" }}>{cap(session.name)}</div>
           <div style={{ fontSize:"0.68rem", color:"#94a3b8", marginTop:2 }}>
             {(() => {
-              const endH  = session.startH + session.dur;
-              const endHH = Math.floor(endH);
-              const endMM = Math.round((endH - endHH) * 60);
-              const endStr = `${endHH}:${String(endMM).padStart(2,"0")}`;
-              return `${DAYS_SHORT[session.day]} • ${session.startH}:00 – ${endStr}`;
+              const endH = session.startH + session.dur;
+              return `${DAYS_SHORT[session.day]} • ${floatToHHMM(session.startH)} – ${floatToHHMM(endH)}`;
             })()}
           </div>
         </div>
         <button onClick={onClose} style={{ background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:16,lineHeight:1,padding:0 }}>✕</button>
       </div>
-
-      {/* Body */}
       <div style={{ padding:"12px 15px", display:"flex", flexDirection:"column", gap:10 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", fontSize:"0.78rem" }}>
           <span style={{ color:"#64748b" }}>Type :</span>
@@ -201,8 +324,6 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
           <div style={{ fontSize:"0.73rem", color:"#64748b", background:"#f8fafc", padding:"6px 9px", borderRadius:7, marginTop:2 }}>{session.notes}</div>
         )}
       </div>
-
-      {/* Footer */}
       <div style={{ display:"flex", gap:8, padding:"10px 13px", borderTop:"1px solid #e2e8f0", background:"#f8fafc" }}>
         <button onClick={() => { onDelete(session.id); onClose(); }} style={{ flex:1, padding:"7px", borderRadius:8, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.25)", color:"#ef4444", fontFamily:"'Poppins',sans-serif", fontSize:"0.75rem", fontWeight:600, cursor:"pointer" }}>
           Supprimer
@@ -229,32 +350,25 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           setCandidats(Array.isArray(c) ? c : []);
           setMoniteurs(Array.isArray(m) ? m : []);
         }
-      } catch (err) {
-        console.error("Erreur loadData:", err);
-      }
+      } catch (err) { console.error("Erreur loadData:", err); }
     }
     loadData();
   }, []);
 
   const [form, setForm] = React.useState(editing ? {
     candidat:    editing.name,
-    candidatId:  editing._raw?.candidatsIds
-                   ? String(editing._raw.candidatsIds.split(",")[0].trim())
-                   : "",
+    candidatId:  editing._raw?.candidatsIds ? String(editing._raw.candidatsIds.split(",")[0].trim()) : "",
     moniteur:    editing.monitor,
-    moniteur_id: editing._raw?.moniteur_id
-                   ? String(editing._raw.moniteur_id)
-                   : "",
+    moniteur_id: editing._raw?.moniteur_id ? String(editing._raw.moniteur_id) : "",
     type:        editing.type,
     date:        toLocalISO(editing._raw?.date),
-    heure:       `${String(editing.startH).padStart(2,"0")}:00`,
+    heure:       floatToHHMM(editing.startH),
     statut:      editing._raw?.statut || "planifiée",
     dur:         String(editing.dur || 1),
     notes:       "",
   } : {
     candidat:"", candidatId:"", moniteur:"", moniteur_id:"",
-    type:"code",
-    date: toLocalISO(new Date()),
+    type:"code", date: toLocalISO(new Date()),
     heure:"08:00", statut:"planifiée", dur:"1", notes:"",
   });
 
@@ -270,21 +384,15 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   const handleSubmit = () => {
     if (!form.date || !form.heure || !form.type) return;
-    if (!form.candidatId || form.candidatId === "") {
-      alert("Veuillez sélectionner un candidat.");
-      return;
-    }
-    if (!form.moniteur_id || form.moniteur_id === "") {
-      alert("Veuillez sélectionner un moniteur.");
-      return;
-    }
+    if (!form.candidatId) { alert("Veuillez sélectionner un candidat."); return; }
+    if (!form.moniteur_id) { alert("Veuillez sélectionner un moniteur."); return; }
     onCreate({
       id:      editing ? editing.id : Date.now(),
       name:    form.candidat || "Nouveau Candidat",
       monitor: form.moniteur || "Moniteur 1",
       type:    form.type || "code",
       day:     new Date(form.date + "T12:00:00").getDay(),
-      startH:  parseInt(form.heure.split(":")[0]),
+      startH:  parseInt(form.heure.split(":")[0]) + parseInt(form.heure.split(":")[1] || 0) / 60,
       dur:     parseFloat(form.dur) || 1,
       notes:   form.statut,
       _formData: {
@@ -292,26 +400,19 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
         heure:       form.heure,
         type:        form.type,
         statut:      form.statut,
-        moniteur_id: form.moniteur_id && form.moniteur_id !== ""
-                       ? parseInt(form.moniteur_id)
-                       : null,
+        moniteur_id: form.moniteur_id ? parseInt(form.moniteur_id) : null,
         candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],
         duree:       parseFloat(form.dur) || 1,
       },
     });
   };
 
-  // Génère les options de créneaux horaires
   const renderHeureOptions = () => {
     const duree = parseFloat(form.dur) || 1;
     const allSlots = [];
     for (let h = 7; h < 19; h++) {
-      allSlots.push(h);
-      allSlots.push(h + 0.25);
-      allSlots.push(h + 0.5);
-      allSlots.push(h + 0.75);
+      allSlots.push(h); allSlots.push(h+0.25); allSlots.push(h+0.5); allSlots.push(h+0.75);
     }
-
     const occupiedIntervals = (sessions || [])
       .filter(s => {
         const sDate = toLocalISO(s._raw?.date);
@@ -321,27 +422,20 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
       .map(s => ({ start: s.startH, end: s.startH + s.dur }));
 
     const formatSlot = slot => {
-      const h = Math.floor(slot);
-      const m = Math.round((slot % 1) * 60);
+      const h = Math.floor(slot); const m = Math.round((slot % 1) * 60);
       return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
     };
 
     return allSlots.map(slot => {
       const slotEnd = slot + duree;
       if (slotEnd > 19) return null;
-
       const minutes = Math.round((slot % 1) * 60);
-      const isValid = duree === 0.75
-        ? [0, 15, 30, 45].includes(minutes)
-        : [0, 30].includes(minutes);
+      const isValid = duree === 0.75 ? [0,15,30,45].includes(minutes) : [0,30].includes(minutes);
       if (!isValid) return null;
-
       const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
-      const startStr = formatSlot(slot);
-      const endStr   = formatSlot(slotEnd);
+      const startStr = formatSlot(slot); const endStr = formatSlot(slotEnd);
       return (
-        <option key={slot} value={startStr} disabled={!!conflict}
-          style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
+        <option key={slot} value={startStr} disabled={!!conflict} style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
           {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
         </option>
       );
@@ -350,14 +444,11 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   return (
     <div
-      style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(15,23,42,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center" }}
+      style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(15,23,42,0.5)", display:"flex", alignItems:"center", justifyContent:"center" }}
       onClick={e => e.target===e.currentTarget && onClose()}
     >
       <div style={{ background:"#fff", borderRadius:16, width:520, maxWidth:"96vw", maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 25px 60px rgba(0,0,0,0.2)", overflow:"hidden", fontFamily:"'Poppins',sans-serif", position:"relative" }}>
-
         {saving && <LoadingOverlay />}
-
-        {/* Header */}
         <div style={{ padding:"20px 24px 16px", borderBottom:"1px solid #e2e8f0", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
           <div>
             <div style={{ fontSize:"1.05rem", fontWeight:700, color:"#1e293b" }}>{editing ? "Modifier la séance" : "Créer une séance"}</div>
@@ -365,54 +456,23 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           </div>
           <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", color:"#64748b", width:30, height:30, borderRadius:8, cursor:"pointer", fontSize:14, display:"grid", placeItems:"center" }}>✕</button>
         </div>
-
-        {/* Body */}
         <div style={{ padding:"18px 24px", overflowY:"auto", display:"flex", flexDirection:"column", gap:14 }}>
-
-          {/* Ligne 1 : Candidat | Moniteur */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Candidat <span style={{ color:"#ef4444" }}>*</span></label>
-              <select
-                style={inpS}
-                value={form.candidatId}
-                onChange={e => {
-                  const selected = candidats.find(c => c.idCandidat == e.target.value);
-                  set("candidatId", e.target.value);
-                  set("candidat", selected ? `${selected.nom} ${selected.prenom}` : "");
-                }}
-              >
+              <select style={inpS} value={form.candidatId} onChange={e => { const s = candidats.find(c => c.idCandidat == e.target.value); set("candidatId", e.target.value); set("candidat", s ? `${s.nom} ${s.prenom}` : ""); }}>
                 <option value="">Sélectionner candidat...</option>
-                {candidats.map(c => (
-                  <option key={c.idCandidat} value={c.idCandidat}>
-                    {c.nom} {c.prenom}
-                  </option>
-                ))}
+                {candidats.map(c => <option key={c.idCandidat} value={c.idCandidat}>{c.nom} {c.prenom}</option>)}
               </select>
             </div>
-
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Moniteur <span style={{ color:"#ef4444" }}>*</span></label>
-              <select
-                style={inpS}
-                value={form.moniteur_id}
-                onChange={e => {
-                  const selected = moniteurs.find(m => m.id == e.target.value);
-                  set("moniteur_id", e.target.value);
-                  set("moniteur", selected ? `${selected.nom} ${selected.prenom}` : "");
-                }}
-              >
+              <select style={inpS} value={form.moniteur_id} onChange={e => { const s = moniteurs.find(m => m.id == e.target.value); set("moniteur_id", e.target.value); set("moniteur", s ? `${s.nom} ${s.prenom}` : ""); }}>
                 <option value="">Sélectionner moniteur...</option>
-                {moniteurs.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.nom} {m.prenom}
-                  </option>
-                ))}
+                {moniteurs.map(m => <option key={m.id} value={m.id}>{m.nom} {m.prenom}</option>)}
               </select>
             </div>
           </div>
-
-          {/* Ligne 2 : Type | Date */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Type <span style={{ color:"#ef4444" }}>*</span></label>
@@ -420,7 +480,6 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
                 <option value="code">Code</option>
                 <option value="circulation">Circulation</option>
                 <option value="creneau">Créneau</option>
-                <option value="boxing">Boxing</option>
               </select>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
@@ -428,51 +487,43 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
               <input style={inpS} type="date" value={form.date} onChange={e => set("date", e.target.value)} />
             </div>
           </div>
-
-          {/* Ligne 3 : Durée | Heure */}
-<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Durée <span style={{ color:"#ef4444" }}>*</span></label>
-    <select style={inpS} value={form.dur} onChange={e => set("dur", e.target.value)}>
-      <option value="0.5">30 min</option>
-      <option value="0.75">45 min</option>
-      <option value="1">1h</option>
-      <option value="1.5">1h30</option>
-      <option value="2">2h</option>
-      <option value="3">3h</option>
-    </select>
-  </div>
-
-  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
-    <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
-      <option value="">Choisir un créneau...</option>
-      {renderHeureOptions()}
-    </select>
-  </div>
-</div>
-
-{/* Ligne 4 : Statut | Notes */}
-<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
-    <select style={inpS} value={form.statut} onChange={e => set("statut", e.target.value)}>
-      <option value="planifiée">Planifiée</option>
-      <option value="confirmée">Confirmée</option>
-      <option value="annulée">Annulée</option>
-    </select>
-  </div>
-
-  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-    <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Notes</label>
-    <input style={inpS} type="text" placeholder="Notes rapides..." value={form.notes} onChange={e => set("notes", e.target.value)} />
-  </div>
-</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Durée <span style={{ color:"#ef4444" }}>*</span></label>
+              <select style={inpS} value={form.dur} onChange={e => set("dur", e.target.value)}>
+                <option value="0.5">30 min</option>
+                <option value="0.75">45 min</option>
+                <option value="1">1h</option>
+                <option value="1.5">1h30</option>
+                <option value="2">2h</option>
+                <option value="3">3h</option>
+              </select>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
+              <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
+                <option value="">Choisir un créneau...</option>
+                {renderHeureOptions()}
+              </select>
+            </div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
+              <select style={inpS} value={form.statut} onChange={e => set("statut", e.target.value)}>
+                <option value="planifiée">Planifiée</option>
+                <option value="confirmée">Confirmée</option>
+                <option value="annulée">Annulée</option>
+              </select>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Notes</label>
+              <input style={inpS} type="text" placeholder="Notes rapides..." value={form.notes} onChange={e => set("notes", e.target.value)} />
+            </div>
+          </div>
         </div>
-
-        {/* Footer */}
         <div style={{ padding:"14px 24px", borderTop:"1px solid #e2e8f0", display:"flex", justifyContent:"flex-end", gap:10 }}>
-          <button onClick={onClose} disabled={saving} style={{ padding:"9px 20px", borderRadius:8, background:"#f1f5f9", border:"1px solid #e2e8f0", color:"#64748b", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", cursor:"pointer", fontWeight:500, opacity: saving ? 0.6 : 1 }}>
+          <button onClick={onClose} disabled={saving} style={{ padding:"9px 20px", borderRadius:8, background:"#f1f5f9", border:"1px solid #e2e8f0", color:"#64748b", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", cursor:"pointer", fontWeight:500 }}>
             Annuler
           </button>
           <button onClick={handleSubmit} disabled={saving} style={{ padding:"9px 22px", borderRadius:8, background: saving ? "#93c5fd" : "#2563eb", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:600, cursor: saving ? "not-allowed" : "pointer", boxShadow:"0 4px 14px rgba(37,99,235,0.35)", display:"flex", alignItems:"center", gap:8 }}>
@@ -486,7 +537,7 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 }
 
 // ── CALENDAR GRID ─────────────────────────────────────────────────────────────
-function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop }) {
+function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, onDrop }) {
   const [dragging, setDragging] = React.useState(null);
   const [dragOver, setDragOver] = React.useState(null);
   const dragRef = useRef(null);
@@ -495,6 +546,29 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
   const handleDragEnd   = () => { setDragging(null); setDragOver(null); dragRef.current = null; };
   const handleDragOver  = (e, day, hour) => { e.preventDefault(); e.dataTransfer.dropEffect="move"; setDragOver({day,hour}); };
   const handleDrop      = (e, day, hour) => { e.preventDefault(); if (dragRef.current) onDrop(dragRef.current.id, day, hour); setDragging(null); setDragOver(null); dragRef.current = null; };
+
+  // Grouper les séances qui se chevauchent sur le même créneau
+  function findOverlapping(daySessions, targetSession) {
+    return daySessions.filter(s =>
+      s.id !== targetSession.id &&
+      s.startH < targetSession.startH + targetSession.dur &&
+      s.startH + s.dur > targetSession.startH
+    );
+  }
+
+  function assignColumns(daySessions) {
+    const sorted = [...daySessions].sort((a, b) => a.startH - b.startH);
+    const columns = [];
+    const result = sorted.map(s => {
+      const endH = s.startH + s.dur;
+      let colIdx = columns.findIndex(colEnd => colEnd <= s.startH);
+      if (colIdx === -1) { columns.push(endH); colIdx = columns.length - 1; }
+      else { columns[colIdx] = endH; }
+      return { session: s, colIdx };
+    });
+    const totalCols = Math.max(1, columns.length);
+    return { items: result, totalCols };
+  }
 
   return (
     <div style={{ border:"1px solid #e2e8f0", borderRadius:12, overflow:"hidden", background:"#fff", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -509,12 +583,9 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
               <div style={{ fontSize:"0.92rem", fontWeight:700, color: isToday ? "#fff" : "#334155", marginTop:3, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {isToday
                   ? <div style={{ width:26, height:26, borderRadius:"50%", background:"#2563eb", display:"grid", placeItems:"center", fontSize:"0.88rem" }}>{date.getDate()}</div>
-                  : date.getDate()
-                }
+                  : date.getDate()}
               </div>
-              <div style={{ fontSize:"0.6rem", color:"#94a3b8", marginTop:1 }}>
-                {date.toLocaleDateString("fr-FR",{month:"short"})}
-              </div>
+              <div style={{ fontSize:"0.6rem", color:"#94a3b8", marginTop:1 }}>{date.toLocaleDateString("fr-FR",{month:"short"})}</div>
             </div>
           );
         })}
@@ -522,7 +593,6 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
 
       {/* Body */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)" }}>
-        {/* Colonne heure */}
         <div style={{ borderRight:"1px solid #e2e8f0" }}>
           {HOURS.map(h => (
             <div key={h} style={{ height:CELL_H, borderBottom:"1px solid #f1f5f9", display:"flex", alignItems:"flex-start", padding:"5px 8px 0", fontSize:"0.62rem", fontWeight:600, color:"#94a3b8" }}>
@@ -531,10 +601,11 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
           ))}
         </div>
 
-        {/* Colonnes jours */}
-        {weekDates.map((_,dayIdx) => {
+        {weekDates.map((_, dayIdx) => {
           const isToday = dayIdx === todayIdx;
           const daySessions = sessions.filter(s => s.day === dayIdx);
+          const { items: columnedSessions, totalCols } = assignColumns(daySessions);
+
           return (
             <div key={dayIdx} style={{ position:"relative", borderRight:"1px solid #e2e8f0", background: isToday ? "rgba(37,99,235,0.015)" : "transparent" }}>
               {HOURS.map((h, hIdx) => {
@@ -554,38 +625,82 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onDrop })
                 );
               })}
 
-              {daySessions.map(s => {
+              {columnedSessions.map(({ session: s, colIdx }) => {
                 const firstHour = HOURS[0];
                 const topPx = (s.startH - firstHour) * CELL_H;
                 if (s.startH < firstHour || s.startH >= firstHour + HOURS.length) return null;
-                const col = COLORS[s.type] || COLORS.code;
+
+                const colData    = COLORS[s.type] || COLORS.code;
                 const isDragging = dragging === s.id;
+
+                // Cherche les séances qui se chevauchent avec celle-ci
+                const overlapping = findOverlapping(daySessions, s);
+                const hasOverlap  = overlapping.length > 0;
+
+                const widthPct = 100 / totalCols;
+                const leftPct  = colIdx * widthPct;
+
+                // Groupe complet pour la modale (cette séance + celles qui se chevauchent)
+                const groupSessions = hasOverlap
+                  ? [s, ...overlapping].filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
+                  : [s];
+
                 return (
                   <div key={s.id}
                     draggable
                     onDragStart={e => handleDragStart(e, s)}
                     onDragEnd={handleDragEnd}
-                    onClick={e => { e.stopPropagation(); onSessionClick(s, e.currentTarget.getBoundingClientRect()); }}
-                    style={{
-                      position:"absolute", left:3, right:3,
-                      top: topPx+3, height: s.dur*CELL_H-6,
-                      borderRadius:8, padding:"5px 8px",
-                      cursor: isDragging ? "grabbing" : "grab",
-                      userSelect:"none",
-                      background: col.light,
-                      borderLeft: `3px solid ${col.bg}`,
-                      boxShadow: `0 1px 4px ${col.bg}30`,
-                      opacity: isDragging ? 0.4 : 1,
-                      transform: isDragging ? "scale(0.97)" : "scale(1)",
-                      transition:"transform 0.15s, box-shadow 0.15s",
-                      overflow:"hidden",
-                      zIndex: isDragging ? 1 : 2,
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (hasOverlap) {
+                        // Ouvre la grande modale avec toutes les séances du groupe
+                        onGroupClick(groupSessions);
+                      } else {
+                        // Ouvre le petit popup classique
+                        onSessionClick(s, e.currentTarget.getBoundingClientRect());
+                      }
                     }}
-                    onMouseEnter={e => { if (!isDragging) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow=`0 4px 12px ${col.bg}40`; e.currentTarget.style.zIndex=5; }}}
-                    onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow=`0 1px 4px ${col.bg}30`; e.currentTarget.style.zIndex=2; }}
+                    style={{
+                      position:  "absolute",
+                      left:      `calc(${leftPct}% + 3px)`,
+                      width:     `calc(${widthPct}% - 6px)`,
+                      top:       topPx + 3,
+                      height:    s.dur * CELL_H - 6,
+                      borderRadius: 8,
+                      padding:   "5px 8px",
+                      cursor:    isDragging ? "grabbing" : "pointer",
+                      userSelect:"none",
+                      background:  colData.light,
+                      borderLeft:  `3px solid ${colData.bg}`,
+                      boxShadow:   hasOverlap
+                        ? `0 0 0 2px ${colData.bg}, 0 2px 8px ${colData.bg}50`
+                        : `0 1px 4px ${colData.bg}30`,
+                      opacity:     isDragging ? 0.4 : 1,
+                      transition:  "transform 0.15s, box-shadow 0.15s",
+                      overflow:    "hidden",
+                      zIndex:      isDragging ? 1 : 2,
+                    }}
+                    onMouseEnter={e => { if (!isDragging) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.zIndex=5; }}}
+                    onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.zIndex=2; }}
                   >
-                    <div style={{ fontSize:"0.72rem", fontWeight:700, color:col.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cap(s.name)}</div>
-                    <div style={{ fontSize:"0.62rem", color:"#64748b", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.monitor}</div>
+                    <div style={{ fontSize:"0.72rem", fontWeight:700, color:colData.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {cap(s.name)}
+                    </div>
+                    <div style={{ fontSize:"0.62rem", color:"#64748b", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {s.monitor}
+                    </div>
+                    {/* Badge si chevauchement */}
+                    {hasOverlap && (
+                      <div style={{
+                        position:"absolute", top:4, right:4,
+                        width:18, height:18, borderRadius:"50%",
+                        background: colData.bg, color:"white",
+                        fontSize:"0.6rem", fontWeight:700,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                      }}>
+                        {groupSessions.length}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -608,6 +723,10 @@ export default function AgendaPage() {
   const [showModal,  setShowModal]  = useState(false);
   const [editing,    setEditing]    = useState(null);
   const [popup,      setPopup]      = useState({ session:null, anchor:null });
+
+  // ── NOUVEL ÉTAT : modale groupe ──────────────────────────────────────────
+  const [groupModal, setGroupModal] = useState(null); // null | Session[]
+
   const [search,     setSearch]     = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterMon,  setFilterMon]  = useState("");
@@ -621,33 +740,23 @@ export default function AgendaPage() {
   const api = window.electron || null;
   const showToast = (message, type = "success") => setToast({ message, type });
 
-  // ── CHARGEMENT INITIAL ───────────────────────────────────────────────────
-  useEffect(() => {
-    loadSeances();
-  }, []);
+  useEffect(() => { loadSeances(); }, []);
 
   async function loadSeances() {
     setLoading(true);
     try {
       if (api?.getSeances) {
         const rows = await api.getSeances();
-        if (Array.isArray(rows) && rows.length > 0) {
-          setSessions(rows.map(dbRowToSession));
-        }
+        if (Array.isArray(rows) && rows.length > 0) setSessions(rows.map(dbRowToSession));
       }
-    } catch(err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch(err) { console.error(err); }
+    finally { setLoading(false); }
   }
 
-  // ── NAVIGATION ───────────────────────────────────────────────────────────
   const prevWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()-7); return n; });
   const nextWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()+7); return n; });
   const goToday  = () => { setWeekBase(getMondayOfWeek(new Date())); setViewMode("aujourd'hui"); };
 
-  // ── FILTRES ──────────────────────────────────────────────────────────────
   const hasFilters = search || filterType || filterMon;
   const resetFilters = () => { setSearch(""); setFilterType(""); setFilterMon(""); };
 
@@ -655,108 +764,77 @@ export default function AgendaPage() {
     const sessionDate = s._raw?.date instanceof Date
       ? s._raw.date
       : new Date(String(s._raw?.date).split("T")[0] + "T12:00:00");
-
-    const weekStart = weekDates[0];
-    const weekEnd   = weekDates[6];
-    const inWeek    = sessionDate >= weekStart && sessionDate <= weekEnd;
-
+    const weekStart = weekDates[0]; const weekEnd = weekDates[6];
+    const inWeek = sessionDate >= weekStart && sessionDate <= weekEnd;
     return inWeek &&
       (!search     || s.name.toLowerCase().includes(search.toLowerCase()) || s.monitor.toLowerCase().includes(search.toLowerCase())) &&
       (!filterType || s.type    === filterType) &&
       (!filterMon  || s.monitor === filterMon);
   });
 
-  // ── DRAG & DROP ──────────────────────────────────────────────────────────
   const handleDrop = useCallback(async (id, day, hour) => {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
-
     setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
-
-    const newDate  = toLocalISO(weekDates[day]);
-    const newHeure = floatToHHMM(hour);
+    const newDate = toLocalISO(weekDates[day]); const newHeure = floatToHHMM(hour);
     if (api?.updateSeance) {
       try {
-        await api.updateSeance({
-          id:          session.id,
-          date:        newDate,
-          heure:       newHeure,
-          type:        session.type,
-          statut:      session._raw?.statut || "planifiée",
-          moniteur_id: session._raw?.moniteur_id,
-          duree:       session.dur,
-        });
-        await loadSeances();
-        showToast("Séance déplacée avec succès.");
-      } catch (err) {
-        console.error("handleDrop error:", err);
-        showToast("Erreur lors du déplacement.", "error");
-        await loadSeances();
-      }
+        await api.updateSeance({ id: session.id, date: newDate, heure: newHeure, type: session.type, statut: session._raw?.statut || "planifiée", moniteur_id: session._raw?.moniteur_id, duree: session.dur });
+        await loadSeances(); showToast("Séance déplacée avec succès.");
+      } catch (err) { showToast("Erreur lors du déplacement.", "error"); await loadSeances(); }
     }
   }, [sessions, weekDates, api]);
 
-  // ── SUPPRESSION ──────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     setSessions(p => p.filter(s => s.id !== id));
-    if (api?.deleteSeance) {
-      try {
-        await api.deleteSeance(id);
-        showToast("Séance supprimée.", "success");
-      } catch (err) {
-        showToast("Erreur lors de la suppression.", "error");
-      }
-    } else {
-      showToast("Séance supprimée (mode démo).", "info");
+    // Retire aussi de la modale groupe si ouverte
+    if (groupModal) {
+      const updated = groupModal.filter(s => s.id !== id);
+      updated.length > 0 ? setGroupModal(updated) : setGroupModal(null);
     }
+    if (api?.deleteSeance) {
+      try { await api.deleteSeance(id); showToast("Séance supprimée.", "success"); }
+      catch (err) { showToast("Erreur lors de la suppression.", "error"); }
+    } else { showToast("Séance supprimée (mode démo).", "info"); }
   };
 
-  // ── CRÉATION / MODIFICATION ──────────────────────────────────────────────
   const handleSave = async (sessionObj) => {
+    const { _formData } = sessionObj;
+    const [startHH, startMM] = _formData.heure.split(":").map(Number);
+    const newStart = startHH + startMM / 60;
+    const newEnd   = newStart + parseFloat(_formData.duree);
+
+    const conflict = sessions.find(s => {
+      if (editing && s.id === editing.id) return false;
+      const sDate = toLocalISO(s._raw?.date);
+      if (sDate !== _formData.date) return false;
+      if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
+      const sEnd = s.startH + s.dur;
+      return newStart < sEnd && newEnd > s.startH;
+    });
+
+    if (conflict) {
+      showToast(`⚠️ Ce moniteur est déjà occupé de ${floatToHHMM(conflict.startH)} à ${floatToHHMM(conflict.startH + conflict.dur)} ce jour-là.`, "error");
+      return;
+    }
+
     setSaving(true);
     try {
-      const { _formData, ...calendarFields } = sessionObj;
-
       if (api?.updateSeance && editing) {
-        await api.updateSeance({
-          id:          editing.id,
-          date:        _formData.date,
-          heure:       _formData.heure,
-          type:        _formData.type,
-          statut:      _formData.statut,
-          moniteur_id: _formData.moniteur_id,
-          duree:       _formData.duree,
-          candidatId:  _formData.candidatIds?.[0] || null,
-        });
-        await loadSeances();
-        showToast("Séance modifiée avec succès.");
-
+        await api.updateSeance({ id: editing.id, date: _formData.date, heure: _formData.heure, type: _formData.type, statut: _formData.statut, moniteur_id: _formData.moniteur_id, duree: _formData.duree, candidatId: _formData.candidatIds?.[0] || null });
+        await loadSeances(); showToast("Séance modifiée avec succès.");
       } else if (api?.addSeance && !editing) {
         const result = await api.addSeance(_formData);
-        if (result?.success) {
-          await loadSeances();
-          showToast("Séance créée avec succès.");
-        } else {
-          throw new Error(result?.message || "Erreur lors de la création.");
-        }
-
+        if (result?.success) { await loadSeances(); showToast("Séance créée avec succès."); }
+        else throw new Error(result?.message || "Erreur lors de la création.");
       } else {
-        if (editing) {
-          setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
-        } else {
-          setSessions(p => [...p, { ...calendarFields, id: Date.now() }]);
-        }
+        const { _formData: _fd, ...calendarFields } = sessionObj;
+        if (editing) setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
+        else setSessions(p => [...p, { ...calendarFields, id: Date.now() }]);
         showToast(editing ? "Séance modifiée (mode démo)." : "Séance créée (mode démo).", "info");
       }
-
-    } catch (err) {
-      console.error("handleSave error:", err);
-      showToast(err.message || "Une erreur est survenue.", "error");
-    } finally {
-      setSaving(false);
-      setShowModal(false);
-      setEditing(null);
-    }
+    } catch (err) { showToast(err.message || "Une erreur est survenue.", "error"); }
+    finally { setSaving(false); setShowModal(false); setEditing(null); }
   };
 
   const monitors = [...new Set(sessions.map(s=>s.monitor))].sort();
@@ -769,8 +847,6 @@ export default function AgendaPage() {
         {/* ── HERO ── */}
         <div style={{ position:"relative", background:"linear-gradient(135deg,#dbeafe 0%,#bfdbfe 50%,#e0f2fe 100%)", borderBottom:"1px solid #bfdbfe", padding:"0 28px", flexShrink:0, overflow:"hidden", minHeight:110 }}>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:6, background:"repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 30px,transparent 30px,transparent 60px)", opacity:0.6 }} />
-
-          {/* Voiture */}
           <div style={{ position:"absolute", right:120, bottom:8, opacity:0.9 }}>
             <svg width="160" height="80" viewBox="0 0 320 160" fill="none">
               <ellipse cx="160" cy="148" rx="148" ry="10" fill="rgba(0,0,0,0.08)" />
@@ -786,8 +862,6 @@ export default function AgendaPage() {
               <rect x="28" y="98" width="16" height="8" rx="2" fill="#f87171" />
             </svg>
           </div>
-
-          {/* Feu tricolore */}
           <div style={{ position:"absolute", right:40, bottom:0, opacity:0.85 }}>
             <svg width="36" height="100" viewBox="0 0 50 160" fill="none">
               <rect x="15" y="0" width="20" height="130" rx="10" fill="#334155" />
@@ -797,22 +871,17 @@ export default function AgendaPage() {
               <circle cx="25" cy="96" r="11" fill="#22c55e" />
             </svg>
           </div>
-
-          {/* Panneau */}
           <div style={{ position:"absolute", right:280, bottom:10, opacity:0.7 }}>
             <svg width="40" height="40" viewBox="0 0 80 80" fill="none">
               <polygon points="40,5 75,70 5,70" fill="#fbbf24" stroke="#f59e0b" strokeWidth="3"/>
               <text x="40" y="58" textAnchor="middle" fontSize="32" fontWeight="bold" fill="#1e293b">!</text>
             </svg>
           </div>
-
           <div style={{ position:"relative", zIndex:1, display:"flex", alignItems:"center", gap:20, padding:"18px 0" }}>
             <div>
               <h1 style={{ fontSize:"1.9rem", fontWeight:800, color:"#1e3a8a", margin:0, letterSpacing:-0.5 }}>Agenda</h1>
               <div style={{ fontSize:"0.75rem", color:"#3b82f6", marginTop:2, fontWeight:500 }}>Planification et suivi des séances</div>
             </div>
-
-            {/* Boutons vue */}
             <div style={{ display:"flex", gap:0, marginLeft:20, background:"rgba(255,255,255,0.6)", borderRadius:10, overflow:"hidden", border:"1px solid rgba(255,255,255,0.8)" }}>
               {[{key:"jour",label:"Jour"},{key:"semaine",label:"Semaine"},{key:"aujourd'hui",label:"Aujourd'hui"}].map(({key,label}) => (
                 <button key={key} onClick={() => { setViewMode(key); if(key==="aujourd'hui") goToday(); }}
@@ -821,8 +890,6 @@ export default function AgendaPage() {
                 </button>
               ))}
             </div>
-
-            {/* Semaine label */}
             <div style={{ fontSize:"1.05rem", fontWeight:700, color:"#1e3a8a", marginLeft:"auto" }}>
               {weekDates[0] && `${weekDates[0].getDate()} – ${weekDates[6].getDate()} ${weekDates[6].toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}`}
             </div>
@@ -839,19 +906,15 @@ export default function AgendaPage() {
             <button onClick={nextWeek} style={{ width:30, height:30, borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#64748b", cursor:"pointer", display:"grid", placeItems:"center" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
-            <button onClick={goToday} style={{ padding:"7px 14px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#3b82f6", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", fontWeight:600, cursor:"pointer" }}>
-              Aujourd'hui
-            </button>
+            <button onClick={goToday} style={{ padding:"7px 14px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#3b82f6", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", fontWeight:600, cursor:"pointer" }}>Aujourd'hui</button>
             <button onClick={loadSeances} disabled={loading} title="Rafraîchir"
               style={{ width:30, height:30, borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#64748b", cursor: loading ? "not-allowed" : "pointer", display:"grid", placeItems:"center", opacity: loading ? 0.5 : 1 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                style={{ animation: loading ? "spin 0.8s linear infinite" : "none" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: loading ? "spin 0.8s linear infinite" : "none" }}>
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
               </svg>
             </button>
           </div>
-
           <Button text="+ Ajouter Séance" onClick={() => setShowModal(true)} />
         </div>
 
@@ -862,7 +925,6 @@ export default function AgendaPage() {
             <input style={{ width:"100%", boxSizing:"border-box", padding:"8px 12px 8px 32px", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, color:"#1e293b", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", outline:"none" }}
               type="text" placeholder="Rechercher candidat ou moniteur..." value={search} onChange={e=>setSearch(e.target.value)} />
           </div>
-
           <span style={{ fontSize:"0.75rem", color:"#94a3b8", fontWeight:500 }}>Type :</span>
           <select style={{ padding:"7px 10px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#334155", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", outline:"none", cursor:"pointer" }}
             value={filterType} onChange={e=>setFilterType(e.target.value)}>
@@ -871,20 +933,17 @@ export default function AgendaPage() {
             <option value="circulation">Circulation</option>
             <option value="creneau">Créneau</option>
           </select>
-
           <span style={{ fontSize:"0.75rem", color:"#94a3b8", fontWeight:500 }}>Moniteur :</span>
           <select style={{ padding:"7px 10px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#334155", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", outline:"none", cursor:"pointer" }}
             value={filterMon} onChange={e=>setFilterMon(e.target.value)}>
             <option value="">Tous</option>
             {monitors.map(m=><option key={m}>{m}</option>)}
           </select>
-
           {hasFilters && (
             <button onClick={resetFilters} style={{ padding:"6px 12px", borderRadius:8, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#ef4444", fontFamily:"'Poppins',sans-serif", fontSize:"0.75rem", fontWeight:600, cursor:"pointer" }}>
               ✕ Réinitialiser
             </button>
           )}
-
           <div style={{ marginLeft:"auto", fontSize:"0.72rem", color:"#94a3b8", background:"#f8fafc", border:"1px solid #e2e8f0", padding:"3px 12px", borderRadius:20 }}>
             {filtered.length} séance{filtered.length!==1?"s":""}
           </div>
@@ -904,6 +963,7 @@ export default function AgendaPage() {
             weekDates={weekDates}
             todayIdx={todayIdx}
             onSessionClick={(s, rect) => setPopup({ session:s, anchor:rect })}
+            onGroupClick={(group) => setGroupModal(group)}
             onDrop={handleDrop}
           />
         </div>
@@ -923,7 +983,7 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* ── Popup & Modals ── */}
+      {/* ── Popup simple (1 séance) ── */}
       {popup.session && (
         <SessionPopup
           session={popup.session}
@@ -933,6 +993,18 @@ export default function AgendaPage() {
           onEdit={s => { setEditing(s); setShowModal(true); setPopup({session:null,anchor:null}); }}
         />
       )}
+
+      {/* ── Grande modale groupe (plusieurs séances) ── */}
+      {groupModal && (
+        <GroupModal
+          sessions={groupModal}
+          onClose={() => setGroupModal(null)}
+          onDelete={handleDelete}
+          onEdit={s => { setEditing(s); setShowModal(true); setGroupModal(null); }}
+        />
+      )}
+
+      {/* ── Modale création/édition ── */}
       {showModal && (
         <CreateModal
           onClose={() => { setShowModal(false); setEditing(null); }}
@@ -943,13 +1015,8 @@ export default function AgendaPage() {
           sessions={sessions}
         />
       )}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
     </>
   );
 }

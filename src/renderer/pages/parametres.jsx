@@ -239,14 +239,46 @@ const ModalInscription = ({ onClose }) => {
     { id: 2, ageLabel: "17 - 18 ans", rule: "Autorisation parentale", icon: "📑", toggle: true, color: "#f87171" },
     { id: 3, ageLabel: ">= 19 ans", rule: "Inscription libre", icon: "✅", toggle: true, color: "#34d399" },
   ]);
+
   const [isAdding, setIsAdding] = useState(false);
   const [customLabel, setCustomLabel] = useState("");
-  const toggle = (id) => setRules(prev => prev.map(r => r.id === id ? { ...r, toggle: !r.toggle } : r));
+
+  // 🔥 LOAD depuis localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("inscriptionRules");
+    if (saved) setRules(JSON.parse(saved));
+  }, []);
+
+  const toggle = (id) =>
+    setRules(prev => prev.map(r =>
+      r.id === id ? { ...r, toggle: !r.toggle } : r
+    ));
+
   const handleAddCustomRule = () => {
     if (!customLabel.trim()) return;
-    setRules([...rules, { id: Date.now(), ageLabel: "Spécifique", rule: customLabel, icon: "📝", toggle: true, color: "#6c63ff" }]);
-    setCustomLabel(""); setIsAdding(false);
+
+    setRules([
+      ...rules,
+      {
+        id: Date.now(),
+        ageLabel: "Spécifique",
+        rule: customLabel,
+        icon: "📝",
+        toggle: true,
+        color: "#6c63ff"
+      }
+    ]);
+
+    setCustomLabel("");
+    setIsAdding(false);
   };
+
+  // 💾 SAVE
+  const handleSave = () => {
+    localStorage.setItem("inscriptionRules", JSON.stringify(rules));
+    onClose();
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal new-modal">
@@ -255,34 +287,43 @@ const ModalInscription = ({ onClose }) => {
           <span className="close" onClick={onClose}><X size={16}/></span>
         </div>
         <hr/>
+
         <div className="new-rules-list">
           {rules.map(r => (
             <div key={r.id} style={{ marginBottom: 15 }}>
-              <p style={{ fontSize: 12, fontWeight: "700", color: "#666", marginBottom: 5 }}>{r.ageLabel}</p>
-              <div className="new-rule-row" style={{ background: r.color + "15", borderLeft: `4px solid ${r.color}` }}>
+              <p className="age-label">{r.ageLabel}</p>
+
+              <div className="new-rule-row" style={{
+                background: r.color + "15",
+                borderLeft: `4px solid ${r.color}`
+              }}>
                 <span className="rule-icon">{r.icon}</span>
-                <span className="rule-label" style={{ flex: 1 }}>{r.rule}</span>
+                <span className="rule-label">{r.rule}</span>
                 <Toggle value={r.toggle} onChange={() => toggle(r.id)} />
               </div>
             </div>
           ))}
         </div>
+
         {isAdding ? (
-          <div style={{ marginTop: 15, padding: 12, background: "#f8faff", borderRadius: 10, border: "1px dashed #6c63ff" }}>
-            <input type="text" placeholder="Libellé de la condition d'inscription..." value={customLabel}
-              onChange={e => setCustomLabel(e.target.value)}
-              style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #ccc", marginBottom: "10px", outline: "none" }} autoFocus />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn primary" style={{ flex: 1, fontSize: 12 }} onClick={handleAddCustomRule}>Confirmer</button>
-              <button className="btn cancel" style={{ flex: 1, fontSize: 12 }} onClick={() => setIsAdding(false)}>Annuler</button>
-            </div>
+          <div style={{ marginTop: 15 }}>
+            <input
+              type="text"
+              placeholder="Nouvelle règle..."
+              value={customLabel}
+              onChange={(e) => setCustomLabel(e.target.value)}
+            />
+            <button onClick={handleAddCustomRule}>Ajouter</button>
           </div>
         ) : (
-          <button className="add-rule-btn" onClick={() => setIsAdding(true)} style={{ marginTop: 15 }}><Plus size={14} /> Ajouter une règle d'inscription</button>
+          <button className="add-rule-btn" onClick={() => setIsAdding(true)}>
+            <Plus size={14}/> Ajouter une règle
+          </button>
         )}
+
         <div className="new-modal-footer">
-          <button className="btn cancel" onClick={onClose}><X size={13}/> Annuler</button>
-          <button className="btn primary" onClick={onClose}><Save size={13}/> Sauvegarder</button>
+          <button className="btn cancel" onClick={onClose}>Annuler</button>
+          <button className="btn primary" onClick={handleSave}>Sauvegarder</button>
         </div>
       </div>
     </div>
