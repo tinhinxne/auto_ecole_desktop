@@ -2,7 +2,7 @@ import React, { useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useMyPermissions } from "../context/PermissionsContext";
 
-// ── CONSTANTS — gardées telles quelles ────────────────────────────────────────
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const HOURS      = [7,8,9,10,11,12,13,14,15,16,17,18];
 const DAYS_SHORT = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 const CELL_H     = 72;
@@ -11,12 +11,7 @@ const COLORS = {
   code:        { bg:"#3b82f6", light:"rgba(59,130,246,0.18)",  border:"rgba(59,130,246,0.4)",  text:"#1d4ed8" },
   creneau:     { bg:"#f59e0b", light:"rgba(245,158,11,0.18)",  border:"rgba(245,158,11,0.4)",  text:"#92400e" },
   circulation: { bg:"#10b981", light:"rgba(16,185,129,0.18)",  border:"rgba(16,185,129,0.4)",  text:"#065f46" },
-  boxing:      { bg:"#ef4444", light:"rgba(239,68,68,0.18)",   border:"rgba(239,68,68,0.4)",   text:"#991b1b" },
 };
-
-// ── SUPPRIME ces 2 lignes et remplace par le hook dans le composant ──
-// const CURRENT_MONITOR = "Moniteur 3";
-// const CAN_ADD_SESSION = false;
 
 const INITIAL_SESSIONS = [
   { id:1,  name:"Sonia Benazzouz",   monitor:"Moniteur 1", type:"code",        day:0, startH:8,  dur:1, notes:"" },
@@ -29,7 +24,6 @@ const INITIAL_SESSIONS = [
   { id:8,  name:"Cherdi Feriel",     monitor:"Moniteur 5", type:"code",        day:0, startH:10, dur:1, notes:"" },
   { id:9,  name:"Benacer Riham",     monitor:"Moniteur 7", type:"circulation", day:4, startH:10, dur:1, notes:"" },
   { id:10, name:"Kaci Benazzouz",    monitor:"Moniteur 2", type:"creneau",     day:5, startH:10, dur:1, notes:"" },
-  { id:11, name:"Kaci Benazzouz",    monitor:"Moniteur 6", type:"boxing",      day:2, startH:14, dur:1, notes:"" },
 ];
 
 const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
@@ -54,7 +48,7 @@ function formatWeekLabel(dates) {
 
 const FONT_LINK = `@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');`;
 
-// ── LockedTooltip, SessionPopup, CalendarGrid — identiques, gardés tels quels ──
+// ── LOCKED TOOLTIP ────────────────────────────────────────────────────────────
 function LockedTooltip({ children }) {
   const [show, setShow] = React.useState(false);
   return (
@@ -76,6 +70,115 @@ function LockedTooltip({ children }) {
   );
 }
 
+// ── MODALE GROUPE DE SÉANCES (même créneau) ───────────────────────────────────
+function GroupModal({ sessions, onClose }) {
+  if (!sessions || sessions.length === 0) return null;
+  const first = sessions[0];
+  const endH  = first.startH + first.dur;
+
+  return (
+    <div
+      style={{
+        position:"fixed", inset:0, zIndex:400,
+        background:"rgba(15,23,42,0.55)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Poppins',sans-serif",
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background:"#fff", borderRadius:18,
+        width:640, maxWidth:"95vw",
+        maxHeight:"82vh", display:"flex", flexDirection:"column",
+        boxShadow:"0 30px 80px rgba(0,0,0,0.2)", overflow:"hidden",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding:"20px 26px 16px", background:"#f8fafc",
+          borderBottom:"1px solid #e2e8f0",
+          display:"flex", justifyContent:"space-between", alignItems:"flex-start",
+          flexShrink:0,
+        }}>
+          <div>
+            <div style={{ fontSize:"1rem", fontWeight:700, color:"#1e293b" }}>
+              Séances du {DAYS_SHORT[first.day]} — {first.startH}:00 → {endH}:00
+            </div>
+            <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>
+              {sessions.length} séance{sessions.length > 1 ? "s" : ""} sur ce créneau
+            </div>
+          </div>
+          <button onClick={onClose} style={{
+            background:"#f1f5f9", border:"none", color:"#64748b",
+            width:32, height:32, borderRadius:8, cursor:"pointer",
+            fontSize:14, display:"grid", placeItems:"center",
+          }}>✕</button>
+        </div>
+
+        {/* Liste */}
+        <div style={{ overflowY:"auto", padding:"16px 24px", display:"flex", flexDirection:"column", gap:12 }}>
+          {sessions.map((s) => {
+            const col  = COLORS[s.type] || COLORS.code;
+            const sEnd = s.startH + s.dur;
+            return (
+              <div key={s.id} style={{
+                border:`1px solid ${col.border}`, borderLeft:`4px solid ${col.bg}`,
+                borderRadius:12, padding:"14px 16px",
+                background:col.light, display:"flex", alignItems:"center", gap:16,
+              }}>
+                <div style={{
+                  width:42, height:42, borderRadius:10, background:"white",
+                  border:`1px solid ${col.border}`,
+                  display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+                }}>
+                  <div style={{ width:14, height:14, borderRadius:3, background:col.bg }} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{ fontSize:"0.88rem", fontWeight:700, color:"#1e293b", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {cap(s.name)}
+                    </span>
+                    <span style={{
+                      fontSize:"0.68rem", fontWeight:600, padding:"2px 9px", borderRadius:20,
+                      background:"white", color:col.text, border:`1px solid ${col.border}`,
+                      textTransform:"capitalize", flexShrink:0,
+                    }}>
+                      {s.type}
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", gap:16, fontSize:"0.75rem", color:"#64748b" }}>
+                    <span>👤 <strong style={{ color:"#334155" }}>{s.monitor}</strong></span>
+                    <span>🕐 {s.startH}:00 – {sEnd}:00</span>
+                    {s.notes && <span>📋 {s.notes}</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer — vue lecture seule, pas de boutons Modifier/Supprimer */}
+        <div style={{
+          padding:"14px 24px", borderTop:"1px solid #e2e8f0",
+          background:"#f8fafc", display:"flex", justifyContent:"space-between", alignItems:"center",
+          flexShrink:0,
+        }}>
+          <span style={{ fontSize:"0.7rem", color:"#94a3b8", fontStyle:"italic" }}>
+            🔒 Vue lecture seule — contactez l'admin pour modifier
+          </span>
+          <button onClick={onClose} style={{
+            padding:"9px 22px", borderRadius:8, background:"#1e293b", border:"none",
+            color:"white", fontFamily:"'Poppins',sans-serif",
+            fontSize:"0.85rem", fontWeight:600, cursor:"pointer",
+          }}>
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SESSION POPUP (1 séance) ──────────────────────────────────────────────────
 function SessionPopup({ session, anchor, onClose, isOwn }) {
   const ref = useRef();
   React.useEffect(() => {
@@ -130,9 +233,34 @@ function SessionPopup({ session, anchor, onClose, isOwn }) {
   );
 }
 
-function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, currentMonitor }) {
+// ── CALENDAR GRID ─────────────────────────────────────────────────────────────
+function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, currentMonitor }) {
+
+  function findOverlapping(daySessions, targetSession) {
+    return daySessions.filter(s =>
+      s.id !== targetSession.id &&
+      s.startH < targetSession.startH + targetSession.dur &&
+      s.startH + s.dur > targetSession.startH
+    );
+  }
+
+  function assignColumns(daySessions) {
+    const sorted = [...daySessions].sort((a, b) => a.startH - b.startH);
+    const columns = [];
+    const result = sorted.map(s => {
+      const endH = s.startH + s.dur;
+      let colIdx = columns.findIndex(colEnd => colEnd <= s.startH);
+      if (colIdx === -1) { columns.push(endH); colIdx = columns.length - 1; }
+      else { columns[colIdx] = endH; }
+      return { session: s, colIdx };
+    });
+    const totalCols = Math.max(1, columns.length);
+    return { items: result, totalCols };
+  }
+
   return (
     <div style={{ border:"1px solid #e2e8f0", borderRadius:12, overflow:"hidden", background:"#fff", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+      {/* Header */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)", background:"#f8fafc", borderBottom:"2px solid #e2e8f0", position:"sticky", top:0, zIndex:10 }}>
         <div style={{ borderRight:"1px solid #e2e8f0", fontSize:"0.65rem", color:"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:600 }}>Heure</div>
         {weekDates.map((date,i) => {
@@ -148,6 +276,8 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, currentMo
           );
         })}
       </div>
+
+      {/* Body */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)" }}>
         <div style={{ borderRight:"1px solid #e2e8f0" }}>
           {HOURS.map(h => (
@@ -157,32 +287,76 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, currentMo
         {weekDates.map((_,dayIdx) => {
           const isToday = dayIdx === todayIdx;
           const daySessions = sessions.filter(s => s.day === dayIdx);
+          const { items: columnedSessions, totalCols } = assignColumns(daySessions);
+
           return (
             <div key={dayIdx} style={{ position:"relative", borderRight:"1px solid #e2e8f0", background: isToday ? "rgba(37,99,235,0.015)" : "transparent" }}>
               {HOURS.map((h, hIdx) => (
                 <div key={h} style={{ height:CELL_H, borderBottom: hIdx < HOURS.length-1 ? "1px solid #f1f5f9" : "none", position:"relative" }} />
               ))}
-              {daySessions.map(s => {
+
+              {columnedSessions.map(({ session: s, colIdx }) => {
                 const idx = HOURS.indexOf(s.startH);
                 if (idx < 0) return null;
-                const col = COLORS[s.type] || COLORS.code;
-                const isOwn = s.monitor === currentMonitor;
+                const col     = COLORS[s.type] || COLORS.code;
+                const isOwn   = s.monitor === currentMonitor;
+
+                const overlapping   = findOverlapping(daySessions, s);
+                const hasOverlap    = overlapping.length > 0;
+                const groupSessions = hasOverlap
+                  ? [s, ...overlapping].filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
+                  : [s];
+
+                const widthPct = 100 / totalCols;
+                const leftPct  = colIdx * widthPct;
+
                 return (
                   <div key={s.id}
-                    onClick={e => { e.stopPropagation(); onSessionClick(s, e.currentTarget.getBoundingClientRect()); }}
-                    style={{ position:"absolute", left:3, right:3, top: idx*CELL_H+3, height: s.dur*CELL_H-6,
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (hasOverlap) {
+                        onGroupClick(groupSessions);
+                      } else {
+                        onSessionClick(s, e.currentTarget.getBoundingClientRect());
+                      }
+                    }}
+                    style={{
+                      position:"absolute",
+                      left:`calc(${leftPct}% + 3px)`,
+                      width:`calc(${widthPct}% - 6px)`,
+                      top: idx*CELL_H+3,
+                      height: s.dur*CELL_H-6,
                       borderRadius:8, padding:"5px 8px", cursor:"pointer", userSelect:"none",
                       background: isOwn ? col.light : "rgba(148,163,184,0.10)",
                       borderLeft: isOwn ? `3px solid ${col.bg}` : "3px solid #cbd5e1",
-                      boxShadow: isOwn ? `0 1px 4px ${col.bg}30` : "none",
-                      opacity: isOwn ? 1 : 0.65, transition:"transform 0.15s, box-shadow 0.15s", overflow:"hidden", zIndex:2 }}
+                      boxShadow: hasOverlap
+                        ? `0 0 0 2px ${col.bg}, 0 2px 8px ${col.bg}50`
+                        : isOwn ? `0 1px 4px ${col.bg}30` : "none",
+                      opacity: isOwn ? 1 : 0.65,
+                      transition:"transform 0.15s, box-shadow 0.15s",
+                      overflow:"hidden", zIndex:2,
+                    }}
                     onMouseEnter={e => { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.zIndex=5; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.zIndex=2; }}
                   >
-                    <div style={{ fontSize:"0.72rem", fontWeight:700, color: isOwn ? col.text : "#94a3b8", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cap(s.name)}</div>
+                    <div style={{ fontSize:"0.72rem", fontWeight:700, color: isOwn ? col.text : "#94a3b8", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {cap(s.name)}
+                    </div>
                     <div style={{ fontSize:"0.6rem", color: isOwn ? "#64748b" : "#b0bec5", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display:"flex", alignItems:"center", gap:3 }}>
                       {isOwn ? <><span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:"#10b981", flexShrink:0 }}/>Ma séance</> : "—"}
                     </div>
+                    {/* Badge si chevauchement */}
+                    {hasOverlap && (
+                      <div style={{
+                        position:"absolute", top:4, right:4,
+                        width:18, height:18, borderRadius:"50%",
+                        background: col.bg, color:"white",
+                        fontSize:"0.6rem", fontWeight:700,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                      }}>
+                        {groupSessions.length}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -196,14 +370,14 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, currentMo
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function AgendaMoniteur() {
-  // ← REMPLACE les constantes codées en dur
   const { currentUser } = useAuth();
   const { CAN_ADD_SESSION } = useMyPermissions();
   const CURRENT_MONITOR = currentUser ? `${currentUser.prenom} ${currentUser.nom}` : "";
 
-  const [sessions]    = React.useState(INITIAL_SESSIONS);
+  const [sessions,    setSessions]   = React.useState(INITIAL_SESSIONS);
   const [weekBase,    setWeekBase]   = React.useState(() => getMondayOfWeek(new Date()));
   const [popup,       setPopup]      = React.useState({ session:null, anchor:null });
+  const [groupModal,  setGroupModal] = React.useState(null); // null | Session[]
   const [search,      setSearch]     = React.useState("");
   const [filterType,  setFilterType] = React.useState("");
   const [showLocked,  setShowLocked] = React.useState(false);
@@ -220,6 +394,15 @@ export default function AgendaMoniteur() {
   const hasFilters = search || filterType;
   const resetFilters = () => { setSearch(""); setFilterType(""); };
 
+  // handleDelete mis à jour : retire aussi de groupModal si ouvert
+  const handleDelete = (id) => {
+    setSessions(p => p.filter(s => s.id !== id));
+    if (groupModal) {
+      const updated = groupModal.filter(s => s.id !== id);
+      updated.length > 0 ? setGroupModal(updated) : setGroupModal(null);
+    }
+  };
+
   const filtered = sessions.filter(s =>
     (!search     || s.name.toLowerCase().includes(search.toLowerCase())) &&
     (!filterType || s.type === filterType)
@@ -230,6 +413,7 @@ export default function AgendaMoniteur() {
     <>
       <style>{FONT_LINK}</style>
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden", background:"#f1f5f9", fontFamily:"'Poppins',sans-serif", color:"#1e293b" }}>
+
         {/* HERO */}
         <div style={{ position:"relative", background:"linear-gradient(135deg,#dbeafe 0%,#bfdbfe 50%,#e0f2fe 100%)", borderBottom:"1px solid #bfdbfe", padding:"0 28px", flexShrink:0, overflow:"hidden", minHeight:110 }}>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:6, background:"repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 30px,transparent 30px,transparent 60px)", opacity:0.6 }} />
@@ -267,7 +451,6 @@ export default function AgendaMoniteur() {
             </button>
           </div>
 
-          {/* ← CAN_ADD_SESSION vient maintenant du hook */}
           {CAN_ADD_SESSION ? (
             <button style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", borderRadius:8, background:"#2563eb", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.83rem", fontWeight:600, cursor:"pointer", boxShadow:"0 4px 14px rgba(37,99,235,0.35)" }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -306,7 +489,6 @@ export default function AgendaMoniteur() {
             <option value="code">Code</option>
             <option value="circulation">Circulation</option>
             <option value="creneau">Créneau</option>
-            <option value="boxing">Boxing</option>
           </select>
           {hasFilters && (
             <button onClick={resetFilters} style={{ padding:"6px 12px", borderRadius:8, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#ef4444", fontFamily:"'Poppins',sans-serif", fontSize:"0.75rem", fontWeight:600, cursor:"pointer" }}>✕ Réinitialiser</button>
@@ -324,10 +506,19 @@ export default function AgendaMoniteur() {
           </div>
         </div>
 
+        {/* CALENDRIER */}
         <div style={{ flex:1, overflowY:"auto", overflowX:"auto", padding:"16px 28px 20px" }}>
-          <CalendarGrid sessions={filtered} weekDates={weekDates} todayIdx={todayIdx} currentMonitor={CURRENT_MONITOR} onSessionClick={(s, rect) => setPopup({ session:s, anchor:rect })} />
+          <CalendarGrid
+            sessions={filtered}
+            weekDates={weekDates}
+            todayIdx={todayIdx}
+            currentMonitor={CURRENT_MONITOR}
+            onSessionClick={(s, rect) => setPopup({ session:s, anchor:rect })}
+            onGroupClick={(group) => setGroupModal(group)}
+          />
         </div>
 
+        {/* LÉGENDE */}
         <div style={{ display:"flex", alignItems:"center", gap:24, padding:"10px 28px 14px", background:"#fff", borderTop:"1px solid #e2e8f0", flexShrink:0 }}>
           {Object.entries(COLORS).map(([type, col]) => (
             <div key={type} style={{ display:"flex", alignItems:"center", gap:7, fontSize:"0.76rem", color:"#64748b" }}>
@@ -337,10 +528,22 @@ export default function AgendaMoniteur() {
         </div>
       </div>
 
+      {/* Popup simple (1 séance) */}
       {popup.session && (
-        <SessionPopup session={popup.session} anchor={popup.anchor}
+        <SessionPopup
+          session={popup.session}
+          anchor={popup.anchor}
           isOwn={popup.session.monitor === CURRENT_MONITOR}
-          onClose={() => setPopup({session:null, anchor:null})} />
+          onClose={() => setPopup({session:null, anchor:null})}
+        />
+      )}
+
+      {/* Grande modale groupe (plusieurs séances) */}
+      {groupModal && (
+        <GroupModal
+          sessions={groupModal}
+          onClose={() => setGroupModal(null)}
+        />
       )}
     </>
   );

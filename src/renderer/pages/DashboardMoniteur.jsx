@@ -12,19 +12,37 @@ const DashboardMoniteur = () => {
 
   useEffect(() => {
     if (!currentUser) return;
+    
     window.electron.getSeances().then(seances => {
       const miennes = seances.filter(s => s.moniteur_id === currentUser.id);
-      const today = new Date().toISOString().split("T")[0];
+      
+      // On récupère la date du jour au format YYYY-MM-DD
+      const todayDate = new Date();
+      const todayStr = todayDate.toISOString().split("T")[0];
+
+      // Calcul des limites de la semaine (Lundi à Dimanche)
       const lundi = new Date();
-      lundi.setDate(lundi.getDate() - lundi.getDay() + 1);
+      lundi.setDate(lundi.getDate() - (lundi.getDay() === 0 ? 6 : lundi.getDay() - 1));
+      lundi.setHours(0, 0, 0, 0);
+
       const dimanche = new Date(lundi);
       dimanche.setDate(dimanche.getDate() + 6);
+      dimanche.setHours(23, 59, 59, 999);
 
-      const auj = miennes.filter(s => s.date?.slice(0,10) === today);
+      // --- CORRECTION ICI ---
+      const auj = miennes.filter(s => {
+        if (!s.date) return false;
+        // On transforme s.date en String avant de faire le slice au cas où c'est un objet Date
+        const dateStr = s.date instanceof Date ? s.date.toISOString() : String(s.date);
+        return dateStr.slice(0, 10) === todayStr;
+      });
+
       const semaine = miennes.filter(s => {
+        if (!s.date) return false;
         const d = new Date(s.date);
         return d >= lundi && d <= dimanche;
       });
+
       const terminees = miennes.filter(s => s.statut === "terminée");
 
       setStats({
