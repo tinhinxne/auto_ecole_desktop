@@ -34,6 +34,8 @@ const Examens = () => {
       setExamensList(prev => prev.filter(item => item.id !== id));
     }
   };
+  const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
+const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
   const handleToggleStatus = (id, currentStatus, e) => {
     e.stopPropagation();
@@ -101,63 +103,78 @@ const Examens = () => {
           />
         </div>
 
-        <div className="examens-table-wrap">
-          <table className="examens-table">
-            <thead>
-              <tr>
-                <th>Candidat(e)</th>
-                <th>Type</th>
-                <th>Date / Heure</th>
-                <th>Lieu</th>
-                <th>Résultat (Cliquer pour changer)</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {filtered.map((examen, i) => {
-                  const st = STATUS_CONFIG[examen.status];
-                  return (
-                    <motion.tr
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      key={examen.id}
-                      className={`examens-table__row ${i % 2 === 0 ? "examens-table__row--even" : ""}`}
-                      onClick={() => setSelectedExamen(examen)}
-                    >
-                      <td style={{ fontWeight: "600" }}>{examen.candidat}</td>
-                      <td>{examen.type}</td>
-                      <td>
-                        <div className="examens-table__date">
-                          <FaCalendarDay style={{ color: "#4E96E1", fontSize: 12 }} />
-                          <div>{examen.date} <span className="examens-table__heure">{examen.heure}</span></div>
-                        </div>
-                      </td>
-                      <td>{examen.lieu}</td>
-                      <td>
-                        <div 
-                          className="status-clickable" 
-                          style={{ background: st.bg, color: st.color }}
-                          onClick={(e) => handleToggleStatus(examen.id, examen.status, e)}
-                        >
-                          <FaExchangeAlt style={{ marginRight: 8, fontSize: 10 }} />
-                          {st.label}
-                        </div>
-                      </td>
-                      <td className="examens-table__actions">
-                        <button className="btn-remove" onClick={(e) => handleRemoveCandidat(examen.id, e)}>
-                          <FaTrashAlt />
-                        </button>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
+        <div style={{ background: "#fff", borderRadius: "15px", overflow: "hidden", boxShadow: "0 5px 15px rgba(0,0,0,0.05)" }}>
+  <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
+        <tr style={{ background: "#2b537e" }}>
+          <th style={th}>Candidat(e)</th>
+          <th style={th}>Type</th>
+          <th style={th}>Date / Heure</th>
+          <th style={th}>Lieu</th>
+          <th style={th}>Résultat (Cliquer pour changer)</th>
+          <th style={th}>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <AnimatePresence>
+          {filtered.length > 0 ? filtered.map((examen, i) => {
+            const st = STATUS_CONFIG[examen.status];
+            return (
+              <motion.tr
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                key={examen.id}
+                style={{ background: i % 2 === 0 ? "#fff" : "#F8FAFC", cursor: "pointer" }}
+                onClick={() => setSelectedExamen(examen)}
+              >
+                <td style={{ ...td, fontWeight: "600" }}>{examen.candidat}</td>
+                <td style={td}>{examen.type}</td>
+                <td style={td}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <FaCalendarDay style={{ color: "#4E96E1", fontSize: 12 }} />
+                    <div>{examen.date} <span style={{ color: "#64748b", fontSize: "12px" }}>{examen.heure}</span></div>
+                  </div>
+                </td>
+                <td style={td}>{examen.lieu}</td>
+                <td style={td}>
+                  <div
+                    style={{ 
+                      background: st.bg, color: st.color, 
+                      display: "inline-flex", alignItems: "center",
+                      padding: "4px 10px", borderRadius: "20px",
+                      fontWeight: "600", fontSize: "13px", cursor: "pointer"
+                    }}
+                    onClick={(e) => handleToggleStatus(examen.id, examen.status, e)}
+                  >
+                    <FaExchangeAlt style={{ marginRight: 8, fontSize: 10 }} />
+                    {st.label}
+                  </div>
+                </td>
+                <td style={td}>
+                  <button 
+                    onClick={(e) => handleRemoveCandidat(examen.id, e)}
+                    style={{ background: "#FEF2F2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+                  >
+                    <FaTrashAlt />
+                  </button>
+                </td>
+              </motion.tr>
+            );
+          }) : (
+            <tr>
+              <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#A0AEC0" }}>
+                Aucun examen trouvé.
+              </td>
+            </tr>
+          )}
+        </AnimatePresence>
+      </tbody>
+    </table>
+  </div>
+</div>
       </div>
 
       {/* La modale affiche les infos, mais sans bouton modifier (voir ci-dessous) */}
