@@ -4,6 +4,8 @@ const db = require('./db');
 
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const { registerMoniteurHandlers } = require('./moniteurHandlers');
+
 
 // ── CONFIG EMAIL ─────────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
@@ -63,9 +65,9 @@ function createWindow() {
   });
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 }
-
 app.whenReady().then(() => {
   createWindow();
+  registerMoniteurHandlers(db); // ← ajouter cette ligne
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -74,6 +76,8 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
+
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  IPC HANDLERS
