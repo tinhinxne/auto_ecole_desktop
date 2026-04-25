@@ -29,5 +29,9 @@ contextBridge.exposeInMainWorld('electron', {
   // Paiements
   getPayments: () => ipcRenderer.invoke('get-payments'),
   addPayment: (data) => ipcRenderer.invoke('add-payment', data),
-  getCandidatsDebiteurs:  ()     => ipcRenderer.invoke('get-candidats-debiteurs'), 
+  getCandidatsDebiteurs:  ()     => ipcRenderer.invoke('get-candidats-debiteurs'),
+  
+  
+  getPaymentsByMoniteur:       (moniteurId) => ipcRenderer.invoke('get-payments-by-moniteur', moniteurId),
+getCandidatsDebiteursMoniteur: (moniteurId) => ipcRenderer.invoke('get-candidats-debiteurs-moniteur', moniteurId),
 });

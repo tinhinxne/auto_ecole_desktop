@@ -477,3 +477,53 @@ ipcMain.handle("update-seance", async (event, data) => {
     );
   });
 });
+
+
+// NOUVEAU : Paiements filtrés par moniteur_id
+ipcMain.handle('get-payments-by-moniteur', async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT 
+        v.idVersement, v.montant, v.methode, v.dateVersement,
+        v.remarque, v.typeVersement, v.numeroTranche,
+        c.nom, c.prenom, c.idCandidat,
+        p.montantTotal, p.montantRestant, p.statutPaiement, p.idPaiement
+      FROM Versement v
+      JOIN Paiement p     ON v.idPaiement     = p.idPaiement
+      JOIN Candidat c     ON p.idCandidat      = c.idCandidat
+      JOIN CandidatSeance cs ON cs.idCandidat  = c.idCandidat
+      JOIN Seance s        ON cs.idSeance       = s.idSeance
+      WHERE s.moniteur_id = ?
+      GROUP BY v.idVersement
+      ORDER BY v.dateVersement DESC
+    `;
+    db.query(sql, [moniteurId], (err, res) => {
+      if (err) { console.error('get-payments-by-moniteur:', err); resolve([]); }
+      else resolve(res);
+    });
+  });
+});
+
+// NOUVEAU : Candidats débiteurs du moniteur uniquement
+ipcMain.handle('get-candidats-debiteurs-moniteur', async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT DISTINCT
+        c.idCandidat, c.nom, c.prenom, c.telephone,
+        COALESCE(p.montantTotal,  30000) AS montantTotal,
+        COALESCE(p.montantRestant, 30000) AS montantRestant,
+        COALESCE(p.statutPaiement, 'en_attente') AS statutPaiement
+      FROM Candidat c
+      JOIN CandidatSeance cs ON cs.idCandidat = c.idCandidat
+      JOIN Seance s           ON cs.idSeance   = s.idSeance
+      LEFT JOIN Paiement p   ON p.idCandidat   = c.idCandidat
+      WHERE s.moniteur_id = ?
+        AND (p.idPaiement IS NULL OR p.montantRestant > 0)
+      ORDER BY c.nom ASC
+    `;
+    db.query(sql, [moniteurId], (err, res) => {
+      if (err) { console.error('get-candidats-debiteurs-moniteur:', err); resolve([]); }
+      else resolve(res);
+    });
+  });
+});
