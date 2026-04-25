@@ -115,13 +115,33 @@ ipcMain.handle("login", async (event, credentials) => {
 ipcMain.handle("get-candidats", async () => {
   return new Promise((resolve) => {
     const sql = `
-      SELECT c.*, p.montantTotal, p.montantRestant, p.statutPaiement 
-      FROM Candidat c
-      LEFT JOIN Paiement p ON c.idCandidat = p.idCandidat
-      ORDER BY c.idCandidat DESC`;
+      SELECT 
+    c.*, 
+    MAX(p.montantTotal) AS montantTotal, 
+    MAX(p.montantRestant) AS montantRestant, 
+    MAX(p.statutPaiement) AS statutPaiement,
+    GROUP_CONCAT(s.idSeance) AS seanceIds,
+    GROUP_CONCAT(CONCAT(s.date, ' ', s.heure)) AS seanceDates
+    FROM Candidat c
+    LEFT JOIN Paiement p ON c.idCandidat = p.idCandidat
+    LEFT JOIN CandidatSeance cs ON c.idCandidat = cs.idCandidat
+    LEFT JOIN Seance s ON cs.idSeance = s.idSeance
+    GROUP BY c.idCandidat
+    ORDER BY c.idCandidat DESC`;
+
     db.query(sql, (err, res) => {
-      if (err) resolve([]);
-      else resolve(res);
+      if (err) {
+        console.error(err);
+        resolve([]);
+      } else {
+        // Optional: Convert the comma-separated strings back into arrays
+        const formattedRes = res.map(row => ({
+          ...row,
+          seanceIds: row.seanceIds ? row.seanceIds.split(',').map(Number) : [],
+          seanceDates: row.seanceDates ? row.seanceDates.split(',') : []
+        }));
+        resolve(formattedRes);
+      }
     });
   });
 });
@@ -392,20 +412,41 @@ ipcMain.handle("get-payments", async () => {
 
 ipcMain.handle('get-candidats-debiteurs', async () => {
   return new Promise((resolve) => {
+    console.log("Calling this guy!")
     const sql = `
       SELECT 
-        c.idCandidat, c.nom, c.prenom, c.telephone,
-        COALESCE(p.montantTotal, 30000) AS montantTotal,
-        COALESCE(p.montantRestant, 30000) AS montantRestant,
-        COALESCE(p.statutPaiement, 'en_attente') AS statutPaiement
+        c.idCandidat, 
+        c.nom, 
+        c.prenom, 
+        c.telephone,
+        MAX(COALESCE(p.montantTotal, 30000)) AS montantTotal,
+        MAX(COALESCE(p.montantRestant, 30000)) AS montantRestant,
+        MAX(COALESCE(p.statutPaiement, 'en_attente')) AS statutPaiement,
+        GROUP_CONCAT(s.idSeance) AS seanceIds,
+        GROUP_CONCAT(CONCAT(s.date, ' à ', s.heure)) AS seanceDetails
       FROM Candidat c
       LEFT JOIN Paiement p ON c.idCandidat = p.idCandidat
+      LEFT JOIN CandidatSeance cs ON c.idCandidat = cs.idCandidat
+      LEFT JOIN Seance s ON cs.idSeance = s.idSeance
       WHERE p.idPaiement IS NULL OR p.montantRestant > 0
+      GROUP BY c.idCandidat
       ORDER BY c.nom ASC
     `;
+
     db.query(sql, (err, res) => {
-      if (err) { console.error(err); resolve([]); }
-      else resolve(res);
+      if (err) { 
+        console.error('get-candidats-debiteurs error:', err); 
+        resolve([]); 
+      } else {
+        // Clean up the strings into arrays for React
+        const formattedRes = res.map(row => ({
+          ...row,
+          seanceIds: row.seanceIds ? row.seanceIds.split(',').map(Number) : [],
+          seanceDetails: row.seanceDetails ? row.seanceDetails.split(',') : []
+        }));
+        resolve(formattedRes);
+        console.log(formattedRes)
+      }
     });
   });
 });
