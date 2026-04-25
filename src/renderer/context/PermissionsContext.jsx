@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 const PERMS_DEFAUT = {
-  CAN_ADD_SESSION: false,
+  CAN_ADD_SESSION: true,
   CAN_ADD_PAYMENT: false,
   CAN_TOGGLE_STATUS: false,
   CAN_REMOVE_CANDIDAT: false,

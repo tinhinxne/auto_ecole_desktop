@@ -3,7 +3,7 @@ import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
 import { Ban } from 'lucide-react';
-
+import { useAuth } from "../context/AuthContext"; // ← ajoute cet import
 
 
 const SteeringWheelIcon = () => (
@@ -126,7 +126,9 @@ export default function SignIn() {
       const response = await window.electron.login({ email, password });
 
       if (response.success) {
-        login(response.user); // ← REMPLACE localStorage.setItem par ça
+        login(response.user);
+        localStorage.setItem("user", JSON.stringify(response.user));
+
         if (response.user.type_utilisateur === "moniteur") {
           navigate("/moniteur/dashboard");
         } else {
