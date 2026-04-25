@@ -198,6 +198,8 @@ const ModalMoniteurs = ({ onClose }) => {
             </select>
           )}
         </div>
+
+        {/* Toggles des permissions */}
         <div className="new-rules-list">
           {PERMS_LABELS.map(({ key, icon, label }) => {
             const val = !!localPerms[key];

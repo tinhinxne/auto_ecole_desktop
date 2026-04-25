@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { Ban } from 'lucide-react';
 
 
-
 const SteeringWheelIcon = () => (
   <svg
     className="signin-card__app-icon"

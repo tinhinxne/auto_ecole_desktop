@@ -408,40 +408,42 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
   };
 
   const renderHeureOptions = () => {
-    const duree = parseFloat(form.dur) || 1;
-    const allSlots = [];
-    for (let h = 7; h < 19; h++) {
-      allSlots.push(h); allSlots.push(h+0.25); allSlots.push(h+0.5); allSlots.push(h+0.75);
-    }
-    const occupiedIntervals = (sessions || [])
-      .filter(s => {
-        const sDate = toLocalISO(s._raw?.date);
-        const isOther = editing ? s.id !== editing.id : true;
-        return sDate === form.date && isOther;
-      })
-      .map(s => ({ start: s.startH, end: s.startH + s.dur }));
+  const duree = parseFloat(form.dur) || 1;
+  const allSlots = [];
+  for (let h = 7; h < 19; h++) {
+    allSlots.push(h); allSlots.push(h+0.25); allSlots.push(h+0.5); allSlots.push(h+0.75);
+  }
 
-    const formatSlot = slot => {
-      const h = Math.floor(slot); const m = Math.round((slot % 1) * 60);
-      return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
-    };
+  // ── FILTRE PAR MONITEUR ET DATE ──────────────────────────────────────────
+  const occupiedIntervals = (sessions || [])
+    .filter(s => {
+      const sDate = toLocalISO(s._raw?.date);
+      const isOther = editing ? s.id !== editing.id : true;
+      const sameMoniteur = String(s._raw?.moniteur_id) === String(form.moniteur_id); // ← AJOUT
+      return sDate === form.date && isOther && sameMoniteur; // ← AJOUT
+    })
+    .map(s => ({ start: s.startH, end: s.startH + s.dur }));
 
-    return allSlots.map(slot => {
-      const slotEnd = slot + duree;
-      if (slotEnd > 19) return null;
-      const minutes = Math.round((slot % 1) * 60);
-      const isValid = duree === 0.75 ? [0,15,30,45].includes(minutes) : [0,30].includes(minutes);
-      if (!isValid) return null;
-      const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
-      const startStr = formatSlot(slot); const endStr = formatSlot(slotEnd);
-      return (
-        <option key={slot} value={startStr} disabled={!!conflict} style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
-          {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
-        </option>
-      );
-    });
+  const formatSlot = slot => {
+    const h = Math.floor(slot); const m = Math.round((slot % 1) * 60);
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
   };
 
+  return allSlots.map(slot => {
+    const slotEnd = slot + duree;
+    if (slotEnd > 19) return null;
+    const minutes = Math.round((slot % 1) * 60);
+    const isValid = duree === 0.75 ? [0,15,30,45].includes(minutes) : [0,30].includes(minutes);
+    if (!isValid) return null;
+    const conflict = occupiedIntervals.find(i => slot < i.end && slotEnd > i.start);
+    const startStr = formatSlot(slot); const endStr = formatSlot(slotEnd);
+    return (
+      <option key={slot} value={startStr} disabled={!!conflict} style={{ color: conflict ? "#cbd5e1" : "#1e293b" }}>
+        {conflict ? `${startStr} – ${endStr}  ✗` : `${startStr} – ${endStr}  ✓`}
+      </option>
+    );
+  });
+};
   return (
     <div
       style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(15,23,42,0.5)", display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -805,13 +807,14 @@ export default function AgendaPage() {
     const newEnd   = newStart + parseFloat(_formData.duree);
 
     const conflict = sessions.find(s => {
-      if (editing && s.id === editing.id) return false;
-      const sDate = toLocalISO(s._raw?.date);
-      if (sDate !== _formData.date) return false;
-      if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
-      const sEnd = s.startH + s.dur;
-      return newStart < sEnd && newEnd > s.startH;
-    });
+  if (editing && s.id === editing.id) return false;
+  const sDate = toLocalISO(s._raw?.date);
+  if (sDate !== _formData.date) return false;
+  if (!_formData.moniteur_id) return false; // ← AJOUT
+  if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
+  const sEnd = s.startH + s.dur;
+  return newStart < sEnd && newEnd > s.startH;
+});
 
     if (conflict) {
       showToast(`⚠️ Ce moniteur est déjà occupé de ${floatToHHMM(conflict.startH)} à ${floatToHHMM(conflict.startH + conflict.dur)} ce jour-là.`, "error");
