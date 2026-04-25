@@ -12,6 +12,8 @@ const Condidats = () => {
   const [showModal, setShowModal] = useState(false);
   const [editCandidat, setEditCandidat] = useState(null);
   const [searchQuery, setSearchQuery] = useState(""); // ← NOUVEAU
+  const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
+const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
   // ─────────────────────────────────────────────
   // 🔍 FILTRAGE DES CANDIDATS
@@ -147,62 +149,55 @@ const loadCandidats = async () => {
           </div>
 
           {/* TABLE */}
-          <table>
-            <thead>
-              <tr>
-                <th>Candidat</th>
-                <th>Contact</th>
-                <th>Date d'inscription</th>
-                <th>Progress</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {candidatsFiltres.length === 0 ? ( // ← NOUVEAU
-                <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "20px", color: "#888" }}>
-                    Aucun candidat trouvé
-                  </td>
-                </tr>
-              ) : (
-                candidatsFiltres.map((c) => ( // ← candidatsFiltres au lieu de candidats
-                  <tr key={c.id}>
-                    <td>{c.nom} {c.prenom}</td>
-                    <td><Phone size={15} /> {c.tel}</td>
-                    <td>{c.inscription}</td>
-                    <td>
-                      <div className="progress-container">
-                        <div
-                          className="progress-bar"
-                          style={{ width: `${Math.min((c.sessions / 30) * 100, 100)}%` }}
-                        />
-                      </div>
-                      <span className="progress-text">{c.sessions}/30 sessions</span>
-                    </td>
-                    <td>
-                      <span className={`status ${c.status}`}>{c.status}</span>
-                    </td>
-                    <td className="actions">
-                      <SquarePen
-                        size={17}
-                        color="blue"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleEdit(c)}
-                      />
-                      <Trash
-                        size={17}
-                        color="red"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleDelete(c.id)}
-                      />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+         {/* TABLE */}
+<div style={{ background: "#fff", borderRadius: "15px", overflow: "hidden", boxShadow: "0 5px 15px rgba(0,0,0,0.05)" }}>
+  <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
+        <tr style={{ background: "#2b537e" }}>
+          <th style={th}>Candidat</th>
+          <th style={th}>Contact</th>
+          <th style={th}>Date d'inscription</th>
+          <th style={th}>Progress</th>
+          <th style={th}>Status</th>
+          <th style={th}>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {candidatsFiltres.length === 0 ? (
+          <tr>
+            <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#A0AEC0" }}>
+              Aucun candidat trouvé
+            </td>
+          </tr>
+        ) : (
+          candidatsFiltres.map((c, index) => (
+            <tr key={c.id} style={{ background: index % 2 === 0 ? "#fff" : "#F8FAFC" }}>
+              <td style={td}>{c.nom} {c.prenom}</td>
+              <td style={td}><Phone size={15} /> {c.tel}</td>
+              <td style={td}>{c.inscription}</td>
+              <td style={td}>
+                <div className="progress-container">
+                  <div className="progress-bar" style={{ width: `${Math.min((c.sessions / 30) * 100, 100)}%` }} />
+                </div>
+                <span className="progress-text">{c.sessions}/30 sessions</span>
+              </td>
+              <td style={td}>
+                <span className={`status ${c.status}`}>{c.status}</span>
+              </td>
+              <td style={td}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <SquarePen size={17} color="blue" style={{ cursor: "pointer" }} onClick={() => handleEdit(c)} />
+                  <Trash size={17} color="red" style={{ cursor: "pointer" }} onClick={() => handleDelete(c.id)} />
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
         </div>
       </div>
 
