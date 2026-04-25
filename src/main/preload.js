@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electron', {
   resetMoniteurPassword: (data) => ipcRenderer.invoke('reset-moniteur-password', data),
   updateMoniteur: (data) => ipcRenderer.invoke('update-moniteur', data),
   deleteMoniteur: (id) => ipcRenderer.invoke('delete-moniteur', id),
+  getMoniteurStats: (moniteurId) => ipcRenderer.invoke('get-moniteur-stats', moniteurId),
   
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
