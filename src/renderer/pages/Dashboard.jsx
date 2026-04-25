@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { FiUsers, FiActivity, FiCalendar, FiClock } from "react-icons/fi";
+import {
+  FiUsers, FiActivity, FiCalendar, FiClock,
+  FiUserPlus, FiPlusCircle, FiDollarSign,
+  FiClipboard, FiSettings
+} from "react-icons/fi";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import "../../styles/Dashboard.css";
@@ -15,7 +20,6 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-// Couleur du badge selon statut séance
 const statutColor = (statut) => {
   if (!statut) return { bg: "#F1F5F9", color: "#64748B" };
   const s = statut.toLowerCase();
@@ -25,9 +29,11 @@ const statutColor = (statut) => {
 };
 
 const Dashboard = () => {
-  const [stats, setStats]     = useState({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
-  const [seances, setSeances] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [stats, setStats]                       = useState({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
+  const [seances, setSeances]                   = useState([]);
+  const [loading, setLoading]                   = useState(true);
+  const [showQuickActions, setShowQuickActions] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -35,13 +41,11 @@ const Dashboard = () => {
       window.electron.getSeances(),
     ]).then(([s, allSeances]) => {
       setStats(s ?? { totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
-      // 5 séances les plus récentes pour l'activité récente
       setSeances((allSeances ?? []).slice(0, 5));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  // Cards dynamiques — seules les valeurs changent, le design reste identique
   const cardData = [
     {
       label: "Nombre total de candidats",
@@ -59,7 +63,7 @@ const Dashboard = () => {
     },
     {
       label: "Examens à venir",
-      val: "—",          // pas encore dans le backend, placeholder
+      val: "—",
       trend: null,
       color: "red",
       icon: <FiCalendar />
@@ -73,9 +77,56 @@ const Dashboard = () => {
     }
   ];
 
+  const quickActions = [
+    {
+      label: "Ajouter un candidat",
+      icon: <FiUserPlus size={22} />,
+      color: "#3B82F6",
+      bg: "#EFF6FF",
+      action: () => navigate("/candidats"),
+    },
+    {
+      label: "Ajouter une séance",
+      icon: <FiPlusCircle size={22} />,
+      color: "#16A34A",
+      bg: "#F0FDF4",
+      action: () => navigate("/agenda"),
+    },
+    {
+      label: "Ajouter un paiement",
+      icon: <FiDollarSign size={22} />,
+      color: "#EA580C",
+      bg: "#FFF7ED",
+      action: () => navigate("/payments"),
+    },
+    {
+      label: "Voir les examens",
+      icon: <FiClipboard size={22} />,
+      color: "#7C3AED",
+      bg: "#F5F3FF",
+      action: () => navigate("/examens"),
+    },
+  ];
+
   return (
     <div className="dashboard-wrapper">
-      {/* BANNIÈRE */}
+
+      {/* ── TOPBAR ── */}
+      <div className="dashboard-topbar">
+        <span className="topbar-title">Tableau de bord</span>
+        <motion.button
+          className="settings-btn"
+          onClick={() => navigate("/parametres")}
+          whileHover={{ rotate: 45, scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300 }}
+          title="Paramètres"
+        >
+          <FiSettings size={20} />
+        </motion.button>
+      </div>
+
+      {/* ── BANNIÈRE ── */}
       <motion.div
         className="header-banner-container"
         initial={{ opacity: 0, scale: 0.95 }}
@@ -90,12 +141,69 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
+      {/* ── WELCOME ── */}
       <motion.div className="welcome-section" {...fadeInUp}>
         <h2>Tableau de bord de l'administrateur</h2>
         <p>Bon retour ! Voici votre emploi du temps pour aujourd'hui.</p>
       </motion.div>
 
-      {/* STAT CARDS */}
+      {/* ── ACTIONS RAPIDES ── */}
+      <motion.div
+        className="quick-actions-section"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.45 }}
+      >
+        {/* Bouton toggle */}
+        <button
+          className={`qa-toggle-btn ${showQuickActions ? "open" : ""}`}
+          onClick={() => setShowQuickActions(prev => !prev)}
+        >
+          <span className="qa-toggle-left">
+            <span className="qa-toggle-icon">⚡</span>
+            Actions rapides
+          </span>
+          <motion.span
+            className="qa-toggle-arrow"
+            animate={{ rotate: showQuickActions ? 180 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            ▾
+          </motion.span>
+        </button>
+
+        {/* Cartes — apparaissent/disparaissent */}
+        <motion.div
+          className="quick-actions-grid"
+          initial={false}
+          animate={
+            showQuickActions
+              ? { height: "auto", opacity: 1, marginTop: 14 }
+              : { height: 0,      opacity: 0, marginTop: 0  }
+          }
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          style={{ overflow: "hidden" }}
+        >
+          {quickActions.map((qa, i) => (
+            <motion.button
+              key={i}
+              className="quick-action-card"
+              style={{ "--qa-color": qa.color, "--qa-bg": qa.bg }}
+              onClick={qa.action}
+              whileHover={{ y: -6, scale: 1.04, boxShadow: `0 8px 24px ${qa.color}30` }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 18 }}
+              animate={showQuickActions ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+              transition={{ delay: showQuickActions ? i * 0.07 : 0 }}
+            >
+              <span className="qa-icon">{qa.icon}</span>
+              <span className="qa-label">{qa.label}</span>
+            </motion.button>
+          ))}
+        </motion.div>
+      </motion.div>
+
+      {/* ── STAT CARDS ── */}
       <div className="stats-grid">
         {cardData.map((item, i) => (
           <motion.div
@@ -119,7 +227,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* GRAPHIQUES (données statiques de démonstration — à connecter plus tard) */}
+      {/* ── GRAPHIQUES ── */}
       <div className="charts-main-grid">
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.4 }}>
           <h3>Aperçu des revenus</h3>
@@ -143,7 +251,9 @@ const Dashboard = () => {
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.5 }}>
           <h3>Sessions de ce mois</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={[{ n: "S1", v: 45 }, { n: "S2", v: 52 }, { n: "S3", v: 48 }, { n: "S4", v: 61 }]}>
+            <BarChart data={[
+              { n: "S1", v: 45 }, { n: "S2", v: 52 }, { n: "S3", v: 48 }, { n: "S4", v: 61 }
+            ]}>
               <XAxis dataKey="n" tick={{ fill: "#fff" }} axisLine={false} />
               <Tooltip cursor={{ fill: "rgba(255,255,255,0.1)" }} />
               <Bar dataKey="v" fill="#065F46" radius={[6, 6, 0, 0]} animationDuration={1500} />
@@ -152,7 +262,7 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* LISTES BAS DE PAGE */}
+      {/* ── LISTES BAS DE PAGE ── */}
       <div className="bottom-sections">
 
         {/* Examens à venir — placeholder statique */}
@@ -174,7 +284,7 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
-        {/* Activité récente — DONNÉES RÉELLES */}
+        {/* Activité récente — données réelles */}
         <motion.div className="list-container blue-container" {...fadeInUp} transition={{ delay: 0.7 }}>
           <h3><FiClock /> Activité récente (séances)</h3>
 

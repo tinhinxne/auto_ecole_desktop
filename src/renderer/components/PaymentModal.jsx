@@ -29,7 +29,11 @@ const PaymentModal = ({ candidate, allCandidates, onClose, onAddPayment }) => {
   const [errors, setErrors]                       = useState({});
 
   const [loading, setLoading]                     = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
 
+const filteredCandidates = candidatesList.filter(c =>
+  `${c.prenom} ${c.nom}`.toLowerCase().includes(searchQuery.toLowerCase())
+);
 
 
   // ✅ Charger les candidats directement depuis l'IPC au montage
@@ -266,40 +270,81 @@ const PaymentModal = ({ candidate, allCandidates, onClose, onAddPayment }) => {
 
 
 
-          {/* SELECT CANDIDAT */}
+          {/* SEARCH CANDIDAT */}
+{!candidate && (
+  <div style={{ marginBottom: "4px" }}>
+    <label style={{ fontSize: "12px", color: "#64748B", fontWeight: "500", display: "block", marginBottom: "5px" }}>
+      Candidat *
+    </label>
 
-          {!candidate && (
+    {/* Champ de recherche avec icône loupe */}
+    <div style={{ position: "relative", marginBottom: "4px" }}>
+      <span style={{
+        position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)",
+        color: "#94A3B8", display: "flex", alignItems: "center", pointerEvents: "none"
+      }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </span>
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={e => {
+          setSearchQuery(e.target.value);
+          if (e.target.value === "") setSelectedCandidate(null);
+        }}
+        placeholder="Rechercher un candidat..."
+        style={{
+          width: "100%", padding: "9px 32px 9px 34px",
+          border: `1px solid ${errors.candidate ? "#EF4444" : "#D1D5DB"}`,
+          borderRadius: "8px", fontSize: "13px", outline: "none",
+        }}
+      />
+      {searchQuery && (
+        <button onClick={() => { setSearchQuery(""); setSelectedCandidate(null); }}
+          style={{ position:"absolute", right:"8px", top:"50%", transform:"translateY(-50%)",
+            background:"none", border:"none", cursor:"pointer", color:"#94A3B8", fontSize:"14px" }}>
+          ✕
+        </button>
+      )}
+    </div>
 
-            <div style={{ marginBottom:"4px" }}>
+    {/* Liste filtrée */}
+{!selectedCandidate && (
+  <div style={{
+    border: "1px solid #D1D5DB", borderRadius: "8px", maxHeight: "160px",
+    overflowY: "auto", background: "#fff", marginBottom: "4px"
+  }}>
+    {filteredCandidates.length === 0 ? (
+      <div style={{ padding: "10px 12px", fontSize: "13px", color: "#94A3B8", textAlign: "center" }}>
+        Aucun candidat trouvé
+      </div>
+    ) : filteredCandidates.map(c => (
+      <div key={c.idCandidat}
+        onClick={() => { setSelectedCandidate(c); setSearchQuery(`${c.prenom} ${c.nom}`); setErrors({}); setAmount(""); }}
+        style={{
+          padding: "9px 12px", fontSize: "13px", cursor: "pointer",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          borderBottom: "1px solid #F1F5F9",
+          background: "transparent"
+        }}>
+        <span style={{ fontWeight: "500" }}>{c.prenom} {c.nom}</span>
+        <span style={{ fontSize: "11px", color: "#b91c1c" }}>
+          Reste : {parseFloat(c.montantRestant ?? PRIX_PERMIS).toLocaleString("fr-DZ")} DA
+        </span>
+      </div>
+    ))}
+  </div>
+)}
 
-              <Select
-
-                label="Candidat *"
-
-                value={selectedCandidate ? String(selectedCandidate.idCandidat) : ""}
-
-                onChange={handleCandidateChange}
-
-                options={candidateOptions}
-
-                error={errors.candidate}
-
-              />
-
-              <p style={{ fontSize:"11px",color: loading?"#4E96E1":"#94A3B8",marginTop:"4px" }}>
-
-                {loading
-
-                  ? "⏳ Chargement de la liste..."
-
-                  : `${candidatesList.length} candidat(s) avec solde en attente`}
-
-              </p>
-
-            </div>
-
-          )}
-
+    {errors.candidate && <p style={{ fontSize: "11px", color: "#EF4444", marginTop: "2px" }}>{errors.candidate}</p>}
+    <p style={{ fontSize: "11px", color: loading ? "#4E96E1" : "#94A3B8", marginTop: "4px" }}>
+      {loading ? "⏳ Chargement..." : `${candidatesList.length} candidat(s) avec solde en attente`}
+    </p>
+  </div>
+)}
 
 
           {/* BADGE CANDIDAT */}
