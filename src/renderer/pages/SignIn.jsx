@@ -3,7 +3,7 @@ import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
 import { Ban } from 'lucide-react';
-
+import { useAuth } from "../context/AuthContext";
 
 const SteeringWheelIcon = () => (
   <svg
@@ -114,6 +114,7 @@ const InactivePopup = ({ onClose }) => (
 );
 
 export default function SignIn() {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showInactivePopup, setShowInactivePopup] = useState(false);
@@ -127,6 +128,7 @@ export default function SignIn() {
       const response = await window.electron.login({ email, password });
 
       if (response.success) {
+        login(response.user);
         localStorage.setItem("user", JSON.stringify(response.user));
 
         if (response.user.type_utilisateur === "moniteur") {
