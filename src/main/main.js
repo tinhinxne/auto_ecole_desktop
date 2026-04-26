@@ -522,3 +522,95 @@ ipcMain.handle("update-seance", async (event, data) => {
     );
   });
 });
+
+
+// NOUVEAU : Paiements filtrés par moniteur_id
+ipcMain.handle('get-payments-by-moniteur', async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT 
+        v.idVersement, v.montant, v.methode, v.dateVersement,
+        v.remarque, v.typeVersement, v.numeroTranche,
+        c.nom, c.prenom, c.idCandidat,
+        p.montantTotal, p.montantRestant, p.statutPaiement, p.idPaiement
+      FROM Versement v
+      JOIN Paiement p     ON v.idPaiement     = p.idPaiement
+      JOIN Candidat c     ON p.idCandidat      = c.idCandidat
+      JOIN CandidatSeance cs ON cs.idCandidat  = c.idCandidat
+      JOIN Seance s        ON cs.idSeance       = s.idSeance
+      WHERE s.moniteur_id = ?
+      GROUP BY v.idVersement
+      ORDER BY v.dateVersement DESC
+    `;
+    db.query(sql, [moniteurId], (err, res) => {
+      if (err) { console.error('get-payments-by-moniteur:', err); resolve([]); }
+      else resolve(res);
+    });
+  });
+});
+
+// NOUVEAU : Candidats débiteurs du moniteur uniquement
+ipcMain.handle('get-candidats-debiteurs-moniteur', async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT DISTINCT
+        c.idCandidat, c.nom, c.prenom, c.telephone,
+        COALESCE(p.montantTotal,  30000) AS montantTotal,
+        COALESCE(p.montantRestant, 30000) AS montantRestant,
+        COALESCE(p.statutPaiement, 'en_attente') AS statutPaiement
+      FROM Candidat c
+      JOIN CandidatSeance cs ON cs.idCandidat = c.idCandidat
+      JOIN Seance s           ON cs.idSeance   = s.idSeance
+      LEFT JOIN Paiement p   ON p.idCandidat   = c.idCandidat
+      WHERE s.moniteur_id = ?
+        AND (p.idPaiement IS NULL OR p.montantRestant > 0)
+      ORDER BY c.nom ASC
+    `;
+    db.query(sql, [moniteurId], (err, res) => {
+      if (err) { console.error('get-candidats-debiteurs-moniteur:', err); resolve([]); }
+      else resolve(res);
+    });
+  });
+});
+// MONITEUR : récupérer ses infos personnelles
+ipcMain.handle('get-moniteur-profile', async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    const sql = `
+      SELECT u.id, u.nom, u.prenom, u.mail as email,
+             m.numeroTelephone as telephone, m.photo,
+             IF(m.actif, 'actif', 'inactif') as statut
+      FROM Utilisateur u
+      JOIN Moniteur m ON u.id = m.id
+      WHERE u.id = ?
+    `;
+    db.query(sql, [moniteurId], (err, res) => {
+      if (err || !res.length) resolve(null);
+      else resolve(res[0]);
+    });
+  });
+});
+
+// MONITEUR : modifier son mot de passe
+ipcMain.handle('update-moniteur-password', async (event, { moniteurId, oldPassword, newPassword }) => {
+  return new Promise((resolve) => {
+    // Vérifier l'ancien mot de passe
+    db.query(
+      'SELECT id FROM Utilisateur WHERE id = ? AND mot_de_passe = ?',
+      [moniteurId, oldPassword],
+      (err, res) => {
+        if (err) return resolve({ success: false, message: "Erreur base de données." });
+        if (!res.length) return resolve({ success: false, message: "Ancien mot de passe incorrect." });
+
+        // Mettre à jour
+        db.query(
+          'UPDATE Utilisateur SET mot_de_passe = ? WHERE id = ?',
+          [newPassword, moniteurId],
+          (err2) => {
+            if (err2) resolve({ success: false, message: "Erreur lors de la mise à jour." });
+            else resolve({ success: true });
+          }
+        );
+      }
+    );
+  });
+});

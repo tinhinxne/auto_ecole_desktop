@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Search, TrendingUp, Users } from "lucide-react";
+import { Search, TrendingUp, Users, Plus, Trash2 } from "lucide-react";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import { useAuth } from "../context/AuthContext";
 import { useMyPermissions } from "../context/PermissionsContext";
+import AddCandidatModal from "../components/addCondidat";
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 const getInitials = (nom) =>
-  nom
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  nom.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
 const AVATAR_COLORS = [
   { color: "#dbeafe", textColor: "#185fa5" },
@@ -28,17 +24,16 @@ const AVATAR_COLORS = [
 // Component
 // ─────────────────────────────────────────────
 const MesCandidats = () => {
-  // ── Auth + permissions ─────────────────────────────────────────────────────
-  const { currentUser } = useAuth();                            // ← plus de localStorage direct
-  const { CAN_VIEW_ALL_CANDIDATES } = useMyPermissions();       // ← permission dynamique
+  const { currentUser } = useAuth();
+  const { CAN_VIEW_ALL_CANDIDATES, CAN_REMOVE_CANDIDAT } = useMyPermissions();
 
-  const [search, setSearch]     = useState("");
-  const [candidats, setCandidats] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [search,       setSearch]       = useState("");
+  const [candidats,    setCandidats]    = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [showModal,    setShowModal]    = useState(false);
+  const [editCandidat, setEditCandidat] = useState(null);
 
-  // ─────────────────────────────────────────────
-  // Chargement des données
-  // ─────────────────────────────────────────────
+  // ── Chargement ───────────────────────────────────────────────────────────────
   const loadData = async () => {
     try {
       setLoading(true);
@@ -50,43 +45,34 @@ const MesCandidats = () => {
 
       const moniteurId = currentUser?.id;
 
-      // Si CAN_VIEW_ALL_CANDIDATES → on voit toutes les séances (tous moniteurs)
-      // Sinon → uniquement les séances de ce moniteur
       const mesSeances = CAN_VIEW_ALL_CANDIDATES
         ? rawSeances
         : moniteurId
           ? rawSeances.filter((s) => s.moniteur_id === moniteurId)
           : [];
 
-      // Set des ids candidats présents dans mes séances
       const candidatIdSet = new Set();
       mesSeances.forEach((s) => {
         if (!s.candidatsIds) return;
-        String(s.candidatsIds)
-          .split(",")
+        String(s.candidatsIds).split(",")
           .forEach((id) => candidatIdSet.add(parseInt(id.trim())));
       });
 
-      const now = new Date();
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
 
       const formatted = rawCandidats
-        // Si CAN_VIEW_ALL_CANDIDATES → tous les candidats ; sinon filtre par id
         .filter((c) => CAN_VIEW_ALL_CANDIDATES || candidatIdSet.has(c.idCandidat))
         .map((c, index) => {
-          // Séances de ce candidat dans mes séances
           const seancesDuCandidat = mesSeances.filter((s) => {
             if (!s.candidatsIds) return false;
-            return String(s.candidatsIds)
-              .split(",")
+            return String(s.candidatsIds).split(",")
               .map((id) => parseInt(id.trim()))
               .includes(c.idCandidat);
           });
 
           const nbSessions = seancesDuCandidat.length;
 
-          // Prochaine séance à venir
           const nextSeance = seancesDuCandidat
             .map((s) => {
               const dateObj = s.date instanceof Date ? s.date : new Date(s.date);
@@ -117,6 +103,7 @@ const MesCandidats = () => {
             total:       30,
             nextSession,
             status:      c.statut,
+            _raw:        c,
             ...AVATAR_COLORS[index % AVATAR_COLORS.length],
           };
         });
@@ -130,13 +117,40 @@ const MesCandidats = () => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [currentUser?.id, CAN_VIEW_ALL_CANDIDATES]); // recharge si permission change
+  useEffect(() => { loadData(); }, [currentUser?.id, CAN_VIEW_ALL_CANDIDATES]);
 
-  // ─────────────────────────────────────────────
-  // Stats dérivées
-  // ─────────────────────────────────────────────
+  // ── Ajouter ──────────────────────────────────────────────────────────────────
+  const handleAdd = () => {
+    if (!CAN_VIEW_ALL_CANDIDATES) return;
+    setEditCandidat(null);
+    setShowModal(true);
+  };
+
+  const handleSave = async (data) => {
+    if (!CAN_VIEW_ALL_CANDIDATES) return;
+    if (data.idCandidat) {
+      await window.electron.updateCandidat(data);
+    } else {
+      await window.electron.addCandidat(data);
+    }
+    await loadData();
+    setShowModal(false);
+  };
+
+  // ── Supprimer ────────────────────────────────────────────────────────────────
+  const handleDelete = async (id) => {
+    if (!CAN_REMOVE_CANDIDAT) return;
+    const confirmed = window.confirm("Supprimer ce candidat définitivement ? Cette action est irréversible.");
+    if (!confirmed) return;
+    const result = await window.electron.deleteCandidat(id);
+    if (result?.success) {
+      await loadData();
+    } else {
+      alert("Erreur lors de la suppression du candidat.");
+    }
+  };
+
+  // ── Stats ────────────────────────────────────────────────────────────────────
   const onTrack = candidats.filter((c) => c.sessions / c.total >= 0.5).length;
 
   const filtered = candidats.filter(
@@ -145,9 +159,7 @@ const MesCandidats = () => {
       c.tel?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ─────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="container">
       <div className="main">
@@ -162,23 +174,24 @@ const MesCandidats = () => {
           <p>
             {CAN_VIEW_ALL_CANDIDATES
               ? "Vue complète — tous les candidats de l'auto-école"
-              : "Gérer mes étudiants, leçons et examens"}
+              : "Mes candidats — vue lecture seule"}
           </p>
         </div>
 
-        {/* Badge vue */}
-        {CAN_VIEW_ALL_CANDIDATES && (
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: "rgba(22,101,52,0.08)",
-            border: "1px solid rgba(22,101,52,0.25)",
-            borderRadius: 10, padding: "6px 14px",
-            fontSize: "0.75rem", color: "#166534", fontWeight: 600,
-            marginBottom: 14,
-          }}>
-            👥 Accès étendu — vous voyez tous les candidats
-          </div>
-        )}
+        {/* Badge mode */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          background: CAN_VIEW_ALL_CANDIDATES ? "rgba(22,101,52,0.08)" : "rgba(148,163,184,0.12)",
+          border: `1px solid ${CAN_VIEW_ALL_CANDIDATES ? "rgba(22,101,52,0.25)" : "#e2e8f0"}`,
+          borderRadius: 10, padding: "6px 14px",
+          fontSize: "0.75rem",
+          color: CAN_VIEW_ALL_CANDIDATES ? "#166534" : "#64748b",
+          fontWeight: 600, marginBottom: 14,
+        }}>
+          {CAN_VIEW_ALL_CANDIDATES
+            ? "👥 Accès complet — vous pouvez voir et ajouter des candidats"
+            : "🔒 Vue lecture seule — contactez l'admin pour ajouter des candidats"}
+        </div>
 
         {/* STATS */}
         <div className="stats-row-layout">
@@ -189,10 +202,8 @@ const MesCandidats = () => {
               </p>
               <h3 className="stat-number-small">{candidats.length}</h3>
             </div>
-            <div
-              className="stat-icon-circle-small large-icon"
-              style={{ backgroundColor: "rgba(77,163,255,0.15)" }}
-            >
+            <div className="stat-icon-circle-small large-icon"
+              style={{ backgroundColor: "rgba(77,163,255,0.15)" }}>
               <Users size={24} color="#4da3ff" />
             </div>
           </div>
@@ -202,22 +213,39 @@ const MesCandidats = () => {
               <p className="stat-label-small">En bonne voie</p>
               <h3 className="stat-number-small">{onTrack}</h3>
             </div>
-            <div
-              className="stat-icon-circle-small large-icon"
-              style={{ backgroundColor: "#d4edda" }}
-            >
+            <div className="stat-icon-circle-small large-icon"
+              style={{ backgroundColor: "#d4edda" }}>
               <TrendingUp size={24} color="green" />
             </div>
           </div>
         </div>
 
-        {/* CANDIDATS SECTION */}
+        {/* SECTION CANDIDATS */}
         <div className="card">
           <div className="card-header">
             <div>
               <h2>{CAN_VIEW_ALL_CANDIDATES ? "Tous les Candidats" : "Mes Candidats"}</h2>
-              <p>Voir et suivre la progression de vos candidats</p>
+              <p>
+                {CAN_VIEW_ALL_CANDIDATES
+                  ? "Voir, suivre et ajouter des candidats"
+                  : "Suivi de la progression de vos candidats"}
+              </p>
             </div>
+
+            {CAN_VIEW_ALL_CANDIDATES && (
+              <button
+                onClick={handleAdd}
+                style={{
+                  display: "flex", alignItems: "center", gap: 7,
+                  padding: "10px 20px", borderRadius: 10,
+                  background: "#2b537e", border: "none", color: "#fff",
+                  fontFamily: "inherit", fontSize: "0.85rem", fontWeight: 700,
+                  cursor: "pointer", boxShadow: "0 4px 14px rgba(43,83,126,0.3)",
+                }}
+              >
+                <Plus size={15} /> Ajouter candidat
+              </button>
+            )}
           </div>
 
           {/* SEARCH */}
@@ -234,15 +262,11 @@ const MesCandidats = () => {
             </div>
           </div>
 
-          {/* CARDS GRID */}
+          {/* CARDS */}
           {loading ? (
-            <p style={{ textAlign: "center", color: "#888", padding: "20px" }}>
-              Chargement…
-            </p>
+            <p style={{ textAlign: "center", color: "#888", padding: "20px" }}>Chargement…</p>
           ) : filtered.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#888", padding: "20px" }}>
-              Aucun candidat trouvé
-            </p>
+            <p style={{ textAlign: "center", color: "#888", padding: "20px" }}>Aucun candidat trouvé</p>
           ) : (
             <div style={{
               display: "grid",
@@ -253,6 +277,7 @@ const MesCandidats = () => {
                 const pct = Math.min(Math.round((c.sessions / c.total) * 100), 100);
                 return (
                   <div key={c.id} style={candidateCard}>
+
                     {/* Avatar + nom */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                       <div style={{
@@ -288,6 +313,27 @@ const MesCandidats = () => {
                       Prochaine session :{" "}
                       <span style={{ color: "#1e293b", fontWeight: 600 }}>{c.nextSession}</span>
                     </div>
+
+                    {/* ── Bouton Supprimer — uniquement si permission accordée ── */}
+                    {CAN_REMOVE_CANDIDAT && (
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        style={{
+                          marginTop: 12,
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                          width: "100%", padding: "7px 0", borderRadius: 8,
+                          background: "rgba(239,68,68,0.07)",
+                          border: "1px solid rgba(239,68,68,0.22)",
+                          color: "#dc2626", fontSize: 12, fontWeight: 600,
+                          cursor: "pointer", transition: "background 0.18s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.07)"}
+                      >
+                        <Trash2 size={13} /> Supprimer
+                      </button>
+                    )}
+
                   </div>
                 );
               })}
@@ -295,6 +341,16 @@ const MesCandidats = () => {
           )}
         </div>
       </div>
+
+      {/* MODALE — s'ouvre seulement si CAN_VIEW_ALL_CANDIDATES */}
+      {CAN_VIEW_ALL_CANDIDATES && (
+        <AddCandidatModal
+          showModal={showModal}
+          setShowModal={setShowModal}
+          candidat={editCandidat}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 };
