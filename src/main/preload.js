@@ -19,11 +19,14 @@ contextBridge.exposeInMainWorld('electron', {
   getMoniteurStats: (moniteurId) => ipcRenderer.invoke('get-moniteur-stats', moniteurId),
 
   // Ajouter dans contextBridge.exposeInMainWorld('electron', { ... })
-getMoniteurProfile:     (id)    => ipcRenderer.invoke('get-moniteur-profile', id),
-updateMoniteurPassword: (data)  => ipcRenderer.invoke('update-moniteur-password', data),
+  getMoniteurProfile:     (id)    => ipcRenderer.invoke('get-moniteur-profile', id),
+  updateMoniteurPassword: (data)  => ipcRenderer.invoke('update-moniteur-password', data),
   
   // Dashboard
   getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
+  // Stats Admin
+  getRevenusMensuels: () => ipcRenderer.invoke('get-revenus-mensuels'),
+  getSeancesMois:     () => ipcRenderer.invoke('get-seances-mois'),
   
   //Seances
   getSeances: () => ipcRenderer.invoke('get-seances'),
