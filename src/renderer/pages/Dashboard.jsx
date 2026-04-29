@@ -34,6 +34,8 @@ const Dashboard = () => {
   const [seances, setSeances]                   = useState([]);
   const [loading, setLoading]                   = useState(true);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [revenusData, setRevenusData] = useState([]);
+  const [seancesData, setSeancesData] = useState([]);
 
   useEffect(() => {
     Promise.all([
