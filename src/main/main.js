@@ -5,6 +5,8 @@ const db = require('./db');
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { registerMoniteurHandlers } = require('./moniteurHandlers');
+const { registerAdminHandlers } = require('./adminHandlers');
+
 
 
 // ── CONFIG EMAIL ─────────────────────────────────────────────────────────────
