@@ -69,7 +69,8 @@ function createWindow() {
 }
 app.whenReady().then(() => {
   createWindow();
-  registerMoniteurHandlers(db); // ← ajouter cette ligne
+  registerMoniteurHandlers(db); 
+  registerAdminHandlers(db); 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
