@@ -44,7 +44,7 @@ const Dashboard = () => {
     ]).then(([s, allSeances]) => {
       setStats(s ?? { totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
       setSeances((allSeances ?? []).slice(0, 5));
-      setRevenusData(revenus ?? []);
+      setRevenusData(revenus ?? []); 
       setSeancesData(seancesMois ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -233,37 +233,59 @@ const Dashboard = () => {
 
       {/* ── GRAPHIQUES ── */}
       <div className="charts-main-grid">
+
+        {/* Aperçu des revenus — données réelles */}
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.4 }}>
           <h3>Aperçu des revenus</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={[
-              { n: "Jan", v: 4000 }, { n: "Fév", v: 3000 }, { n: "Mar", v: 5000 },
-              { n: "Avr", v: 4500 }, { n: "Mai", v: 7000 }, { n: "Jun", v: 6500 }
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="n" tick={{ fill: "#fff" }} axisLine={false} />
-              <YAxis tick={{ fill: "#fff" }} axisLine={false} />
-              <Tooltip
-                contentStyle={{ borderRadius: "12px", border: "none", color: "#1e293b" }}
-                cursor={{ stroke: "#fff", strokeWidth: 2 }}
-              />
-              <Area type="monotone" dataKey="v" stroke="#fff" fillOpacity={0.4} fill="#fff" animationDuration={2000} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {revenusData.length === 0 ? (
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, paddingTop: 16 }}>
+              Aucun versement enregistré.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={revenusData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="n" tick={{ fill: "#fff" }} axisLine={false} />
+                <YAxis tick={{ fill: "#fff" }} axisLine={false} />
+                <Tooltip
+                  formatter={(val) => [`${Number(val).toLocaleString("fr-DZ")} DA`, "Revenus"]}
+                  contentStyle={{ borderRadius: "12px", border: "none", color: "#1e293b" }}
+                  cursor={{ stroke: "#fff", strokeWidth: 2 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="v"
+                  stroke="#fff"
+                  fillOpacity={0.4}
+                  fill="#fff"
+                  animationDuration={2000}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </motion.div>
 
+        {/* Sessions de ce mois — données réelles */}
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.5 }}>
           <h3>Sessions de ce mois</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={[
-              { n: "S1", v: 45 }, { n: "S2", v: 52 }, { n: "S3", v: 48 }, { n: "S4", v: 61 }
-            ]}>
-              <XAxis dataKey="n" tick={{ fill: "#fff" }} axisLine={false} />
-              <Tooltip cursor={{ fill: "rgba(255,255,255,0.1)" }} />
-              <Bar dataKey="v" fill="#065F46" radius={[6, 6, 0, 0]} animationDuration={1500} />
-            </BarChart>
-          </ResponsiveContainer>
+          {seancesData.length === 0 ? (
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, paddingTop: 16 }}>
+              Aucune séance ce mois-ci.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={seancesData}>
+                <XAxis dataKey="n" tick={{ fill: "#fff" }} axisLine={false} />
+                <Tooltip
+                  formatter={(val) => [val, "Séances"]}
+                  cursor={{ fill: "rgba(255,255,255,0.1)" }}
+                />
+                <Bar dataKey="v" fill="#065F46" radius={[6, 6, 0, 0]} animationDuration={1500} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </motion.div>
+
       </div>
 
       {/* ── LISTES BAS DE PAGE ── */}
