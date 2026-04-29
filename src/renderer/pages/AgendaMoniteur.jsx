@@ -95,7 +95,7 @@ function LoadingOverlay() {
 
 // ── LOCKED TOOLTIP ────────────────────────────────────────────────────────────
 function LockedTooltip({ children }) {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = React.useState(false);
   return (
     <div style={{ position:"relative", display:"inline-block" }}
       onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
@@ -191,7 +191,6 @@ function SessionPopup({ session, anchor, onClose, isOwn, canEdit, onEdit, onDele
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [onClose]);
-
   if (!session || !anchor) return null;
   const top  = Math.min(anchor.bottom + 8, window.innerHeight - 320);
   const left = Math.min(anchor.left, window.innerWidth - 270);
@@ -856,6 +855,7 @@ export default function AgendaMoniteur() {
         </div>
       </div>
 
+      {/* Popup simple (1 séance) */}
       {popup.session && (
         <SessionPopup
           session={popup.session}

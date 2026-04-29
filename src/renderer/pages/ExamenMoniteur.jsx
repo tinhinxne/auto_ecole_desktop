@@ -53,6 +53,8 @@ const ExamensMoniteur = () => {
   const { currentUser } = useAuth();
   const { CAN_TOGGLE_STATUS, CAN_REMOVE_CANDIDAT } = useMyPermissions();
   const CURRENT_MONITEUR = currentUser ? `${currentUser.prenom} ${currentUser.nom}` : "";
+  const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
+const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
   // ... tout le reste du composant identique à ton fichier original
   const [examensList] = useState([
@@ -129,8 +131,9 @@ const ExamensMoniteur = () => {
           <SelectFilter value={statusFilter} onChange={setStatusFilter} options={["Tous","Scheduled","Passed","Failed"]} label="Filtrer par Statut" />
           <SelectFilter value={typeFilter}   onChange={setTypeFilter}   options={["Tous","Code","Créneau","Circulation"]} label="Type d'Examen" />
         </div>
-        <div className="examens-table-wrap">
-          <table className="examens-table">
+        <div style={{ background: "#fff", borderRadius: "15px", overflow: "hidden", boxShadow: "0 5px 15px rgba(0,0,0,0.05)" }}>
+  <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr><th>Candidat(e)</th><th>Type</th><th>Date / Heure</th><th>Lieu</th><th>Résultat</th><th>Actions</th></tr>
             </thead>
@@ -180,6 +183,7 @@ const ExamensMoniteur = () => {
         </div>
       </div>
       <ExamenModal examen={selectedExamen} onClose={() => setSelectedExamen(null)} readOnly />
+    </div>
     </div>
   );
 };
