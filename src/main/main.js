@@ -15,7 +15,49 @@ const transporter = nodemailer.createTransport({
     pass: 'gjgw vqfa qzkp wbfa',
   },
 });
+// Ajouter cette fonction avec les autres templates email en haut du fichier
+function buildSeanceEmailHtml({ prenomCandidat, nomCandidat, prenomMoniteur, nomMoniteur, date, heure, duree, type }) {
+  const typeLabel = type === "code" ? "Code" : type === "circulation" ? "Circulation" : "Créneau";
+  const [h, m] = heure.split(":");
+  const startH = parseInt(h) + parseInt(m) / 60;
+  const endH   = startH + parseFloat(duree);
+  const endHH  = String(Math.floor(endH)).padStart(2, "0");
+  const endMM  = String(Math.round((endH % 1) * 60)).padStart(2, "0");
 
+  return `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">
+      <div style="background:#2563eb;padding:24px;text-align:center;">
+        <h1 style="color:#fff;margin:0;font-size:20px;">🚗 Auto-École</h1>
+      </div>
+      <div style="padding:28px;">
+        <h2 style="color:#0F172A;margin-bottom:8px;">Nouvelle séance planifiée !</h2>
+        <p style="color:#475569;margin-bottom:20px;">
+          Bonjour <strong>${prenomCandidat} ${nomCandidat}</strong>, une nouvelle séance vous a été assignée.
+        </p>
+        <div style="background:#F1F5F9;border-radius:8px;padding:16px;margin-bottom:20px;">
+          <p style="margin:6px 0;color:#475569;">
+            <strong>📅 Date :</strong> ${new Date(date + "T12:00:00").toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
+          </p>
+          <p style="margin:6px 0;color:#475569;">
+            <strong>🕐 Heure :</strong> ${heure} – ${endHH}:${endMM}
+          </p>
+          <p style="margin:6px 0;color:#475569;">
+            <strong>⏱ Durée :</strong> ${parseFloat(duree) === 0.5 ? "30 min" : parseFloat(duree) === 0.75 ? "45 min" : parseFloat(duree) === 1 ? "1h" : parseFloat(duree) === 1.5 ? "1h30" : parseFloat(duree) + "h"}
+          </p>
+          <p style="margin:6px 0;color:#475569;">
+            <strong>📋 Type :</strong> ${typeLabel}
+          </p>
+          <p style="margin:6px 0;color:#475569;">
+            <strong>👤 Moniteur :</strong> ${prenomMoniteur} ${nomMoniteur}
+          </p>
+        </div>
+        <p style="color:#94A3B8;font-size:12px;">
+          Merci d'être présent(e) à l'heure. En cas d'empêchement, contactez votre auto-école.
+        </p>
+      </div>
+    </div>
+  `;
+}
 function generatePassword(length = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   return Array.from(crypto.randomBytes(length))
@@ -89,11 +131,12 @@ ipcMain.handle("login", async (event, credentials) => {
 
   // JOIN with Moniteur to also fetch the `actif` flag when applicable
   const sql = `
-    SELECT u.id, u.nom, u.type_utilisateur, m.actif
-    FROM Utilisateur u
-    LEFT JOIN Moniteur m ON u.id = m.id
-    WHERE u.mail = ? AND u.mot_de_passe = ?
-  `;
+  SELECT u.id, u.nom, u.prenom, u.type_utilisateur, m.actif
+  FROM Utilisateur u
+  LEFT JOIN Moniteur m ON u.id = m.id
+  WHERE u.mail = ? AND u.mot_de_passe = ?
+  AND u.deleted_at IS NULL
+`;
 
   return new Promise((resolve) => {
     db.query(sql, [email, password], (err, result) => {
@@ -130,6 +173,7 @@ ipcMain.handle("get-candidats", async () => {
     LEFT JOIN Paiement p ON c.idCandidat = p.idCandidat
     LEFT JOIN CandidatSeance cs ON c.idCandidat = cs.idCandidat
     LEFT JOIN Seance s ON cs.idSeance = s.idSeance
+    WHERE c.deleted_at IS NULL
     GROUP BY c.idCandidat
     ORDER BY c.idCandidat DESC`;
 
@@ -151,17 +195,20 @@ ipcMain.handle("get-candidats", async () => {
 });
 
 ipcMain.handle("add-candidat", async (event, data) => {
-  const { nom, prenom, telephone, date_naissance, sexe, photo, statut } = data;
+  const { nom, prenom, telephone, date_naissance, sexe, photo, statut, email } = data;
+  
+  // ← cette partie manquait
   let photoBuffer = null;
   if (photo && photo.startsWith("data:image")) {
     photoBuffer = Buffer.from(photo.split(",")[1], "base64");
   }
+
   const sql = `
-    INSERT INTO Candidat (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut)
-    VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?)
+    INSERT INTO Candidat (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut, email)
+    VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)
   `;
   return new Promise((resolve) => {
-    db.query(sql, [nom, prenom, telephone, date_naissance, sexe, photoBuffer, statut], (err) => {
+    db.query(sql, [nom, prenom, telephone, date_naissance || null, sexe, photoBuffer, statut, email || null], (err) => {
       if (err) { console.error('add-candidat error:', err); resolve(false); }
       else resolve(true);
     });
@@ -169,23 +216,43 @@ ipcMain.handle("add-candidat", async (event, data) => {
 });
 
 ipcMain.handle("update-candidat", async (event, c) => {
+  console.log("📝 update-candidat reçu:", c);
   return new Promise((resolve) => {
     const sql = `UPDATE Candidat 
-      SET nom=?, prenom=?, telephone=?, date_naissance=?, sexe=?, photo=?, statut=?
+      SET nom=?, prenom=?, telephone=?, date_naissance=?, sexe=?, photo=?, statut=?, email=?
       WHERE idCandidat=?`;
-    db.query(sql, [c.nom, c.prenom, c.telephone, c.date_naissance, c.sexe, c.photo || null, c.statut, c.idCandidat], (err) => {
-      if (err) resolve({ success: false, error: err.message });
-      else resolve({ success: true });
+    db.query(sql, [
+      c.nom,
+      c.prenom,
+      c.telephone   || null,
+      c.date_naissance && c.date_naissance !== "" ? c.date_naissance : null,
+      c.sexe,
+      c.photo       || null,
+      c.statut,
+      c.email       || null,
+      c.idCandidat,
+    ], (err) => {
+      if (err) {
+        console.error("❌ update-candidat error:", err.message);
+        resolve({ success: false, error: err.message });
+      } else {
+        console.log("✅ update-candidat OK pour idCandidat:", c.idCandidat);
+        resolve({ success: true });
+      }
     });
   });
 });
 
 ipcMain.handle("delete-candidat", async (event, id) => {
   return new Promise((resolve) => {
-    db.query(`DELETE FROM Candidat WHERE idCandidat = ?`, [id], (err) => {
-      if (err) resolve({ success: false, error: err.message });
-      else resolve({ success: true });
-    });
+    db.query(
+      `UPDATE Candidat SET deleted_at = NOW() WHERE idCandidat = ?`,
+      [id],
+      (err) => {
+        if (err) resolve({ success: false, error: err.message });
+        else resolve({ success: true });
+      }
+    );
   });
 });
 
@@ -193,11 +260,12 @@ ipcMain.handle("delete-candidat", async (event, id) => {
 ipcMain.handle("get-moniteurs", async () => {
   return new Promise((resolve) => {
     const sql = `
-      SELECT u.id, u.nom, u.prenom, u.mail as email, m.numeroTelephone as telephone, 
-             m.photo, IF(m.actif, 'actif', 'inactif') as statut
-      FROM Utilisateur u
-      JOIN Moniteur m ON u.id = m.id
-      ORDER BY u.nom ASC`;
+  SELECT u.id, u.nom, u.prenom, u.mail as email, m.numeroTelephone as telephone, 
+         m.photo, IF(m.actif, 'actif', 'inactif') as statut
+  FROM Utilisateur u
+  JOIN Moniteur m ON u.id = m.id
+  WHERE u.deleted_at IS NULL
+  ORDER BY u.nom ASC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
       else resolve(res);
@@ -301,10 +369,14 @@ ipcMain.handle("update-moniteur", async (event, m) => {
 
 ipcMain.handle("delete-moniteur", async (event, id) => {
   return new Promise((resolve) => {
-    db.query('DELETE FROM Utilisateur WHERE id = ?', [id], (err) => {
-      if (err) resolve({ success: false });
-      else resolve({ success: true });
-    });
+    db.query(
+      `UPDATE Utilisateur SET deleted_at = NOW() WHERE id = ?`,
+      [id],
+      (err) => {
+        if (err) resolve({ success: false });
+        else resolve({ success: true });
+      }
+    );
   });
 });
 
@@ -459,18 +531,18 @@ ipcMain.handle('get-candidats-debiteurs', async () => {
 ipcMain.handle("get-seances", async () => {
   return new Promise((resolve) => {
     const sql = `
-      SELECT 
-        s.idSeance, s.date, s.heure, s.duree, s.type, s.statut, s.moniteur_id,
-        CONCAT(u.prenom, ' ', u.nom) AS moniteurNom,
-        GROUP_CONCAT(CONCAT(c.prenom, ' ', c.nom) SEPARATOR ', ') AS candidatsNoms,
-        GROUP_CONCAT(c.idCandidat SEPARATOR ',') AS candidatsIds
-      FROM Seance s
-      JOIN Moniteur m ON s.moniteur_id = m.id
-      JOIN Utilisateur u ON m.id = u.id
-      LEFT JOIN CandidatSeance cs ON s.idSeance = cs.idSeance
-      LEFT JOIN Candidat c ON cs.idCandidat = c.idCandidat
-      GROUP BY s.idSeance
-      ORDER BY s.date DESC, s.heure ASC`;
+  SELECT 
+    s.idSeance, s.date, s.heure, s.duree, s.type, s.statut, s.moniteur_id,
+    CONCAT(u.prenom, ' ', u.nom) AS moniteurNom,
+    GROUP_CONCAT(CONCAT(c.prenom, ' ', c.nom) SEPARATOR ', ') AS candidatsNoms,
+    GROUP_CONCAT(c.idCandidat SEPARATOR ',') AS candidatsIds
+  FROM Seance s
+  JOIN Moniteur m ON s.moniteur_id = m.id
+  JOIN Utilisateur u ON m.id = u.id
+  LEFT JOIN CandidatSeance cs ON s.idSeance = cs.idSeance
+  LEFT JOIN Candidat c ON cs.idCandidat = c.idCandidat
+  GROUP BY s.idSeance
+  ORDER BY s.date DESC, s.heure ASC`;
     db.query(sql, (err, res) => {
       if (err) resolve([]);
       else resolve(res);
@@ -483,13 +555,74 @@ ipcMain.handle("add-seance", async (event, seanceData) => {
   return new Promise((resolve) => {
     const sqlSeance = `INSERT INTO Seance (date, heure, type, statut, moniteur_id, duree) VALUES (?, ?, ?, ?, ?, ?)`;
     db.query(sqlSeance, [date, heure, type, statut || 'planifiée', moniteur_id, duree || 1], (err, res) => {
-      if (err) return resolve({ success: false });
+      if (err) { console.error("❌ Erreur INSERT Seance:", err); return resolve({ success: false }); }
+      
       const newSeanceId = res.insertId;
-      if (!candidatIds || candidatIds.length === 0) return resolve({ success: true, id: newSeanceId });
+      console.log("✅ Séance créée ID:", newSeanceId);
+
+      if (!candidatIds || candidatIds.length === 0) {
+        console.log("⚠️ Aucun candidat — mail non envoyé");
+        return resolve({ success: true, id: newSeanceId });
+      }
+
       const values = candidatIds.map(cid => [cid, newSeanceId]);
-      db.query(`INSERT INTO CandidatSeance (idCandidat, idSeance) VALUES ?`, [values], (err2) => {
-        if (err2) resolve({ success: false, id: newSeanceId });
-        else resolve({ success: true, id: newSeanceId });
+      db.query(`INSERT INTO CandidatSeance (idCandidat, idSeance) VALUES ?`, [values], async (err2) => {
+        if (err2) { console.error("❌ Erreur INSERT CandidatSeance:", err2); return resolve({ success: false, id: newSeanceId }); }
+
+        console.log("✅ CandidatSeance inséré, candidatIds:", candidatIds);
+
+        // ── ENVOI MAIL ──────────────────────────────────────────────────
+        try {
+          const candidatId = candidatIds[0];
+          console.log("📧 Recherche candidat ID:", candidatId);
+
+          const candidatRows = await new Promise((res, rej) =>
+            db.query(
+              `SELECT nom, prenom, email FROM Candidat WHERE idCandidat = ?`,
+              [candidatId],
+              (e, r) => e ? rej(e) : res(r)
+            )
+          );
+          const candidat = candidatRows?.[0];
+          console.log("📧 Candidat trouvé:", candidat);
+
+          const moniteurRows = await new Promise((res, rej) =>
+            db.query(
+              `SELECT u.nom, u.prenom FROM Utilisateur u WHERE u.id = ?`,
+              [moniteur_id],
+              (e, r) => e ? rej(e) : res(r)
+            )
+          );
+          const moniteur = moniteurRows?.[0];
+          console.log("📧 Moniteur trouvé:", moniteur);
+
+          if (!candidat?.email) {
+            console.log("⚠️ Pas d'email pour ce candidat — mail non envoyé");
+          } else {
+            console.log("📤 Envoi mail à:", candidat.email);
+            await transporter.sendMail({
+              from: '"Auto-École 🚗" <tinhinanethequeen@gmail.com>',
+              to: candidat.email,
+              subject: "Nouvelle séance planifiée – Auto-École",
+              html: buildSeanceEmailHtml({
+                prenomCandidat: candidat.prenom,
+                nomCandidat:    candidat.nom,
+                prenomMoniteur: moniteur?.prenom || "",
+                nomMoniteur:    moniteur?.nom    || "",
+                date,
+                heure,
+                duree,
+                type,
+              }),
+            });
+            console.log("✅ Mail envoyé avec succès à:", candidat.email);
+          }
+        } catch (mailErr) {
+          console.error("❌ Erreur envoi mail:", mailErr.message);
+        }
+        // ────────────────────────────────────────────────────────────────
+
+        resolve({ success: true, id: newSeanceId });
       });
     });
   });
