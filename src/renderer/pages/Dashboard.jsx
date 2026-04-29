@@ -44,6 +44,8 @@ const Dashboard = () => {
     ]).then(([s, allSeances]) => {
       setStats(s ?? { totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
       setSeances((allSeances ?? []).slice(0, 5));
+      setRevenusData(revenus ?? []);
+      setSeancesData(seancesMois ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
