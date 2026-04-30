@@ -15,7 +15,6 @@ function rowToPayment(row) {
   let formattedDate = '';
   if (row.dateVersement) {
     const d = new Date(row.dateVersement);
-    // This ensures we get 2026-03-08 regardless of the input type
     formattedDate = d.toISOString().split('T')[0];
   }
 
@@ -23,7 +22,7 @@ function rowToPayment(row) {
     idVersement: row.idVersement,
     idPaiement:  row.idPaiement,
     idCandidat:  row.idCandidat,
-    name:   (row.name || '').trim(), // .trim() is crucial here
+    name:   (row.name || '').trim(),
     date:   formattedDate,
     amount: `${Number(row.montant).toLocaleString('fr-DZ')} DA`,
     type:   row.typePaiement === 'complet' ? 'Complet' : 'Par tranche',
@@ -46,49 +45,32 @@ const Payments = () => {
   const [selected, setSelected] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  // Dates par défaut (Aujourd'hui +/- 1 an pour voir large)
   const [startDate, setStartDate] = useState("2024-01-01");
   const [endDate, setEndDate] = useState("2026-12-31");
 
   const [paymentsData, setPaymentsData] = useState([]);
   const [allCandidates, setAllCandidates] = useState([]);
-  const [stats, setStats] = useState({ total: "0 DA", forecast: "0 DA", rate: "0%" });
 
-  // Utilisation de useCallback pour stabiliser la fonction de chargement
   const fetchData = useCallback(async () => {
     try {
-      console.log("Chargement des données financières...");
-      const payments = await window.electron.getPayments();
+      const payments   = await window.electron.getPayments();
       const candidates = await window.electron.getCandidats();
-      const dashboardStats = await window.electron.getDashboardStats();
-
-      setPaymentsData(payments || []);
+      setPaymentsData(payments   || []);
       setAllCandidates(candidates || []);
-      
-      setStats({
-        total: `${dashboardStats?.revenuMois || 0} DA`,
-        forecast: "185.000 DA", 
-        rate: "82%"
-      });
     } catch (err) {
       console.error("Erreur lors du rafraîchissement des données :", err);
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Fonction d'ajout de paiement avec rafraîchissement forcé
   const handleAddPayment = async (paymentData) => {
     try {
       const result = await window.electron.addPayment(paymentData);
-      
       if (result.success) {
         setShowModal(false);
         setSelected(null);
-        // On attend que les données soient rechargées avant de confirmer
-        await fetchData(); 
+        await fetchData();
       } else {
         alert("Erreur de la base de données : " + (result.message || "Action impossible"));
       }
@@ -98,36 +80,42 @@ const Payments = () => {
     }
   };
 
-  // Filtrage intelligent
+  // ── Filtrage ──────────────────────────────────────────────────────────────
   const filteredPayments = paymentsData.filter((payment) => {
     const fullName = `${payment.prenom || ""} ${payment.nom || ""}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase());
-    
     const paymentDate = new Date(payment.dateVersement);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // On ignore le filtre date si les champs sont vides
-    const matchesDate = (!startDate || paymentDate >= start) && (!endDate || paymentDate <= end);
-    
+    const matchesDate =
+      (!startDate || paymentDate >= new Date(startDate)) &&
+      (!endDate   || paymentDate <= new Date(endDate));
     return matchesSearch && matchesDate;
   });
 
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  // totalEncaisse : somme de chaque versement individuel (pas de doublon possible)
+  const totalEncaisse = paymentsData.reduce((acc, p) => acc + (Number(p.montant) || 0), 0);
 
+  // totalRestant : montantRestant appartient à Paiement, pas à Versement.
+  // Comme get-payments retourne 1 ligne par Versement, un même idPaiement peut
+  // apparaître plusieurs fois → on déduplique avant de sommer.
+  const totalRestant = (() => {
+    const seen = new Map(); // idPaiement → montantRestant le plus récent
+    for (const row of paymentsData) {
+      if (row.idPaiement !== undefined && row.idPaiement !== null) {
+        // On garde la première occurrence (ORDER BY dateVersement DESC = la plus récente)
+        if (!seen.has(row.idPaiement)) {
+          seen.set(row.idPaiement, Number(row.montantRestant) || 0);
+        }
+      }
+    }
+    return Array.from(seen.values()).reduce((acc, v) => acc + v, 0);
+  })();
 
-
-  // ── Styles inline réutilisables ───────────────────────────────
+  // ── Styles ────────────────────────────────────────────────────────────────
   const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
   const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
-  // ── Stats dérivées du state (remplace les valeurs codées en dur) ─
-  const totalRevenu = paymentsData.reduce((acc, p) => acc + (p.montant || 0), 0);
-const totalPrevision = paymentsData.reduce((acc, p) => acc + (p.montantRestant || 0), 0);
-const tauxRecouvrement = paymentsData.length
-  ? Math.round((paymentsData.filter((p) => p.statutPaiement === 'solde').length / paymentsData.length) * 100)
-  : 0;
-
-  // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="container">
       <div className="main">
@@ -136,71 +124,84 @@ const tauxRecouvrement = paymentsData.length
         <div className="header">
           <img src={ConnexionImg} alt="illustration" className="header-img" />
           <h1>
-            <img src={SmallCar} alt="icon" width={40} style={{ marginRight: "10px" }} /> 
+            <img src={SmallCar} alt="icon" width={40} style={{ marginRight: "10px" }} />
             Gestion des Encaissements
           </h1>
           <p>Suivi en temps réel des versements et soldes candidats</p>
         </div>
 
-        {/* SECTION STATS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginBottom: "30px", marginTop: "20px" }}>
+        {/* SECTION STATS — 2 cartes */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "20px",
+          marginBottom: "30px",
+          marginTop: "20px",
+        }}>
           {[
-            { title: "Chiffre d'Affaires", value: stats.total, color: "#2b537e", detail: "Encaissé (Mois en cours)" },
-            { title: "Prévisions d'Entrée", value: stats.forecast, color: "#011659", detail: "Restes à recouvrer" },
-            { title: "Taux de Recouvrement", value: stats.rate, color: "#166534", detail: "Globalité des dossiers" }
+            {
+              title: "Total Encaissé",
+              value: `${totalEncaisse.toLocaleString("fr-DZ")} DA`,
+              color: "#2b537e",
+              detail: "Somme de tous les versements",
+            },
+            {
+              title: "Reste à Recouvrer",
+              value: `${totalRestant.toLocaleString("fr-DZ")} DA`,
+              color: totalRestant > 0 ? "#b91c1c" : "#166534",
+              detail: "Soldes impayés (tous candidats)",
+            },
           ].map((card, i) => (
-            <div key={i} style={{ 
-              background: "#DDE2EF", 
-              borderRadius: "16px", 
-              padding: "24px", 
-              borderLeft: `6px solid ${card.color}`, 
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)" 
+            <div key={i} style={{
+              background: "#DDE2EF",
+              borderRadius: "16px",
+              padding: "24px",
+              borderLeft: `6px solid ${card.color}`,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
             }}>
-              <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>{card.title}</p>
-              <h2 style={{ margin: "8px 0", fontSize: "26px", fontWeight: "800", color: "#1e293b" }}>{card.value}</h2>
-              <p style={{ margin: 0, fontSize: "13px", color: card.color, fontWeight: "600" }}>{card.detail}</p>
+              <p style={{ margin: 0, fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>
+                {card.title}
+              </p>
+              <h2 style={{ margin: "8px 0", fontSize: "26px", fontWeight: "800", color: "#1e293b" }}>
+                {card.value}
+              </h2>
+              <p style={{ margin: 0, fontSize: "13px", color: card.color, fontWeight: "600" }}>
+                {card.detail}
+              </p>
             </div>
           ))}
         </div>
 
         {/* FILTRES & ACTIONS */}
         <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
-          <div style={{ 
-            flex: 1, 
-            background: "#fff", 
-            padding: "12px 20px", 
-            borderRadius: "15px", 
-            display: "flex", 
-            gap: "15px", 
-            alignItems: "center", 
-            border: "1px solid #E2E8F0" 
+          <div style={{
+            flex: 1, background: "#fff", padding: "12px 20px",
+            borderRadius: "15px", display: "flex", gap: "15px",
+            alignItems: "center", border: "1px solid #E2E8F0",
           }}>
-            <input 
-              type="text" 
-              placeholder="🔍 Rechercher un candidat..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-              style={{ flex: 1, padding: "10px", border: "1px solid #CBD5E0", borderRadius: "10px", outline: "none" }} 
+            <input
+              type="text"
+              placeholder="🔍 Rechercher un candidat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ flex: 1, padding: "10px", border: "1px solid #CBD5E0", borderRadius: "10px", outline: "none" }}
             />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#4A5568" }}>
               <span>Du</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ padding: "8px", border: "1px solid #CBD5E0", borderRadius: "8px" }} />
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                style={{ padding: "8px", border: "1px solid #CBD5E0", borderRadius: "8px" }} />
               <span>au</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ padding: "8px", border: "1px solid #CBD5E0", borderRadius: "8px" }} />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                style={{ padding: "8px", border: "1px solid #CBD5E0", borderRadius: "8px" }} />
             </div>
           </div>
-          
-          <button 
-            onClick={() => { setSelected(null); setShowModal(true); }} 
-            style={{ 
-              background: "#166534", 
-              color: "#fff", 
-              border: "none", 
-              padding: "15px 25px", 
-              borderRadius: "12px", 
-              cursor: "pointer", 
-              fontWeight: "700",
-              boxShadow: "0 4px 6px rgba(22, 101, 52, 0.2)"
+
+          <button
+            onClick={() => { setSelected(null); setShowModal(true); }}
+            style={{
+              background: "#166534", color: "#fff", border: "none",
+              padding: "15px 25px", borderRadius: "12px", cursor: "pointer",
+              fontWeight: "700", boxShadow: "0 4px 6px rgba(22,101,52,0.2)",
             }}
           >
             + Nouveau Paiement
@@ -224,28 +225,33 @@ const tauxRecouvrement = paymentsData.length
               <tbody>
                 {filteredPayments.length > 0 ? (
                   filteredPayments.map((item, index) => (
-                    <tr key={item.idVersement || index} style={{ background: index % 2 === 0 ? "#fff" : "#F8FAFC" }}>
+                    <tr key={item.idVersement || index}
+                      style={{ background: index % 2 === 0 ? "#fff" : "#F8FAFC" }}>
                       <td style={td}>{item.prenom} {item.nom}</td>
                       <td style={td}>{new Date(item.dateVersement).toLocaleDateString("fr-FR")}</td>
                       <td style={td}><strong style={{ color: "#2D3748" }}>{item.montant} DA</strong></td>
                       <td style={td}>
-                        <span style={{ 
-                          color: item.montantRestant > 0 ? "#b91c1c" : "#059669", 
+                        <span style={{
+                          color: item.montantRestant > 0 ? "#b91c1c" : "#059669",
                           fontWeight: "bold",
                           background: item.montantRestant > 0 ? "#FEF2F2" : "#ECFDF5",
-                          padding: "4px 10px",
-                          borderRadius: "20px"
+                          padding: "4px 10px", borderRadius: "20px",
                         }}>
                           {item.montantRestant} DA
                         </span>
                       </td>
-                      <td style={{td, textTransform: "capitalize" }}>{item.methode}</td>
+                      <td style={{ ...td, textTransform: "capitalize" }}>{item.methode}</td>
                       <td style={td}>
-                        <button 
-                          onClick={() => { setSelected(item); setShowModal(true); }} 
-                          style={{ background: "#EDF2F7", color: "#2b537e", border: "1px solid #2b537e", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
+                        <button
+                          onClick={() => { setSelected(item); setShowModal(true); }}
+                          style={{
+                            background: "#EDF2F7", color: "#2b537e",
+                            border: "1px solid #2b537e", padding: "6px 12px",
+                            borderRadius: "6px", cursor: "pointer",
+                            fontSize: "12px", fontWeight: "600",
+                          }}
                         >
-                          Détails
+                          + Versement
                         </button>
                       </td>
                     </tr>
@@ -264,11 +270,11 @@ const tauxRecouvrement = paymentsData.length
 
         {/* MODALE */}
         {showModal && (
-          <PaymentModal 
-            candidate={selected} 
-            allCandidates={allCandidates} 
-            onClose={() => { setShowModal(false); setSelected(null); }} 
-            onAddPayment={handleAddPayment} 
+          <PaymentModal
+            candidate={selected}
+            allCandidates={allCandidates}
+            onClose={() => { setShowModal(false); setSelected(null); }}
+            onAddPayment={handleAddPayment}
           />
         )}
       </div>
