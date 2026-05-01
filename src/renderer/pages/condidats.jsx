@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Button from "../components/Button";
 import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
-import { SquarePen, Trash, Search, Phone } from "lucide-react";
+import { SquarePen, Trash, Phone } from "lucide-react";
 import AddCandidatModal from "../components/addCondidat";
 
 const Condidats = () => {
@@ -54,7 +55,7 @@ const Condidats = () => {
           status:   c.statut,
           sexe:     c.sexe,
           photo:    c.photo || null,
-          _raw:     c,  // ← objet brut complet pour la modale
+          _raw:     c,
         };
       });
 
@@ -67,19 +68,16 @@ const Condidats = () => {
 
   useEffect(() => { loadCandidats(); }, []);
 
-  // ✏️ EDIT — on passe l'objet brut à la modale
   const handleEdit = (candidat) => {
     setEditCandidat(candidat._raw);
     setShowModal(true);
   };
 
-  // ➕ ADD
   const handleAdd = () => {
     setEditCandidat(null);
     setShowModal(true);
   };
 
-  // ❌ DELETE
   const handleDelete = async (id) => {
     if (window.confirm("Supprimer ce candidat ?")) {
       const result = await window.electron.deleteCandidat(id);
@@ -91,7 +89,6 @@ const Condidats = () => {
     }
   };
 
-  // 💾 SAVE
   const handleSave = async (data) => {
     if (data.idCandidat) {
       await window.electron.updateCandidat(data);
@@ -124,15 +121,31 @@ const Condidats = () => {
             <Button text="+ Ajouter candidat" onClick={handleAdd} />
           </div>
 
-          <div className="search-bar">
-            <div className="search-wrapper">
-              <Search size={16} className="search-icon" />
+          {/* BARRE DE RECHERCHE — même style que Payments */}
+          <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
+            <div style={{
+              flex: 1,
+              background: "#fff",
+              padding: "12px 20px",
+              borderRadius: "15px",
+              display: "flex",
+              gap: "15px",
+              alignItems: "center",
+              border: "1px solid #E2E8F0"
+            }}>
               <input
                 type="text"
-                placeholder="Rechercher un candidat..."
-                className="search"
+                placeholder="🔍 Rechercher un candidat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  border: "1px solid #CBD5E0",
+                  borderRadius: "10px",
+                  outline: "none",
+                  fontSize: "14px"
+                }}
               />
             </div>
           </div>
@@ -177,7 +190,7 @@ const Condidats = () => {
                             <SquarePen
                               size={17} color="blue"
                               style={{ cursor: "pointer" }}
-                              onClick={() => handleEdit(c)}   // ← c contient _raw
+                              onClick={() => handleEdit(c)}
                             />
                             <Trash
                               size={17} color="red"
@@ -199,7 +212,7 @@ const Condidats = () => {
       <AddCandidatModal
         showModal={showModal}
         setShowModal={setShowModal}
-        candidat={editCandidat}   // ← maintenant c'est l'objet brut avec idCandidat
+        candidat={editCandidat}
         onSave={handleSave}
       />
     </div>

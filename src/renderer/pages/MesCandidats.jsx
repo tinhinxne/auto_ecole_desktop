@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Search, TrendingUp, Users, Plus, Trash2 } from "lucide-react";
+import { TrendingUp, Users, Plus, Trash2 } from "lucide-react";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import { useAuth } from "../context/AuthContext";
@@ -248,16 +249,31 @@ const MesCandidats = () => {
             )}
           </div>
 
-          {/* SEARCH */}
-          <div className="search-bar">
-            <div className="search-wrapper">
-              <Search size={16} className="search-icon" />
+          {/* BARRE DE RECHERCHE — même style que Payments */}
+          <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
+            <div style={{
+              flex: 1,
+              background: "#fff",
+              padding: "12px 20px",
+              borderRadius: "15px",
+              display: "flex",
+              gap: "15px",
+              alignItems: "center",
+              border: "1px solid #E2E8F0"
+            }}>
               <input
                 type="text"
-                placeholder="Rechercher des candidats..."
-                className="search"
+                placeholder="🔍 Rechercher un candidat..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  border: "1px solid #CBD5E0",
+                  borderRadius: "10px",
+                  outline: "none",
+                  fontSize: "14px"
+                }}
               />
             </div>
           </div>
@@ -314,7 +330,7 @@ const MesCandidats = () => {
                       <span style={{ color: "#1e293b", fontWeight: 600 }}>{c.nextSession}</span>
                     </div>
 
-                    {/* ── Bouton Supprimer — uniquement si permission accordée ── */}
+                    {/* Bouton Supprimer */}
                     {CAN_REMOVE_CANDIDAT && (
                       <button
                         onClick={() => handleDelete(c.id)}
@@ -342,7 +358,7 @@ const MesCandidats = () => {
         </div>
       </div>
 
-      {/* MODALE — s'ouvre seulement si CAN_VIEW_ALL_CANDIDATES */}
+      {/* MODALE */}
       {CAN_VIEW_ALL_CANDIDATES && (
         <AddCandidatModal
           showModal={showModal}

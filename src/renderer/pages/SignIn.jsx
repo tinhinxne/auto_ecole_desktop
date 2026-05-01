@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/SignIn.css';
 import CarImage from '../../assets/Car.png';
 import { useNavigate } from "react-router-dom";
-import { Ban } from 'lucide-react';
+import { Ban, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from "../context/AuthContext";
 
 const SteeringWheelIcon = () => (
@@ -15,7 +15,7 @@ const SteeringWheelIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="12" cy="12" r="10" />s
+    <circle cx="12" cy="12" r="10" />
     <circle cx="12" cy="12" r="3" />
     <line x1="12" y1="2" x2="12" y2="9" />
     <line x1="4.22" y1="6.22" x2="9.17" y2="9.17" />
@@ -72,8 +72,9 @@ const InactivePopup = ({ onClose }) => (
       textAlign: 'center',
       boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
     }}>
-      {/* Icône d'alerte */}
-      <div ><Ban color="#c0392b" size={32}/></div>
+      <div>
+        <Ban color="#c0392b" size={32}/>
+      </div>
 
       <h2 style={{
         color: '#0d0a0a',
@@ -115,9 +116,13 @@ const InactivePopup = ({ onClose }) => (
 
 export default function SignIn() {
   const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showInactivePopup, setShowInactivePopup] = useState(false);
+
+  // 👇 AJOUTE ÇA
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -137,7 +142,6 @@ export default function SignIn() {
           navigate("/dashboard");
         }
       } else if (response.inactive) {
-        // Moniteur inactif → afficher le popup rouge
         setShowInactivePopup(true);
       } else {
         alert(response.message || "Identifiants invalides");
@@ -148,9 +152,11 @@ export default function SignIn() {
     }
   };
 
-
   return (
-    <div className="signin-page" style={{ backgroundImage: `url(${CarImage})` }}>
+    <div
+      className="signin-page"
+      style={{ backgroundImage: `url(${CarImage})` }}
+    >
 
       {/* ── Popup compte inactif ── */}
       {showInactivePopup && (
@@ -164,6 +170,7 @@ export default function SignIn() {
         aria-hidden="true"
         className="signin-page__bg-image signin-page__bg-image--instructor"
       />
+
       <img
         src="../../assets/Car.png"
         alt=""
@@ -174,16 +181,18 @@ export default function SignIn() {
       {/* ── Carte de connexion ── */}
       <div className="signin-card">
 
-        {/* Logo + nom de l'appli */}
+        {/* Logo + nom appli */}
         <div className="signin-card__app-header">
           <SteeringWheelIcon />
-          <span className="signin-card__app-title">Ecole de Conduite</span>
+          <span className="signin-card__app-title">
+            Ecole de Conduite
+          </span>
         </div>
 
         {/* Titre */}
         <h1 className="signin-card__title">Connexion</h1>
 
-        {/* Bandeau sous-titre */}
+        {/* Sous titre */}
         <div className="signin-card__subtitle-band">
           <p className="signin-card__subtitle">
             Connectez-vous à votre compte
@@ -193,9 +202,10 @@ export default function SignIn() {
         {/* Formulaire */}
         <form className="signin-form" onSubmit={handleSubmit}>
 
-          {/* Champ e-mail */}
+          {/* Email */}
           <div className="signin-form__field">
             <EmailIcon />
+
             <input
               className="signin-form__input"
               type="email"
@@ -207,18 +217,47 @@ export default function SignIn() {
             />
           </div>
 
-          {/* Champ mot de passe */}
-          <div className="signin-form__field">
+          {/* Password */}
+          <div
+            className="signin-form__field"
+            style={{ position: "relative" }}
+          >
             <LockIcon />
+
             <input
               className="signin-form__input"
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Mot de passe"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
             />
+
+            {/* 👁️ Icône oeil */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#666",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {showPassword ? (
+                <EyeOff size={20} />
+              ) : (
+                <Eye size={20} />
+              )}
+            </button>
           </div>
 
           {/* Mot de passe oublié */}
@@ -229,7 +268,10 @@ export default function SignIn() {
           </div>
 
           {/* Bouton */}
-          <button type="submit" className="signin-form__submit">
+          <button
+            type="submit"
+            className="signin-form__submit"
+          >
             Se connecter
           </button>
 

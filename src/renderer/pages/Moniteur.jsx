@@ -6,7 +6,6 @@ import Button from "../components/Button";
 import AddMoniteurModal from "../components/addMoniteur";
 
 const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
-  // Sécurité pour les initiales si le nom/prénom est manquant
   const initials = `${moniteur.prenom?.[0] || ""}${moniteur.nom?.[0] || ""}`.toUpperCase();
 
   return (
@@ -14,9 +13,9 @@ const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
       <div className="card-header-proto">
         <div className="avatar-proto">
           {moniteur.photo ? (
-            <img 
-              src={moniteur.photo} 
-              alt={`${moniteur.prenom} ${moniteur.nom}`} 
+            <img
+              src={moniteur.photo}
+              alt={`${moniteur.prenom} ${moniteur.nom}`}
               style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : (
@@ -61,7 +60,6 @@ const Moniteur = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedMoniteur, setSelectedMoniteur] = useState(null);
 
-  // 1. CHARGER LES DONNÉES DEPUIS MYSQL
   const loadMoniteurs = async () => {
     try {
       const data = await window.electron.getMoniteurs();
@@ -75,51 +73,47 @@ const Moniteur = () => {
     loadMoniteurs();
   }, []);
 
-const handleSave = async (data) => {
-  try {
-    let result;
-    if (data.id) {
-      result = await window.electron.updateMoniteur(data);
-    } else {
-      result = await window.electron.addMoniteur(data);
-    }
-
-    if (result?.success) {
-      await loadMoniteurs();
-      // Ne PAS fermer la modal ici pour le mode ajout
-      // (la modal se gère elle-même après avoir affiché le mdp)
-      if (data.id) setShowModal(false);
-    }
-
-    return result; // ← important : retourner le résultat à la modal
-  } catch (err) {
-    console.error("Erreur save:", err);
-    return { success: false, error: err.message };
-  }
-};
-
-  // 3. SUPPRIMER
-  const handleDelete = async (id) => {
-  console.log("Tentative de suppression de l'ID:", id); // Vérifie la console ici
-  if (!id) {
-    alert("Erreur : ID introuvable");
-    return;
-  }
-
-  if (window.confirm("Supprimer ce moniteur définitivement ?")) {
+  const handleSave = async (data) => {
     try {
-      const result = await window.electron.deleteMoniteur(id);
-      if (result.success) {
-        console.log("Suppression réussie côté BDD");
-        await loadMoniteurs(); // On recharge la liste
+      let result;
+      if (data.id) {
+        result = await window.electron.updateMoniteur(data);
       } else {
-        alert("Erreur BDD : " + result.error);
+        result = await window.electron.addMoniteur(data);
       }
+
+      if (result?.success) {
+        await loadMoniteurs();
+        if (data.id) setShowModal(false);
+      }
+
+      return result;
     } catch (err) {
-      console.error("Erreur appel IPC delete:", err);
+      console.error("Erreur save:", err);
+      return { success: false, error: err.message };
     }
-  }
-};
+  };
+
+  const handleDelete = async (id) => {
+    console.log("Tentative de suppression de l'ID:", id);
+    if (!id) {
+      alert("Erreur : ID introuvable");
+      return;
+    }
+
+    if (window.confirm("Supprimer ce moniteur définitivement ?")) {
+      try {
+        const result = await window.electron.deleteMoniteur(id);
+        if (result.success) {
+          await loadMoniteurs();
+        } else {
+          alert("Erreur BDD : " + result.error);
+        }
+      } catch (err) {
+        console.error("Erreur appel IPC delete:", err);
+      }
+    }
+  };
 
   const handleEditClick = (moniteur) => {
     setSelectedMoniteur(moniteur);
@@ -131,7 +125,6 @@ const handleSave = async (data) => {
     setShowModal(true);
   };
 
-  // FILTRAGE
   const filteredMoniteurs = moniteurs.filter((m) => {
     const fullName = `${m.prenom} ${m.nom}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase());
@@ -157,30 +150,63 @@ const handleSave = async (data) => {
             <Button text="  + Ajouter moniteur" onClick={handleAddClick} />
           </div>
 
-          <div className="toolbar-container">
-            <div className="search-bar-proto">
-              <i className="fa-solid fa-magnifying-glass" />
-              <input 
-                type="text" 
-                placeholder="Rechercher un nom..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
+          {/* BARRE DE RECHERCHE — même style que Payments */}
+          <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
+            <div style={{
+              flex: 1,
+              background: "#fff",
+              padding: "12px 20px",
+              borderRadius: "15px",
+              display: "flex",
+              gap: "15px",
+              alignItems: "center",
+              border: "1px solid #E2E8F0"
+            }}>
+              <input
+                type="text"
+                placeholder="🔍 Rechercher un moniteur..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  border: "1px solid #CBD5E0",
+                  borderRadius: "10px",
+                  outline: "none",
+                  fontSize: "14px"
+                }}
               />
-            </div>
-            <div className="filter-buttons">
-              <button className={filterStatus === "tous" ? "active" : ""} onClick={() => setFilterStatus("tous")}>Tous</button>
-              <button className={filterStatus === "actif" ? "active" : ""} onClick={() => setFilterStatus("actif")}>Actifs</button>
-              <button className={filterStatus === "inactif" ? "active" : ""} onClick={() => setFilterStatus("inactif")}>Inactifs</button>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#4A5568" }}>
+                <span>Statut :</span>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #CBD5E0",
+                    borderRadius: "8px",
+                    outline: "none",
+                    fontSize: "14px",
+                    color: "#4A5568",
+                    background: "#fff",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="tous">Tous</option>
+                  <option value="actif">Actifs</option>
+                  <option value="inactif">Inactifs</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <div className="moniteur-grid-proto">
             {filteredMoniteurs.length > 0 ? (
               filteredMoniteurs.map(m => (
-                <MoniteurCard 
-                  key={m.id} 
-                  moniteur={m} 
-                  onDelete={handleDelete} 
+                <MoniteurCard
+                  key={m.id}
+                  moniteur={m}
+                  onDelete={handleDelete}
                   onEdit={handleEditClick}
                 />
               ))
