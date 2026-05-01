@@ -7,8 +7,8 @@ const ExamenContext = createContext(null);
 // Seuils de séances pour chaque type d'examen
 export const EXAM_THRESHOLDS = {
   Code:        5,   // à partir de 5 séances
-  Créneau:    11,   // à partir de 11 séances (Code réussi)
-  Circulation: 17,  // à partir de 17 séances (Créneau réussi)
+  Créneau:    10,   // à partir de 11 séances (Code réussi)
+  Circulation: 14,  // à partir de 17 séances (Créneau réussi)
 };
 
 // Préfixe localStorage pour la persistance

@@ -14,6 +14,8 @@ import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import "../../styles/Dashboard.css";
 
+import { useExamenCtx } from "../context/ExamenContext";
+
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -28,28 +30,56 @@ const statutColor = (statut) => {
   return { bg: "#FFF7ED", color: "#EA580C" };
 };
 
+const TYPE_COLORS = {
+  Code:        { bg: "#EFF6FF", color: "#3B82F6" },
+  Créneau:     { bg: "#FFF7ED", color: "#EA580C" },
+  Circulation: { bg: "#F0FDF4", color: "#16A34A" },
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { examensList, generateExamens } = useExamenCtx();
+
   const [stats, setStats]                       = useState({ totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
   const [seances, setSeances]                   = useState([]);
   const [loading, setLoading]                   = useState(true);
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const [revenusData, setRevenusData] = useState([]);
-  const [seancesData, setSeancesData] = useState([]);
+  const [revenusData, setRevenusData]           = useState([]);
+  const [seancesData, setSeancesData]           = useState([]);
+
+  // Examens à venir = status "Scheduled", triés par date
+  const examensAVenir = examensList
+    .filter(e => e.status === "Scheduled")
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 5);
 
   useEffect(() => {
-    Promise.all([
-      window.electron.getDashboardStats(),
-      window.electron.getSeances(),
-      window.electron.getRevenusMensuels(),
-      window.electron.getSeancesMois(),
-    ]).then(([s, allSeances, revenus, seancesMois]) => {
-      setStats(s ?? { totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
-      setSeances((allSeances ?? []).slice(0, 5));
-      setRevenusData(revenus    ?? []);
-      setSeancesData(seancesMois ?? []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // Génère les examens automatiquement au chargement du dashboard
+    async function loadAll() {
+      try {
+        const [s, allSeances, revenus, seancesMois, candidats] = await Promise.all([
+          window.electron.getDashboardStats(),
+          window.electron.getSeances(),
+          window.electron.getRevenusMensuels(),
+          window.electron.getSeancesMois(),
+          window.electron.getCandidats(),
+        ]);
+        setStats(s ?? { totalCandidats: 0, sessionsToday: 0, revenuMois: 0 });
+        setSeances((allSeances ?? []).slice(0, 5));
+        setRevenusData(revenus    ?? []);
+        setSeancesData(seancesMois ?? []);
+
+        // Génère les examens depuis les séances et candidats réels
+        if (allSeances && candidats) {
+          generateExamens(allSeances, candidats);
+        }
+      } catch (err) {
+        console.error("Erreur dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAll();
   }, []);
 
   const cardData = [
@@ -69,8 +99,8 @@ const Dashboard = () => {
     },
     {
       label: "Examens à venir",
-      val: "—",
-      trend: null,
+      val: loading ? "…" : String(examensAVenir.length),
+      trend: examensAVenir.length > 0 ? `Prochain : ${examensAVenir[0]?.date ?? "—"}` : "Aucun programmé",
       color: "red",
       icon: <FiCalendar />
     },
@@ -160,7 +190,6 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.45 }}
       >
-        {/* Bouton toggle */}
         <button
           className={`qa-toggle-btn ${showQuickActions ? "open" : ""}`}
           onClick={() => setShowQuickActions(prev => !prev)}
@@ -178,7 +207,6 @@ const Dashboard = () => {
           </motion.span>
         </button>
 
-        {/* Cartes — apparaissent/disparaissent */}
         <motion.div
           className="quick-actions-grid"
           initial={false}
@@ -236,7 +264,6 @@ const Dashboard = () => {
       {/* ── GRAPHIQUES ── */}
       <div className="charts-main-grid">
 
-        {/* Aperçu des revenus — données réelles */}
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.4 }}>
           <h3>Aperçu des revenus</h3>
           {revenusData.length === 0 ? (
@@ -267,7 +294,6 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        {/* Sessions de ce mois — données réelles */}
         <motion.div className="chart-box blue-bg" {...fadeInUp} transition={{ delay: 0.5 }}>
           <h3>Sessions de ce mois</h3>
           {seancesData.length === 0 ? (
@@ -293,23 +319,52 @@ const Dashboard = () => {
       {/* ── LISTES BAS DE PAGE ── */}
       <div className="bottom-sections">
 
-        {/* Examens à venir — placeholder statique */}
+        {/* Examens à venir — données réelles depuis ExamenContext */}
         <motion.div className="list-container blue-container" {...fadeInUp} transition={{ delay: 0.6 }}>
-          <h3><FiCalendar /> Examens à venir</h3>
-          {["Marie Dubois", "Pierre Martin", "Sophie Leroy", "Luc Bernard"].map((name, i) => (
-            <motion.div
-              key={i}
-              className="modern-item-row"
-              whileHover={{ x: 10, backgroundColor: "#fff" }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <div className="item-details">
-                <strong>{name}</strong>
-                <span>2026-03-10 à 09:00</span>
-              </div>
-              <span className="type-badge">Code</span>
-            </motion.div>
-          ))}
+          <h3>
+            <FiCalendar /> Examens à venir
+            {examensAVenir.length > 0 && (
+              <span style={{
+                marginLeft: 10, fontSize: 12, background: "#EFF6FF",
+                color: "#3B82F6", padding: "2px 10px", borderRadius: 20, fontWeight: 600,
+              }}>
+                {examensAVenir.length}
+              </span>
+            )}
+          </h3>
+
+          {loading && <p style={{ color: "#94A3B8", fontSize: 14 }}>Chargement…</p>}
+
+          {!loading && examensAVenir.length === 0 && (
+            <p style={{ color: "#94A3B8", fontSize: 14 }}>
+              Aucun examen programmé. Allez dans la page Examens pour générer.
+            </p>
+          )}
+
+          {!loading && examensAVenir.map((examen, i) => {
+            const tc = TYPE_COLORS[examen.type] ?? { bg: "#F1F5F9", color: "#64748B" };
+            return (
+              <motion.div
+                key={examen.id ?? i}
+                className="modern-item-row"
+                whileHover={{ x: 10, backgroundColor: "#fff" }}
+                transition={{ type: "spring", stiffness: 300 }}
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate("/examens")}
+              >
+                <div className="item-details">
+                  <strong>{examen.candidat}</strong>
+                  <span>{examen.date} à {examen.heure} — {examen.lieu}</span>
+                </div>
+                <span
+                  className="type-badge"
+                  style={{ background: tc.bg, color: tc.color, border: "none" }}
+                >
+                  {examen.type}
+                </span>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Activité récente — données réelles */}
