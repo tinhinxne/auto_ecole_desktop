@@ -5,6 +5,8 @@ const db = require('./db');
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { registerMoniteurHandlers } = require('./moniteurHandlers');
+const { registerAdminHandlers } = require('./adminHandlers');
+
 
 
 // ── CONFIG EMAIL ─────────────────────────────────────────────────────────────
@@ -67,7 +69,8 @@ function createWindow() {
 }
 app.whenReady().then(() => {
   createWindow();
-  registerMoniteurHandlers(db); // ← ajouter cette ligne
+  registerMoniteurHandlers(db); 
+  registerAdminHandlers(db); 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
