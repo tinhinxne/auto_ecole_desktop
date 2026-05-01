@@ -165,9 +165,9 @@ const Condidats = () => {
                         <td style={td}>{c.inscription}</td>
                         <td style={td}>
                           <div className="progress-container">
-                            <div className="progress-bar" style={{ width: `${Math.min((c.sessions / 30) * 100, 100)}%` }} />
+                            <div className="progress-bar" style={{ width: `${Math.min((c.sessions / 20) * 100, 100)}%` }} />
                           </div>
-                          <span className="progress-text">{c.sessions}/30 sessions</span>
+                          <span className="progress-text">{c.sessions}/20 sessions</span>
                         </td>
                         <td style={td}>
                           <span className={`status ${c.status}`}>{c.status}</span>

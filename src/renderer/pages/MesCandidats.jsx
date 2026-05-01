@@ -100,7 +100,7 @@ const MesCandidats = () => {
             nom:         `${c.prenom} ${c.nom}`,
             tel:         c.telephone,
             sessions:    nbSessions,
-            total:       30,
+            total:       20,
             nextSession,
             status:      c.statut,
             _raw:        c,

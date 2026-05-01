@@ -190,27 +190,32 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   // - si autorisation parentale requise → case cochée
   const canSave = !blocked && (!needsParent || parentAuthChecked);
 
-  useEffect(() => {
-    setParentAuthChecked(false);
-    if (candidat) {
-      setForm({
-        nom:         candidat.nom         || "",
-        prenom:      candidat.prenom      || "",
-        dob:         candidat.dob         || "",
-        inscription: candidat.inscription || "",
-        tel:         candidat.tel         || "",
-        sexe:        candidat.sexe        || "",
-      });
-    } else {
-      const today = new Date().toISOString().split("T")[0];
-      setForm({ ...emptyForm, inscription: today });
-    }
-  }, [candidat, showModal]);
+ useEffect(() => {
+  setParentAuthChecked(false);
+  if (candidat) {
+    setForm({
+      nom:         candidat.nom                                              || "",
+      prenom:      candidat.prenom                                           || "",
+      dob:         candidat.date_naissance
+                     ? new Date(candidat.date_naissance).toISOString().split("T")[0]
+                     : "",
+      inscription: candidat.date_inscription
+                     ? new Date(candidat.date_inscription).toISOString().split("T")[0]
+                     : "",
+      tel:         candidat.telephone                                        || "",
+      sexe:        candidat.sexe === "M" ? "homme" : candidat.sexe === "F" ? "femme" : "",
+      email:       candidat.email                                            || "",
+    });
+  } else {
+    const today = new Date().toISOString().split("T")[0];
+    setForm({ nom:"", prenom:"", dob:"", inscription:today, tel:"", sexe:"", email:"" });
+  }
+}, [candidat, showModal]);
 
   const handleSave = () => {
     if (!canSave) return;
     const data = {
-      idCandidat:          candidat?.id,
+      idCandidat:          candidat?.idCandidat,
       nom:                 form.nom,
       prenom:              form.prenom,
       telephone:           form.tel,
@@ -219,6 +224,7 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
       sexe:                form.sexe === "homme" ? "M" : "F",
       statut:              "actif",
       autorisationParentale: needsParent && parentAuthChecked,
+      email:                 form.email || null,
     };
     onSave?.(data);
   };
@@ -333,7 +339,15 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
                 </label>
               </div>
             )}
-
+          <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+  <label>Email</label>
+  <input
+    type="email"
+    placeholder="email@exemple.com"
+    value={form.email || ""}
+    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+  />
+</div>
             {/* Téléphone */}
             <div className="field">
               <label>Numéro de téléphone <span className="req">*</span></label>

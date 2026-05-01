@@ -43,6 +43,7 @@ function dbRowToSession(row) {
     id:      row.idSeance,
     name:    firstName,
     monitor: row.moniteurNom || "—",
+    moniteur_id: row.moniteur_id,
     type:    (row.type || "code").toLowerCase(),
     day:     dayOfWeek,
     startH,
@@ -325,13 +326,14 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
       allSlots.push(h); allSlots.push(h+0.25); allSlots.push(h+0.5); allSlots.push(h+0.75);
     }
     const occupiedIntervals = (sessions || [])
-      .filter(s => {
-        const sDate = toLocalISO(s._raw?.date);
-        const isOther = editing ? s.id !== editing.id : true;
-        const sameMoniteur = String(s._raw?.moniteur_id) === String(form.moniteur_id);
-        return sDate === form.date && isOther && sameMoniteur;
-      })
-      .map(s => ({ start: s.startH, end: s.startH + s.dur }));
+  .filter(s => {
+    if (!form.date || !form.moniteur_id) return false;
+    const sDate = toLocalISO(s._raw?.date);
+    const isOther = editing ? String(s.id) !== String(editing.id) : true;
+    const sameMoniteur = String(s._raw?.moniteur_id) === String(form.moniteur_id);
+    return sDate === form.date && isOther && sameMoniteur;
+  })
+  .map(s => ({ start: s.startH, end: s.startH + s.dur }));
 
     const formatSlot = slot => {
       const h = Math.floor(slot); const m = Math.round((slot % 1) * 60);
@@ -478,10 +480,10 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
 
     const items = withCol.map(({ session: s, colIdx }) => {
       const overlappingCount = withCol.filter(({ session: other }) =>
-        other.id !== s.id &&
-        other.startH < s.startH + s.dur &&
-        other.startH + s.dur > s.startH
-      ).length;
+  other.id !== s.id &&
+  other.startH < s.startH + s.dur &&
+  other.startH + other.dur > s.startH  // ← other.dur pas s.dur
+).length;
       return { session: s, colIdx, localCols: overlappingCount + 1 };
     });
 
@@ -685,14 +687,12 @@ export default function AgendaPage() {
     const newEnd   = newStart + parseFloat(_formData.duree);
 
     const conflict = sessions.find(s => {
-      if (editing && s.id === editing.id) return false;
-      const sDate = toLocalISO(s._raw?.date);
-      if (sDate !== _formData.date) return false;
-      if (!_formData.moniteur_id) return false;
-      if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
-      const sEnd = s.startH + s.dur;
-      return newStart < sEnd && newEnd > s.startH;
-    });
+  if (editing && String(s.id) === String(editing.id)) return false;
+  if (toLocalISO(s._raw?.date) !== _formData.date) return false;
+  if (!_formData.moniteur_id || !s._raw?.moniteur_id) return false;
+  if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
+  return newStart < s.startH + s.dur && newEnd > s.startH;
+});
 
     if (conflict) {
       showToast(`⚠️ Ce moniteur est déjà occupé de ${floatToHHMM(conflict.startH)} à ${floatToHHMM(conflict.startH + conflict.dur)} ce jour-là.`, "error");
