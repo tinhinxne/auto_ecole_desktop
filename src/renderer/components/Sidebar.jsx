@@ -18,7 +18,7 @@ const Sidebar = () => {
     { name: "Moniteur",  icon: <FaUserTie />,     path: "/moniteur"  },
     { name: "Agenda",    icon: <FaCalendarAlt />, path: "/agenda"    },
     { name: "Examens",   icon: <FaFileAlt />,     path: "/examens"   },
-    { name: "Payments",  icon: <FaCreditCard />,  path: "/payments"  },
+    { name: "Paiements",  icon: <FaCreditCard />,  path: "/payments"  },
   ];
 
   const handleLogout = () => navigate("/connexion");
