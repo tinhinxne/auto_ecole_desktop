@@ -458,6 +458,7 @@ import {
 } from "lucide-react";
 import { useRulesCtx } from "../context/RulesContext";
 import { usePermissionsCtx } from "../context/PermissionsContext";
+import { useExamenRulesCtx } from "../context/ExamenRulesContext"
 
 /* ─── COMPOSANTS REUTILISABLES ─── */
 
@@ -488,12 +489,15 @@ const Select = ({ value, onChange, options }) => (
 );
 
 /* ─── MODALE 1 : EXAMENS ─── */
+
 const ModalExamens = ({ onClose }) => {
+  const { examRules, saveExamRules } = useExamenRulesCtx(); // ← ajout
+
   const [rules, setRules] = useState([
-    { id: 1, icon: "🕐", label: "Délai après échec",        value: "14", unit: "Jours", color: "#a78bfa", type: "select" },
-    { id: 2, icon: "🔴", label: "Tentatives max",           value: "3",  unit: null,    color: "#f87171", type: "select" },
-    { id: 3, icon: "💰", label: "Blocage si impayé",        toggleVal: true,             color: "#fbbf24", type: "toggle" },
-    { id: 4, icon: "📅", label: "Jours d'examen autorisés", selectedDays: ["Lun","Mer","Ven"], color: "#60a5fa", type: "days" },
+    { id: 1, icon: "🕐", label: "Délai après échec",        value: String(examRules.delaiApresEchec), unit: "Jours", color: "#a78bfa", type: "select", rulesKey: "delaiApresEchec" },
+    { id: 2, icon: "🔴", label: "Tentatives max",           value: String(examRules.tentativesMax),  unit: null,    color: "#f87171", type: "select", rulesKey: "tentativesMax" },
+    { id: 3, icon: "💰", label: "Blocage si impayé",        toggleVal: examRules.blocageImpaye,       color: "#fbbf24", type: "toggle", rulesKey: "blocageImpaye" },
+    { id: 4, icon: "📅", label: "Jours d'examen autorisés", selectedDays: examRules.joursAutorises,  color: "#60a5fa", type: "days", rulesKey: "joursAutorises" },
   ]);
 
   const daysOptions = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
@@ -510,7 +514,16 @@ const ModalExamens = ({ onClose }) => {
       return { ...r, selectedDays: newDays };
     }));
   };
-
+  const handleSave = () => { // ← ajout
+    const newRules = {
+      delaiApresEchec: Number(rules.find(r => r.rulesKey === "delaiApresEchec")?.value || 14),
+      tentativesMax:   Number(rules.find(r => r.rulesKey === "tentativesMax")?.value || 3),
+      blocageImpaye:   rules.find(r => r.rulesKey === "blocageImpaye")?.toggleVal ?? true,
+      joursAutorises:  rules.find(r => r.rulesKey === "joursAutorises")?.selectedDays || ["Lun","Mer","Ven"],
+    };
+    saveExamRules(newRules);
+    onClose();
+  };
   return (
     <div className="modal-overlay">
       <div className="modal new-modal">
@@ -562,7 +575,7 @@ const ModalExamens = ({ onClose }) => {
         </div>
         <div className="new-modal-footer">
           <button className="btn cancel"  onClick={onClose}><X    size={13}/> Fermer</button>
-          <button className="btn primary" onClick={onClose}><Save size={13}/> Sauvegarder</button>
+          <button className="btn primary" onClick={handleSave}><Save size={13}/> Sauvegarder</button>
         </div>
       </div>
     </div>

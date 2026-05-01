@@ -4,6 +4,9 @@ import { AuthProvider } from "./context/AuthContext";
 import { PermissionsProvider } from "./context/PermissionsContext";
 import { RulesProvider } from "./context/RulesContext"; // ← AJOUTÉ
 
+import { ExamenRulesProvider } from "./context/ExamenRulesContext";
+import { ExamenProvider } from "./context/ExamenContext";
+
 import SignIn from "./pages/SignIn";
 import Access from "./pages/Access";
 import Dashboard from "./pages/Dashboard";
@@ -28,7 +31,9 @@ const App = () => {
   return (
     <AuthProvider>
       <PermissionsProvider>
-        <RulesProvider>          {/* ← AJOUTÉ */}
+        <RulesProvider>    
+          <ExamenRulesProvider>
+          <ExamenProvider>     
           <HashRouter>
             <Routes>
               <Route path="/" element={<Navigate to="/connexion" replace />} />
@@ -57,6 +62,8 @@ const App = () => {
               </Route>
             </Routes>
           </HashRouter>
+           </ExamenProvider>
+           </ExamenRulesProvider>  
         </RulesProvider>          {/* ← AJOUTÉ */}
       </PermissionsProvider>
     </AuthProvider>
