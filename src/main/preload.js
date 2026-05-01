@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('electron', {
 
    // Candidats
   getCandidats:    ()       => ipcRenderer.invoke('get-candidats'),
+  forgotPasswordSendOtp:   (data) => ipcRenderer.invoke("forgot-password-send-otp",   data),
+forgotPasswordVerifyOtp: (data) => ipcRenderer.invoke("forgot-password-verify-otp", data),
+forgotPasswordReset:     (data) => ipcRenderer.invoke("forgot-password-reset",       data),
   addCandidat:     (data)   => ipcRenderer.invoke('add-candidat', data),
   updateCandidat:  (data)   => ipcRenderer.invoke('update-candidat', data),
   deleteCandidat:  (id)     => ipcRenderer.invoke('delete-candidat', id),
@@ -42,4 +45,7 @@ contextBridge.exposeInMainWorld('electron', {
   
   getPaymentsByMoniteur:       (moniteurId) => ipcRenderer.invoke('get-payments-by-moniteur', moniteurId),
 getCandidatsDebiteursMoniteur: (moniteurId) => ipcRenderer.invoke('get-candidats-debiteurs-moniteur', moniteurId),
+
+
+
 });
