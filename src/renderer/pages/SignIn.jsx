@@ -223,9 +223,10 @@ export default function SignIn() {
 
           {/* Mot de passe oublié */}
           <div className="signin-form__forgot">
-            <a href="#" className="signin-form__forgot-link">
-              Mot de passe oublié ?
-            </a>
+           <span onClick={() => navigate("/forgot-password")} 
+  className="signin-form__forgot-link" style={{ cursor: "pointer" }}>
+  Mot de passe oublié ?
+</span>
           </div>
 
           {/* Bouton */}

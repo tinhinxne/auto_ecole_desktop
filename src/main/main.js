@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const { registerMoniteurHandlers } = require('./moniteurHandlers');
 
 
+
 // ── CONFIG EMAIL ─────────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -82,7 +83,91 @@ app.on("window-all-closed", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 //  IPC HANDLERS
 // ══════════════════════════════════════════════════════════════════════════════
+// Map temporaire : email → { code, expiry }
+const otpStore = new Map();
 
+// Étape 1 : envoyer le code OTP
+
+ipcMain.handle("forgot-password-send-otp", async (event, { email }) => {
+  return new Promise((resolve) => {
+    db.query(
+      "SELECT id, nom, prenom, type_utilisateur, recovery_email FROM Utilisateur WHERE mail = ?",
+      [email],
+      async (err, res) => {
+        if (err || !res.length)
+          return resolve({ success: false, message: "Aucun compte trouvé avec cet email." });
+
+        const user = res[0];
+        const isAdmin = user.type_utilisateur === 'administrateur';
+
+        if (isAdmin && !user.recovery_email)
+          return resolve({ success: false, message: "Aucun email de récupération configuré." });
+
+        const sendTo = isAdmin ? user.recovery_email : email;
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = Date.now() + 10 * 60 * 1000;
+        otpStore.set(email, { code, expiry });
+
+        try {
+          await transporter.sendMail({
+            from: '"Auto-École 🚗" <tinhinanethequeen@gmail.com>',
+            to: sendTo,
+            subject: "Code de réinitialisation – Auto-École",
+            html: `
+              <div style="font-family:sans-serif;max-width:480px;margin:auto;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">
+                <div style="background:#4E96E1;padding:24px;text-align:center;">
+                  <h1 style="color:#fff;margin:0;font-size:20px;">🚗 Auto-École</h1>
+                </div>
+                <div style="padding:28px;">
+                  <h2 style="color:#0F172A;">Bonjour ${user.prenom} !</h2>
+                  <p style="color:#475569;margin-bottom:20px;">Votre code de réinitialisation (valable 10 min) :</p>
+                  <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#4E96E1;text-align:center;padding:16px;background:#F1F5F9;border-radius:8px;margin:20px 0;">${code}</div>
+                  <p style="color:#94A3B8;font-size:12px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+                </div>
+              </div>`,
+          });
+          resolve({ success: true, isAdmin, recoveryEmail: sendTo });
+        } catch (emailErr) {
+          resolve({ success: false, message: "Erreur lors de l'envoi de l'email." });
+        }
+      }
+    );
+  });
+});
+
+// Étape 2 : vérifier le code OTP
+ipcMain.handle("forgot-password-verify-otp", async (event, { email, code }) => {
+  const entry = otpStore.get(email);
+  if (!entry) return { success: false, message: "Aucun code demandé pour cet email." };
+  if (Date.now() > entry.expiry) { otpStore.delete(email); return { success: false, message: "Code expiré. Veuillez recommencer." }; }
+  if (entry.code !== code) return { success: false, message: "Code incorrect." };
+  return { success: true };
+});
+
+// Étape 3 : mettre à jour le mot de passe
+ipcMain.handle("forgot-password-reset", async (event, { email, newPassword }) => {
+  const entry = otpStore.get(email);
+  if (!entry) return { success: false, message: "Session expirée." };
+
+  return new Promise((resolve) => {
+    db.query(
+      "UPDATE Utilisateur SET mot_de_passe = ? WHERE mail = ?",
+      [newPassword, email],
+      (err, result) => {
+        if (err)
+          return resolve({ success: false, message: "Erreur base de données." });
+
+        // affectedRows = 0 → email introuvable en BDD
+        if (result.affectedRows === 0)
+          return resolve({ success: false, message: "Aucun compte trouvé avec cet email." });
+
+        // ✅ Supprimer l'OTP seulement après succès confirmé
+        otpStore.delete(email);
+        resolve({ success: true });
+      }
+    );
+  });
+});
 // 1. LOGIN
 ipcMain.handle("login", async (event, credentials) => {
   const { email, password } = credentials;
