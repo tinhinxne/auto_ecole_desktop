@@ -835,3 +835,76 @@ ipcMain.handle('update-moniteur-password', async (event, { moniteurId, oldPasswo
     );
   });
 });
+// ── AJOUTE CE BLOC À LA FIN DE main.js ──────────────────────────────────────
+
+ipcMain.handle("send-examen-notification", async (event, { email, candidat, type, date, heure, lieu }) => {
+  const dateFormatee = new Date(date + "T12:00:00").toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric"
+  });
+
+  const typeColors = {
+    Code:        { bg: "#e8f5e9", color: "#2e7d32" },
+    Créneau:     { bg: "#fff3e0", color: "#e65100" },
+    Circulation: { bg: "#fce4ec", color: "#c62828" },
+  };
+  const tc = typeColors[type] || { bg: "#eee", color: "#333" };
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:500px;margin:auto;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">
+      <div style="background:#2b537e;padding:24px;text-align:center;">
+        <h1 style="color:#fff;margin:0;font-size:20px;">🚗 Auto-École</h1>
+        <p style="color:#c7d7f0;margin:6px 0 0;font-size:13px;">Convocation à l'examen</p>
+      </div>
+      <div style="padding:28px;">
+        <p style="color:#475569;font-size:15px;margin-bottom:20px;">
+          Bonjour <strong>${candidat}</strong>,<br/>
+          Vous êtes convoqué(e) à votre prochain examen. Voici les détails :
+        </p>
+        <div style="background:#F8FAFC;border-radius:10px;padding:20px;margin-bottom:20px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:8px 0;color:#64748b;font-size:13px;width:40%;">📋 Type d'examen</td>
+              <td style="padding:8px 0;">
+                <span style="background:${tc.bg};color:${tc.color};padding:3px 12px;border-radius:6px;font-size:13px;font-weight:700;">
+                  ${type}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#64748b;font-size:13px;">📅 Date</td>
+              <td style="padding:8px 0;color:#0F172A;font-size:13px;font-weight:600;">${dateFormatee}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#64748b;font-size:13px;">🕐 Heure</td>
+              <td style="padding:8px 0;color:#0F172A;font-size:13px;font-weight:600;">${heure}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#64748b;font-size:13px;">📍 Lieu</td>
+              <td style="padding:8px 0;color:#0F172A;font-size:13px;font-weight:600;">${lieu}</td>
+            </tr>
+          </table>
+        </div>
+        <p style="color:#94A3B8;font-size:12px;">
+          Veuillez vous présenter 15 minutes avant l'heure indiquée avec votre pièce d'identité.<br/>
+          En cas d'empêchement, contactez votre auto-école dès que possible.
+        </p>
+      </div>
+      <div style="background:#F1F5F9;padding:14px 28px;text-align:center;">
+        <p style="color:#94A3B8;font-size:11px;margin:0;">Auto-École — Ce message est envoyé automatiquement, merci de ne pas y répondre.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"Auto-École 🚗" <tinhinanethequeen@gmail.com>',
+      to: email,
+      subject: `Convocation examen ${type} – Auto-École`,
+      html,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("Erreur envoi notif examen:", err.message);
+    return { success: false };
+  }
+});
