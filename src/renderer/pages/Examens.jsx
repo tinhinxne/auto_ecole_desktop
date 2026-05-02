@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCalendarDay, FaCheckCircle, FaTimesCircle,
   FaClock, FaTrashAlt, FaExchangeAlt, FaUser,
-  FaSync, FaInfoCircle, FaCalendarPlus
+  FaSync, FaInfoCircle, FaCalendarPlus,
 } from "react-icons/fa";
 
 import SelectFilter from "../components/SelectFilter";
@@ -27,22 +27,24 @@ const Examens = () => {
   const { getPermissions } = usePermissionsCtx();
 
   const isAdmin = currentUser?.type_utilisateur === "administrateur";
-  const perms = isAdmin ? { CAN_REMOVE_CANDIDAT: true, CAN_TOGGLE_STATUS: true } : getPermissions(currentUser?.id);
+  const perms   = isAdmin
+    ? { CAN_REMOVE_CANDIDAT: true, CAN_TOGGLE_STATUS: true }
+    : getPermissions(currentUser?.id);
 
   const [selectedExamen, setSelectedExamen] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("Tous");
-  const [typeFilter, setTypeFilter] = useState("Tous");
-  const [loading, setLoading] = useState(false);
-  const [lastGenerated, setLastGenerated] = useState(null);
-  const [showReportes, setShowReportes] = useState(false);
+  const [statusFilter,   setStatusFilter]   = useState("Tous");
+  const [typeFilter,     setTypeFilter]     = useState("Tous");
+  const [loading,        setLoading]        = useState(false);
+  const [lastGenerated,  setLastGenerated]  = useState(null);
+  const [showReportes,   setShowReportes]   = useState(false);
+  const [candidatsMap,   setCandidatsMap]   = useState({});
 
   const STATUS_CONFIG = {
     Scheduled: { bg: "#e3f2fd", color: "#1565c0", label: "Programmé" },
-    Passed:    { bg: "#e8f5e9", color: "#2e7d32", label: "Réussi" },
-    Failed:    { bg: "#ffebee", color: "#c62828", label: "Échoué" },
+    Passed:    { bg: "#e8f5e9", color: "#2e7d32", label: "Réussi"    },
+    Failed:    { bg: "#ffebee", color: "#c62828", label: "Échoué"    },
   };
 
-  // Génération automatique au montage
   const handleGenerate = async () => {
     setLoading(true);
     try {
@@ -50,6 +52,9 @@ const Examens = () => {
         window.electron.getSeances(),
         window.electron.getCandidats(),
       ]);
+      const map = {};
+      candidats.forEach(c => { map[String(c.idCandidat)] = { nom: c.nom ?? "", prenom: c.prenom ?? "" }; });
+      setCandidatsMap(map);
       generateExamens(seances, candidats);
       setLastGenerated(new Date().toLocaleString("fr-FR"));
     } catch (e) {
@@ -63,9 +68,7 @@ const Examens = () => {
   const handleRemove = (id, e) => {
     e.stopPropagation();
     if (!perms.CAN_REMOVE_CANDIDAT) return;
-    if (window.confirm(
-      "Retirer ce candidat ? Il sera re-suggéré automatiquement à la prochaine date d'examen selon les règles configurées."
-    )) {
+    if (window.confirm("Retirer ce candidat ? Il sera re-suggéré automatiquement à la prochaine date d'examen selon les règles configurées.")) {
       retirerCandidat(id);
     }
   };
@@ -84,15 +87,22 @@ const Examens = () => {
 
   const reportesEntries = Object.entries(candidatsReportes);
 
+  const getCandidatName = (id) => {
+    const c = candidatsMap[String(id)];
+    if (!c) return `Candidat #${id}`;
+    const full = [c.prenom, c.nom].filter(Boolean).join(" ");
+    return full || `Candidat #${id}`;
+  };
+
   const statsData = [
-    { label: "Total session",  val: examensList.length,                                          color: "blue",   icon: <FaUser />,        trend: "Candidats" },
-    { label: "Réussites",      val: examensList.filter(e => e.status === "Passed").length,        color: "green",  icon: <FaCheckCircle />, trend: "Validés" },
-    { label: "Échecs",         val: examensList.filter(e => e.status === "Failed").length,        color: "red",    icon: <FaTimesCircle />, trend: "À reprogrammer" },
-    { label: "En attente",     val: examensList.filter(e => e.status === "Scheduled").length,     color: "orange", icon: <FaClock />,       trend: "À évaluer" },
+    { label: "Total session", val: examensList.length,                                       color: "blue",   icon: <FaUser />,        trend: "Candidats"      },
+    { label: "Réussites",     val: examensList.filter(e => e.status === "Passed").length,    color: "green",  icon: <FaCheckCircle />, trend: "Validés"        },
+    { label: "Échecs",        val: examensList.filter(e => e.status === "Failed").length,    color: "red",    icon: <FaTimesCircle />, trend: "À reprogrammer" },
+    { label: "En attente",    val: examensList.filter(e => e.status === "Scheduled").length, color: "orange", icon: <FaClock />,       trend: "À évaluer"      },
   ];
 
-  const th = { padding: "15px 16px", textAlign: "left", color: "#fff", fontWeight: "600", fontSize: "14px" };
-  const td = { padding: "14px 16px", borderBottom: "1px solid #E5E7EB", fontSize: "14px", color: "#1F2937" };
+  const th = { padding: "15px 16px", textAlign: "left", color: "#fff", fontWeight: "600", fontSize: "13px" };
+  const td = { padding: "12px 16px", borderBottom: "1px solid #E5E7EB", fontSize: "13px", color: "#1F2937" };
 
   return (
     <div className="main">
@@ -103,6 +113,7 @@ const Examens = () => {
       </div>
 
       <div className="examens-content">
+
         {/* Header + bouton génération */}
         <div className="examens-page-header">
           <div>
@@ -114,14 +125,8 @@ const Examens = () => {
           </div>
           {isAdmin && (
             <button
-              onClick={handleGenerate}
-              disabled={loading}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "#4E96E1", color: "#fff", border: "none",
-                padding: "10px 18px", borderRadius: 10, cursor: "pointer",
-                fontSize: 14, fontWeight: 600, opacity: loading ? 0.7 : 1,
-              }}
+              onClick={handleGenerate} disabled={loading}
+              style={{ display: "flex", alignItems: "center", gap: 8, background: "#4E96E1", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 600, opacity: loading ? 0.7 : 1 }}
             >
               <FaSync style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
               {loading ? "Génération..." : "Regénérer"}
@@ -129,12 +134,8 @@ const Examens = () => {
           )}
         </div>
 
-        {/* Alerte règles actives */}
-        <div style={{
-          background: "#f0f4ff", border: "1px solid #c7d7f5",
-          borderRadius: 10, padding: "10px 16px", marginBottom: 16,
-          fontSize: 13, color: "#3b5bdb", display: "flex", alignItems: "center", gap: 10,
-        }}>
+        {/* Règles actives */}
+        <div style={{ background: "#f0f4ff", border: "1px solid #c7d7f5", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 13, color: "#3b5bdb", display: "flex", alignItems: "center", gap: 10 }}>
           <FaInfoCircle />
           <span>
             Règles actives — Délai après échec : <strong>{examRules.delaiApresEchec}j</strong> ·
@@ -160,17 +161,11 @@ const Examens = () => {
 
         {/* Filtres */}
         <div className="examens-filters">
-          <SelectFilter
-            value={statusFilter} onChange={setStatusFilter}
-            options={["Tous","Scheduled","Passed","Failed"]} label="Filtrer par Statut"
-          />
-          <SelectFilter
-            value={typeFilter} onChange={setTypeFilter}
-            options={["Tous","Code","Créneau","Circulation"]} label="Type d'examen"
-          />
+          <SelectFilter value={statusFilter} onChange={setStatusFilter} options={["Tous", "Scheduled", "Passed", "Failed"]} label="Filtrer par Statut" />
+          <SelectFilter value={typeFilter}   onChange={setTypeFilter}   options={["Tous", "Code", "Créneau", "Circulation"]} label="Type d'examen" />
         </div>
 
-        {/* Tableau principal */}
+        {/* Tableau — sans colonne "Base de calcul" */}
         <div style={{ background: "#fff", borderRadius: 15, overflow: "hidden", boxShadow: "0 5px 15px rgba(0,0,0,0.05)" }}>
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -178,7 +173,7 @@ const Examens = () => {
                 <tr style={{ background: "#2b537e" }}>
                   <th style={th}>Candidat(e)</th>
                   <th style={th}>Type</th>
-                  <th style={th}>Date / Heure</th>
+                  <th style={th}>Date examen</th>
                   <th style={th}>Lieu</th>
                   <th style={th}>Séances</th>
                   <th style={th}>Résultat</th>
@@ -191,70 +186,57 @@ const Examens = () => {
                     const st = STATUS_CONFIG[examen.status];
                     return (
                       <motion.tr
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        key={examen.id}
+                        layout key={examen.id}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.95 }}
                         style={{ background: i % 2 === 0 ? "#fff" : "#F8FAFC", cursor: "pointer" }}
                         onClick={() => setSelectedExamen(examen)}
                       >
+                        {/* Candidat */}
                         <td style={{ ...td, fontWeight: 600 }}>
                           {examen.candidat}
-                          {examen.autoGenerated && (
-                            <span style={{
-                              marginLeft: 8, fontSize: 10, background: "#e0f2fe",
-                              color: "#0369a1", padding: "2px 6px", borderRadius: 10, fontWeight: 500,
-                            }}>auto</span>
-                          )}
-                          {examen.suggested && (
-                            <span style={{
-                              marginLeft: 4, fontSize: 10, background: "#fef3c7",
-                              color: "#92400e", padding: "2px 6px", borderRadius: 10, fontWeight: 500,
-                            }}>re-suggéré</span>
-                          )}
+                          {examen.autoGenerated && <span style={{ marginLeft: 8, fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "2px 6px", borderRadius: 10, fontWeight: 500 }}>auto</span>}
+                          {examen.suggested     && <span style={{ marginLeft: 4,  fontSize: 10, background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: 10, fontWeight: 500 }}>re-suggéré</span>}
                         </td>
+
+                        {/* Type */}
                         <td style={td}>{examen.type}</td>
+
+                        {/* Date */}
                         <td style={td}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <FaCalendarDay style={{ color: "#4E96E1", fontSize: 12 }} />
                             <div>{examen.date} <span style={{ color: "#64748b", fontSize: 12 }}>{examen.heure}</span></div>
                           </div>
                         </td>
+
+                        {/* Lieu */}
                         <td style={td}>{examen.lieu}</td>
+
+                        {/* Séances */}
                         <td style={td}>
-                          <span style={{
-                            background: "#f1f5f9", color: "#475569",
-                            padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
-                          }}>
+                          <span style={{ background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600 }}>
                             {examen.nbSeances || "—"} séances
                           </span>
                         </td>
+
+                        {/* Résultat */}
                         <td style={td}>
                           <div
-                            style={{
-                              background: st.bg, color: st.color,
-                              display: "inline-flex", alignItems: "center",
-                              padding: "4px 10px", borderRadius: 20,
-                              fontWeight: 600, fontSize: 13,
-                              cursor: (isAdmin || perms.CAN_TOGGLE_STATUS) ? "pointer" : "default",
-                            }}
+                            style={{ background: st.bg, color: st.color, display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 20, fontWeight: 600, fontSize: 13, cursor: (isAdmin || perms.CAN_TOGGLE_STATUS) ? "pointer" : "default" }}
                             onClick={e => handleToggle(examen.id, e)}
                           >
                             {(isAdmin || perms.CAN_TOGGLE_STATUS) && <FaExchangeAlt style={{ marginRight: 8, fontSize: 10 }} />}
                             {st.label}
                           </div>
                         </td>
+
+                        {/* Actions */}
                         {(isAdmin || perms.CAN_REMOVE_CANDIDAT) && (
                           <td style={td}>
                             <button
                               onClick={e => handleRemove(examen.id, e)}
                               title="Retirer (sera re-suggéré à la prochaine date)"
-                              style={{
-                                background: "#FEF2F2", color: "#b91c1c",
-                                border: "1px solid #fca5a5", padding: "6px 12px",
-                                borderRadius: 6, cursor: "pointer", fontSize: 12,
-                              }}
+                              style={{ background: "#FEF2F2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                             >
                               <FaTrashAlt />
                             </button>
@@ -275,54 +257,61 @@ const Examens = () => {
           </div>
         </div>
 
-        {/* Section candidats reportés */}
+        {/* Candidats reportés */}
         {reportesEntries.length > 0 && (
           <div style={{ marginTop: 20 }}>
             <button
               onClick={() => setShowReportes(v => !v)}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "none", border: "1px solid #e2e8f0",
-                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-                fontSize: 13, color: "#475569", marginBottom: 12,
-              }}
+              style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "1px solid #e2e8f0", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "#475569", marginBottom: 12 }}
             >
               <FaCalendarPlus /> {showReportes ? "Masquer" : "Voir"} les candidats reportés ({reportesEntries.length})
             </button>
+
             {showReportes && (
-              <div style={{
-                background: "#fffbeb", border: "1px solid #fde68a",
-                borderRadius: 12, padding: 16,
-              }}>
+              <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: 16 }}>
                 <p style={{ fontSize: 13, color: "#78350f", marginBottom: 12, fontWeight: 600 }}>
                   Ces candidats seront re-suggérés automatiquement à leur prochaine date d'examen :
                 </p>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "#fef3c7" }}>
-                      <th style={{ ...th, color: "#78350f", background: "transparent" }}>Candidat ID</th>
+                      <th style={{ ...th, color: "#78350f", background: "transparent" }}>Candidat</th>
                       <th style={{ ...th, color: "#78350f", background: "transparent" }}>Type d'examen</th>
                       <th style={{ ...th, color: "#78350f", background: "transparent" }}>Prochaine suggestion</th>
                       <th style={{ ...th, color: "#78350f", background: "transparent" }}>Raison</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reportesEntries.map(([cid, info]) => (
-                      <tr key={cid}>
-                        <td style={td}>Candidat #{cid}</td>
-                        <td style={td}>{info.type}</td>
-                        <td style={td}>{info.nextSuggestedDate}</td>
-                        <td style={td}>
-                          <span style={{
-                            background: info.reason === "echec" ? "#fee2e2" : "#f1f5f9",
-                            color: info.reason === "echec" ? "#991b1b" : "#475569",
-                            padding: "2px 8px", borderRadius: 10, fontSize: 12,
-                          }}>
-                            {info.reason === "echec" ? "Échec" : "Retiré par admin"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {reportesEntries.map(([cid, info]) => {
+                      const nomComplet = getCandidatName(cid);
+                      return (
+                        <tr key={cid}>
+                          <td style={{ ...td, fontWeight: 600 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#fde68a", color: "#78350f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                                {nomComplet.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 700, color: "#1f2937" }}>{nomComplet}</div>
+                                <div style={{ fontSize: 11, color: "#9ca3af" }}>ID #{cid}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={td}>{info.type}</td>
+                          <td style={td}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <FaCalendarDay style={{ color: "#f59e0b", fontSize: 12 }} />
+                              {info.nextSuggestedDate}
+                            </div>
+                          </td>
+                          <td style={td}>
+                            <span style={{ background: info.reason === "echec" ? "#fee2e2" : "#f1f5f9", color: info.reason === "echec" ? "#991b1b" : "#475569", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>
+                              {info.reason === "echec" ? "Échec" : "Retiré par admin"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -136,7 +136,6 @@ function GroupModal({ sessions, onClose, onDelete, onEdit }) {
         maxHeight:"82vh", display:"flex", flexDirection:"column",
         boxShadow:"0 30px 80px rgba(0,0,0,0.2)", overflow:"hidden",
       }}>
-        {/* Header */}
         <div style={{
           padding:"20px 26px 16px",
           background:"#f8fafc",
@@ -155,7 +154,6 @@ function GroupModal({ sessions, onClose, onDelete, onEdit }) {
           <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", color:"#64748b", width:32, height:32, borderRadius:8, cursor:"pointer", fontSize:14, display:"grid", placeItems:"center" }}>✕</button>
         </div>
 
-        {/* Liste des séances */}
         <div style={{ overflowY:"auto", padding:"16px 24px", display:"flex", flexDirection:"column", gap:12 }}>
           {sessions.map((s) => {
             const col = COLORS[s.type] || COLORS.code;
@@ -189,7 +187,6 @@ function GroupModal({ sessions, onClose, onDelete, onEdit }) {
           })}
         </div>
 
-        {/* Footer */}
         <div style={{ padding:"14px 24px", borderTop:"1px solid #e2e8f0", background:"#f8fafc", display:"flex", justifyContent:"flex-end", flexShrink:0 }}>
           <button onClick={onClose} style={{ padding:"9px 22px", borderRadius:8, background:"#1e293b", border:"none", color:"white", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:600, cursor:"pointer" }}>Fermer</button>
         </div>
@@ -326,14 +323,14 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
       allSlots.push(h); allSlots.push(h+0.25); allSlots.push(h+0.5); allSlots.push(h+0.75);
     }
     const occupiedIntervals = (sessions || [])
-  .filter(s => {
-    if (!form.date || !form.moniteur_id) return false;
-    const sDate = toLocalISO(s._raw?.date);
-    const isOther = editing ? String(s.id) !== String(editing.id) : true;
-    const sameMoniteur = String(s._raw?.moniteur_id) === String(form.moniteur_id);
-    return sDate === form.date && isOther && sameMoniteur;
-  })
-  .map(s => ({ start: s.startH, end: s.startH + s.dur }));
+      .filter(s => {
+        if (!form.date || !form.moniteur_id) return false;
+        const sDate = toLocalISO(s._raw?.date);
+        const isOther = editing ? String(s.id) !== String(editing.id) : true;
+        const sameMoniteur = String(s._raw?.moniteur_id) === String(form.moniteur_id);
+        return sDate === form.date && isOther && sameMoniteur;
+      })
+      .map(s => ({ start: s.startH, end: s.startH + s.dur }));
 
     const formatSlot = slot => {
       const h = Math.floor(slot); const m = Math.round((slot % 1) * 60);
@@ -465,7 +462,6 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
     );
   }
 
-  // ── FIX : localCols par séance plutôt que totalCols global ──
   function assignColumns(daySessions) {
     const sorted = [...daySessions].sort((a, b) => a.startH - b.startH);
     const columns = [];
@@ -480,10 +476,10 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
 
     const items = withCol.map(({ session: s, colIdx }) => {
       const overlappingCount = withCol.filter(({ session: other }) =>
-  other.id !== s.id &&
-  other.startH < s.startH + s.dur &&
-  other.startH + other.dur > s.startH  // ← other.dur pas s.dur
-).length;
+        other.id !== s.id &&
+        other.startH < s.startH + s.dur &&
+        other.startH + other.dur > s.startH
+      ).length;
       return { session: s, colIdx, localCols: overlappingCount + 1 };
     });
 
@@ -548,7 +544,6 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                   ? [s, ...overlapping].filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
                   : [s];
 
-                // ── Largeur basée sur localCols (collisions locales uniquement) ──
                 const widthPct = 100 / localCols;
                 const leftPct  = colIdx * widthPct;
 
@@ -614,7 +609,6 @@ export default function AgendaPage() {
   const [search,     setSearch]     = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterMon,  setFilterMon]  = useState("");
-  const [viewMode,   setViewMode]   = useState("semaine");
 
   const weekDates = getWeekDates(weekBase);
   const weekLabel = formatWeekLabel(weekDates);
@@ -639,7 +633,7 @@ export default function AgendaPage() {
 
   const prevWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()-7); return n; });
   const nextWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()+7); return n; });
-  const goToday  = () => { setWeekBase(getMondayOfWeek(new Date())); setViewMode("aujourd'hui"); };
+  const goToday  = () => setWeekBase(getMondayOfWeek(new Date()));
 
   const hasFilters = search || filterType || filterMon;
   const resetFilters = () => { setSearch(""); setFilterType(""); setFilterMon(""); };
@@ -687,12 +681,12 @@ export default function AgendaPage() {
     const newEnd   = newStart + parseFloat(_formData.duree);
 
     const conflict = sessions.find(s => {
-  if (editing && String(s.id) === String(editing.id)) return false;
-  if (toLocalISO(s._raw?.date) !== _formData.date) return false;
-  if (!_formData.moniteur_id || !s._raw?.moniteur_id) return false;
-  if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
-  return newStart < s.startH + s.dur && newEnd > s.startH;
-});
+      if (editing && String(s.id) === String(editing.id)) return false;
+      if (toLocalISO(s._raw?.date) !== _formData.date) return false;
+      if (!_formData.moniteur_id || !s._raw?.moniteur_id) return false;
+      if (String(s._raw?.moniteur_id) !== String(_formData.moniteur_id)) return false;
+      return newStart < s.startH + s.dur && newEnd > s.startH;
+    });
 
     if (conflict) {
       showToast(`⚠️ Ce moniteur est déjà occupé de ${floatToHHMM(conflict.startH)} à ${floatToHHMM(conflict.startH + conflict.dur)} ce jour-là.`, "error");
@@ -725,7 +719,7 @@ export default function AgendaPage() {
       <style>{FONT_LINK}</style>
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden", background:"#f1f5f9", fontFamily:"'Poppins',sans-serif", color:"#1e293b" }}>
 
-        {/* HERO */}
+        {/* HERO — sans les boutons Jour/Semaine/Aujourd'hui */}
         <div style={{ position:"relative", background:"linear-gradient(135deg,#dbeafe 0%,#bfdbfe 50%,#e0f2fe 100%)", borderBottom:"1px solid #bfdbfe", padding:"0 28px", flexShrink:0, overflow:"hidden", minHeight:110 }}>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:6, background:"repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 30px,transparent 30px,transparent 60px)", opacity:0.6 }} />
           <div style={{ position:"absolute", right:120, bottom:8, opacity:0.9 }}>
@@ -762,14 +756,6 @@ export default function AgendaPage() {
             <div>
               <h1 style={{ fontSize:"1.9rem", fontWeight:800, color:"#1e3a8a", margin:0, letterSpacing:-0.5 }}>Agenda</h1>
               <div style={{ fontSize:"0.75rem", color:"#3b82f6", marginTop:2, fontWeight:500 }}>Planification et suivi des séances</div>
-            </div>
-            <div style={{ display:"flex", gap:0, marginLeft:20, background:"rgba(255,255,255,0.6)", borderRadius:10, overflow:"hidden", border:"1px solid rgba(255,255,255,0.8)" }}>
-              {[{key:"jour",label:"Jour"},{key:"semaine",label:"Semaine"},{key:"aujourd'hui",label:"Aujourd'hui"}].map(({key,label}) => (
-                <button key={key} onClick={() => { setViewMode(key); if(key==="aujourd'hui") goToday(); }}
-                  style={{ padding:"8px 16px", border:"none", background: viewMode===key ? "#2563eb" : "transparent", color: viewMode===key ? "#fff" : "#3b82f6", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", fontWeight:600, cursor:"pointer", transition:"all 0.15s" }}>
-                  {label}
-                </button>
-              ))}
             </div>
             <div style={{ fontSize:"1.05rem", fontWeight:700, color:"#1e3a8a", marginLeft:"auto" }}>
               {weekDates[0] && `${weekDates[0].getDate()} – ${weekDates[6].getDate()} ${weekDates[6].toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}`}
@@ -855,7 +841,7 @@ export default function AgendaPage() {
             </div>
           ))}
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, fontSize:"0.7rem", color:"#94a3b8" }}>
-            <div style={{ width:7, height:7, borderRadius:"50%", background: window.electronAPI ? "#22c55e" : "#f59e0b" }} />
+            <div style={{ width:7, height:7, borderRadius:"50%", background: window.electron ? "#22c55e" : "#f59e0b" }} />
             {window.electron ? "Connecté à la base de données" : "Mode démo (hors connexion)"}
           </div>
         </div>

@@ -10,24 +10,20 @@ export const EXAM_THRESHOLDS = {
   Circulation: 14,
 };
 
-const LS_KEY          = "examens_list";
-const LS_REPORTS_KEY  = "examens_reports";
+const LS_KEY         = "examens_list";
+const LS_REPORTS_KEY = "examens_reports";
 
 export function ExamenProvider({ children }) {
   const { examRules } = useExamenRulesCtx();
 
   const [examensList, setExamensList] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LS_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    try { const s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : []; }
+    catch { return []; }
   });
 
   const [candidatsReportes, setCandidatsReportes] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LS_REPORTS_KEY);
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
+    try { const s = localStorage.getItem(LS_REPORTS_KEY); return s ? JSON.parse(s) : {}; }
+    catch { return {}; }
   });
 
   const examensListRef       = useRef(examensList);
@@ -43,12 +39,21 @@ export function ExamenProvider({ children }) {
     localStorage.setItem(LS_REPORTS_KEY, JSON.stringify(candidatsReportes));
   }, [candidatsReportes]);
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Trouve le prochain jour autorisé à partir d'une date + délai
+  // fromDate    : string ISO "YYYY-MM-DD" — point de départ (dernière séance ou dernier échec)
+  // delaiJours  : nombre de jours à attendre avant de chercher un jour autorisé
+  // ─────────────────────────────────────────────────────────────────────────────
   const getNextExamDate = (fromDate, joursAutorises, delaiJours = 0) => {
-    const DAY_MAP = { Dim: 0, Lun: 1, Mar: 2, Mer: 3, Jeu: 4, Ven: 5, Sam: 6 };
+    const DAY_MAP    = { Dim: 0, Lun: 1, Mar: 2, Mer: 3, Jeu: 4, Ven: 5, Sam: 6 };
     const allowedDays = (joursAutorises || ["Lun", "Mer", "Ven"]).map(d => DAY_MAP[d]);
-    const base = new Date(fromDate);
+
+    const base = new Date(fromDate + "T12:00:00");
+    // On avance d'au moins le délai configuré (minimum 1 jour pour ne pas rester le même jour)
     base.setDate(base.getDate() + Math.max(delaiJours, 1));
-    for (let i = 0; i < 14; i++) {
+
+    // Cherche le prochain jour autorisé dans les 30 prochains jours
+    for (let i = 0; i < 30; i++) {
       if (allowedDays.includes(base.getDay())) {
         return base.toISOString().split("T")[0];
       }
@@ -57,20 +62,97 @@ export function ExamenProvider({ children }) {
     return base.toISOString().split("T")[0];
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Retourne la date de la dernière séance d'un type donné pour un candidat
+  // seancesCand : liste des séances du candidat
+  // type        : "code" | "creneau" | "circulation" (en minuscule comme dans l'agenda)
+  // Retourne un string ISO ou null
+  // ─────────────────────────────────────────────────────────────────────────────
+  const getLastSeanceDate = (seancesCand, type) => {
+    const typeNorm = type.toLowerCase().replace("é", "e").replace("è", "e");
+    const matching = seancesCand.filter(s => {
+      const t = (s.type || "").toLowerCase().replace("é", "e").replace("è", "e");
+      return t === typeNorm;
+    });
+    if (matching.length === 0) return null;
+    // Trie par date décroissante et prend la plus récente
+    const sorted = [...matching].sort((a, b) => {
+      const da = new Date(a.date || a._raw?.date || "1970-01-01");
+      const db = new Date(b.date || b._raw?.date || "1970-01-01");
+      return db - da;
+    });
+    const raw = sorted[0].date || sorted[0]._raw?.date;
+    if (!raw) return null;
+    // Normalise en YYYY-MM-DD
+    const d = new Date(raw);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const j = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${j}`;
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Calcule la date d'examen optimale pour un candidat et un type d'examen
+  //
+  // Logique :
+  //   1. Si le candidat a déjà échoué → base = date du dernier échec + delaiApresEchec
+  //   2. Sinon → base = date de la dernière séance du type concerné + delaiApresEchec
+  //   3. Si aucune séance trouvée → base = aujourd'hui (fallback)
+  //   4. On cherche ensuite le prochain jour autorisé après la base
+  // ─────────────────────────────────────────────────────────────────────────────
+  const computeExamDate = (type, seancesCand, examsCand) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    // Dernier échec pour ce type ?
+    const lastFailed = examsCand
+      .filter(e => e.type === type && e.status === "Failed")
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+    if (lastFailed) {
+      // Base = date du dernier échec + délai règles
+      return getNextExamDate(lastFailed.date, examRules.joursAutorises, examRules.delaiApresEchec);
+    }
+
+    // Pas d'échec → on se base sur la dernière séance du type correspondant
+    // Mapping type d'examen → type de séance dans l'agenda
+    const seanceTypeMap = {
+      "Code":        "code",
+      "Créneau":     "creneau",
+      "Circulation": "circulation",
+    };
+    const seanceType    = seanceTypeMap[type] || type.toLowerCase();
+    const lastSeanceDate = getLastSeanceDate(seancesCand, seanceType);
+
+    if (lastSeanceDate) {
+      // Base = dernière séance + délai configuré dans les paramètres
+      return getNextExamDate(lastSeanceDate, examRules.joursAutorises, examRules.delaiApresEchec);
+    }
+
+    // Aucune séance trouvée → fallback aujourd'hui
+    return getNextExamDate(today, examRules.joursAutorises, 1);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Génération principale des examens
+  // seances   : toutes les séances (depuis l'agenda)
+  // candidats : liste complète des candidats
+  // ─────────────────────────────────────────────────────────────────────────────
   const generateExamens = async (seances, candidats) => {
     const today           = new Date().toISOString().split("T")[0];
     const currentExamens  = examensListRef.current;
     const currentReportes = candidatsReportesRef.current;
 
-    // Groupe les séances par candidat
+    // Groupe les séances par candidat (id → liste de séances)
     const seancesParCandidat = {};
     seances.forEach(s => {
-      const ids = s.candidatsIds ? s.candidatsIds.split(",") : [];
+      // Selon la structure de ta DB, les candidatsIds peuvent être une string "1,2,3" ou un seul id
+      const ids = s.candidatsIds
+        ? String(s.candidatsIds).split(",").map(x => x.trim()).filter(Boolean)
+        : s.candidatId ? [String(s.candidatId)] : [];
+
       ids.forEach(cid => {
-        const id = cid.trim();
-        if (!id) return;
-        if (!seancesParCandidat[id]) seancesParCandidat[id] = [];
-        seancesParCandidat[id].push(s);
+        if (!seancesParCandidat[cid]) seancesParCandidat[cid] = [];
+        seancesParCandidat[cid].push(s);
       });
     });
 
@@ -81,92 +163,103 @@ export function ExamenProvider({ children }) {
       const seancesCand = seancesParCandidat[cid] || [];
       const nbSeances   = seancesCand.length;
 
+      // Bloqué si impayé
       if (examRules.blocageImpaye && candidat.montantRestant > 0) return;
 
       const examsCand = currentExamens.filter(e => String(e.candidatId) === cid);
 
-      const aReussiCode       = examsCand.some(e => e.type === "Code"        && e.status === "Passed");
-      const aReussiCreneau    = examsCand.some(e => e.type === "Créneau"     && e.status === "Passed");
+      // États réussi
+      const aReussiCode    = examsCand.some(e => e.type === "Code"        && e.status === "Passed");
+      const aReussiCreneau = examsCand.some(e => e.type === "Créneau"     && e.status === "Passed");
 
+      // Nombre d'échecs par type
       const echecsCode        = examsCand.filter(e => e.type === "Code"        && e.status === "Failed").length;
       const echecsCreneau     = examsCand.filter(e => e.type === "Créneau"     && e.status === "Failed").length;
       const echecsCirculation = examsCand.filter(e => e.type === "Circulation" && e.status === "Failed").length;
 
+      // Déjà un examen programmé ?
       const aExamenCode        = examsCand.some(e => e.type === "Code"        && e.status === "Scheduled");
       const aExamenCreneau     = examsCand.some(e => e.type === "Créneau"     && e.status === "Scheduled");
       const aExamenCirculation = examsCand.some(e => e.type === "Circulation" && e.status === "Scheduled");
 
       const rapportCandidat = currentReportes[cid];
 
-      // --- CODE ---
+      // ── CODE ────────────────────────────────────────────────────────────────
       if (
         nbSeances >= EXAM_THRESHOLDS.Code &&
         !aReussiCode && !aExamenCode &&
         echecsCode < examRules.tentativesMax &&
         (!rapportCandidat || rapportCandidat.type !== "Code" || rapportCandidat.nextSuggestedDate <= today)
       ) {
-        const lastExamDate = examsCand
-          .filter(e => e.type === "Code" && e.status === "Failed")
-          .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.date || today;
-        const delai    = echecsCode > 0 ? examRules.delaiApresEchec : 0;
-        const nextDate = getNextExamDate(lastExamDate, examRules.joursAutorises, delai);
-
+        const nextDate = computeExamDate("Code", seancesCand, examsCand);
         nouveauxExamens.push({
-          id: `auto-${cid}-Code-${Date.now()}-${Math.random()}`,
-          candidatId: cid, candidat: `${candidat.prenom} ${candidat.nom}`,
-          email: candidat.email,
-          type: "Code", date: nextDate, heure: "08:00",
-          lieu: "Centre d'examen", status: "Scheduled",
-          autoGenerated: true, nbSeances,
-          suggested: rapportCandidat?.type === "Code",
+          id:           `auto-${cid}-Code-${Date.now()}-${Math.random()}`,
+          candidatId:   cid,
+          candidat:     `${candidat.prenom} ${candidat.nom}`,
+          email:        candidat.email,
+          type:         "Code",
+          date:         nextDate,
+          heure:        "08:00",
+          lieu:         "Centre d'examen",
+          status:       "Scheduled",
+          autoGenerated: true,
+          nbSeances,
+          suggested:    rapportCandidat?.type === "Code",
+          // Informations de traçabilité pour affichage
+          dateBaseCalc: getLastSeanceDate(seancesCand, "code") || today,
+          calcSource:   echecsCode > 0 ? "après_échec" : "après_dernière_séance",
         });
       }
 
-      // --- CRÉNEAU ---
+      // ── CRÉNEAU ─────────────────────────────────────────────────────────────
       if (
         nbSeances >= EXAM_THRESHOLDS.Créneau &&
         aReussiCode && !aReussiCreneau && !aExamenCreneau &&
         echecsCreneau < examRules.tentativesMax &&
         (!rapportCandidat || rapportCandidat.type !== "Créneau" || rapportCandidat.nextSuggestedDate <= today)
       ) {
-        const lastExamDate = examsCand
-          .filter(e => e.type === "Créneau" && e.status === "Failed")
-          .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.date || today;
-        const delai    = echecsCreneau > 0 ? examRules.delaiApresEchec : 0;
-        const nextDate = getNextExamDate(lastExamDate, examRules.joursAutorises, delai);
-
+        const nextDate = computeExamDate("Créneau", seancesCand, examsCand);
         nouveauxExamens.push({
-          id: `auto-${cid}-Créneau-${Date.now()}-${Math.random()}`,
-          candidatId: cid, candidat: `${candidat.prenom} ${candidat.nom}`,
-          email: candidat.email,
-          type: "Créneau", date: nextDate, heure: "09:00",
-          lieu: "Auto-école", status: "Scheduled",
-          autoGenerated: true, nbSeances,
-          suggested: rapportCandidat?.type === "Créneau",
+          id:           `auto-${cid}-Créneau-${Date.now()}-${Math.random()}`,
+          candidatId:   cid,
+          candidat:     `${candidat.prenom} ${candidat.nom}`,
+          email:        candidat.email,
+          type:         "Créneau",
+          date:         nextDate,
+          heure:        "09:00",
+          lieu:         "Auto-école",
+          status:       "Scheduled",
+          autoGenerated: true,
+          nbSeances,
+          suggested:    rapportCandidat?.type === "Créneau",
+          dateBaseCalc: getLastSeanceDate(seancesCand, "creneau") || today,
+          calcSource:   echecsCreneau > 0 ? "après_échec" : "après_dernière_séance",
         });
       }
 
-      // --- CIRCULATION ---
+      // ── CIRCULATION ─────────────────────────────────────────────────────────
       if (
         nbSeances >= EXAM_THRESHOLDS.Circulation &&
         aReussiCode && aReussiCreneau && !aExamenCirculation &&
         echecsCirculation < examRules.tentativesMax &&
         (!rapportCandidat || rapportCandidat.type !== "Circulation" || rapportCandidat.nextSuggestedDate <= today)
       ) {
-        const lastExamDate = examsCand
-          .filter(e => e.type === "Circulation" && e.status === "Failed")
-          .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.date || today;
-        const delai    = echecsCirculation > 0 ? examRules.delaiApresEchec : 0;
-        const nextDate = getNextExamDate(lastExamDate, examRules.joursAutorises, delai);
-
+        const nextDate = computeExamDate("Circulation", seancesCand, examsCand);
         nouveauxExamens.push({
-          id: `auto-${cid}-Circulation-${Date.now()}-${Math.random()}`,
-          candidatId: cid, candidat: `${candidat.prenom} ${candidat.nom}`,
-          email: candidat.email,
-          type: "Circulation", date: nextDate, heure: "10:00",
-          lieu: "Circuit principal", status: "Scheduled",
-          autoGenerated: true, nbSeances,
-          suggested: rapportCandidat?.type === "Circulation",
+          id:           `auto-${cid}-Circulation-${Date.now()}-${Math.random()}`,
+          candidatId:   cid,
+          candidat:     `${candidat.prenom} ${candidat.nom}`,
+          email:        candidat.email,
+          type:         "Circulation",
+          date:         nextDate,
+          heure:        "10:00",
+          lieu:         "Circuit principal",
+          status:       "Scheduled",
+          autoGenerated: true,
+          nbSeances,
+          suggested:    rapportCandidat?.type === "Circulation",
+          dateBaseCalc: getLastSeanceDate(seancesCand, "circulation") || today,
+          calcSource:   echecsCirculation > 0 ? "après_échec" : "après_dernière_séance",
         });
       }
     });
@@ -181,7 +274,7 @@ export function ExamenProvider({ children }) {
       return [...existing, ...nouveauxExamens];
     });
 
-    // ── ENVOI EMAILS uniquement pour les VRAIS nouveaux (pas déjà existants) ──
+    // Envoi emails uniquement pour les vrais nouveaux
     const vraiNouveaux = nouveauxExamens.filter(n =>
       !currentExamens.some(e => e.candidatId === n.candidatId && e.type === n.type)
     );

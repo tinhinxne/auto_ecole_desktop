@@ -496,7 +496,6 @@ const ModalExamens = ({ onClose }) => {
   const [rules, setRules] = useState([
     { id: 1, icon: "🕐", label: "Délai après échec",        value: String(examRules.delaiApresEchec), unit: "Jours", color: "#a78bfa", type: "select", rulesKey: "delaiApresEchec" },
     { id: 2, icon: "🔴", label: "Tentatives max",           value: String(examRules.tentativesMax),  unit: null,    color: "#f87171", type: "select", rulesKey: "tentativesMax" },
-    { id: 3, icon: "💰", label: "Blocage si impayé",        toggleVal: examRules.blocageImpaye,       color: "#fbbf24", type: "toggle", rulesKey: "blocageImpaye" },
     { id: 4, icon: "📅", label: "Jours d'examen autorisés", selectedDays: examRules.joursAutorises,  color: "#60a5fa", type: "days", rulesKey: "joursAutorises" },
   ]);
 
