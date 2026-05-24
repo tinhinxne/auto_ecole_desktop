@@ -44,7 +44,12 @@ function dbRowToSession(row) {
     name:    firstName,
     monitor: row.moniteurNom || "—",
     moniteur_id: row.moniteur_id,
-    type:    (row.type || "code").toLowerCase(),
+    type: (() => {
+      const raw = (row.type || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (raw.includes("circ")) return "circulation";
+      if (raw.includes("cr"))   return "creneau";
+      return "code";
+    })(),
     day:     dayOfWeek,
     startH,
     dur:     parseFloat(row.duree) || 1,
@@ -114,7 +119,280 @@ function LoadingOverlay() {
   );
 }
 
-// ── MODALE GROUPE DE SÉANCES (même créneau) ───────────────────────────────────
+// ── MILESTONE MODAL ───────────────────────────────────────────────────────────
+function MilestoneModal({ type, candidatName, candidatId, onClose }) {
+  const isCompleted = type === "completed";
+
+  // États pour la facturation supplémentaire
+  const [nbSeances,   setNbSeances]   = useState(1);
+  const [prixSeance,  setPrixSeance]  = useState(0);
+  const [methode,     setMethode]     = useState("especes");
+  const [sending,     setSending]     = useState(false);
+  const [billed,      setBilled]      = useState(false);
+  const [billError,   setBillError]   = useState("");
+
+  const total = nbSeances * prixSeance;
+
+  const handleFacturer = async () => {
+    if (!prixSeance || prixSeance <= 0) { setBillError("Veuillez saisir un prix par séance valide."); return; }
+    if (!candidatId)                    { setBillError("Candidat introuvable, impossible de facturer."); return; }
+    setSending(true);
+    setBillError("");
+    try {
+      const result = await window.electron.addPayment({
+        candidatId,
+        montant:      total,
+        montantTotal: total,
+        methode,
+        typePaiement: "tranche",
+        dateVersement: toLocalISO(new Date()),
+        notes: `Séances supplémentaires hors forfait : ${nbSeances} séance(s) × ${prixSeance.toLocaleString("fr-DZ")} DA`,
+      });
+      if (result?.success) setBilled(true);
+      else setBillError("Erreur lors de l'enregistrement du paiement.");
+    } catch (err) {
+      setBillError("Erreur inattendue : " + err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const inpS = {
+    width: "100%", boxSizing: "border-box",
+    padding: "9px 11px", border: "1.5px solid #e2e8f0", borderRadius: 8,
+    fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem",
+    color: "#1e293b", background: "#f8fafc", outline: "none",
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 600,
+        background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'Poppins',sans-serif",
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background: "#fff", borderRadius: 20,
+        width: isCompleted ? 420 : 480, maxWidth: "94vw",
+        boxShadow: "0 30px 80px rgba(0,0,0,0.2)",
+        overflow: "hidden",
+        animation: "milestoneUp .25s cubic-bezier(.34,1.56,.64,1)",
+      }}>
+        <style>{`@keyframes milestoneUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+
+        {/* Bandeau coloré */}
+        <div style={{
+          background: isCompleted
+            ? "linear-gradient(135deg,#22c55e,#16a34a)"
+            : "linear-gradient(135deg,#f59e0b,#d97706)",
+          padding: "22px 24px 18px",
+          textAlign: "center",
+        }}>
+          <div style={{ fontSize: 44, marginBottom: 4 }}>
+            {isCompleted ? "🎓" : "➕"}
+          </div>
+          <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
+            {isCompleted ? "Permis complété !" : "Séance supplémentaire"}
+          </div>
+        </div>
+
+        {/* Corps */}
+        <div style={{ padding: "20px 24px" }}>
+          {isCompleted ? (
+            <>
+              <p style={{ fontSize: "0.9rem", color: "#1e293b", fontWeight: 600, margin: "0 0 8px", textAlign: "center" }}>
+                🎉 <strong>{candidatName}</strong> vient d'atteindre ses <strong>20 séances</strong> !
+              </p>
+              <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 4px", textAlign: "center" }}>
+                Il peut désormais se présenter à l'examen du permis de conduire.
+              </p>
+              <div style={{
+                marginTop: 14, padding: "10px 16px", borderRadius: 10,
+                background: "#f0fdf4", border: "1px solid #86efac",
+                fontSize: "0.78rem", color: "#166534", fontWeight: 600, textAlign: "center",
+              }}>
+                ✅ Formation théorique et pratique terminée
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Info */}
+              <div style={{
+                padding: "10px 14px", borderRadius: 10, marginBottom: 16,
+                background: "#fffbeb", border: "1px solid #fcd34d",
+                fontSize: "0.78rem", color: "#92400e", fontWeight: 600,
+              }}>
+                ⚠️ <strong>{candidatName}</strong> dépasse les 20 séances du forfait permis.
+                Cette séance est <strong>hors forfait</strong> (3 000 000 DA).
+              </div>
+
+              {billed ? (
+                /* Succès facturation */
+                <div style={{
+                  padding: "20px", borderRadius: 12, textAlign: "center",
+                  background: "#f0fdf4", border: "1px solid #86efac",
+                }}>
+                  <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#166534" }}>
+                    Versement enregistré avec succès !
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "#4ade80", marginTop: 4 }}>
+                    {nbSeances} séance(s) × {prixSeance.toLocaleString("fr-DZ")} DA
+                    = <strong>{total.toLocaleString("fr-DZ")} DA</strong>
+                  </div>
+                  <div style={{ fontSize: "0.74rem", color: "#64748b", marginTop: 4 }}>
+                    Visible dans la page Paiements
+                  </div>
+                </div>
+              ) : (
+                /* Formulaire facturation */
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{
+                    fontSize: "0.8rem", fontWeight: 700, color: "#1e293b",
+                    borderBottom: "1px solid #f1f5f9", paddingBottom: 8, marginBottom: 2,
+                  }}>
+                    💰 Facturer les séances supplémentaires
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    {/* Nb séances */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        Nb de séances <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        type="number" min={1} value={nbSeances}
+                        onChange={e => { setNbSeances(Math.max(1, parseInt(e.target.value) || 1)); setBillError(""); }}
+                        style={inpS}
+                      />
+                    </div>
+
+                    {/* Prix / séance */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        Prix / séance (DA) <span style={{ color: "#ef4444" }}>*</span>
+                      </label>
+                      <input
+                        type="number" min={0} value={prixSeance}
+                        onChange={e => { setPrixSeance(parseFloat(e.target.value) || 0); setBillError(""); }}
+                        style={inpS}
+                        placeholder="ex: 150000"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Méthode paiement */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      Méthode de paiement
+                    </label>
+                    <select value={methode} onChange={e => setMethode(e.target.value)} style={inpS}>
+                      <option value="especes">Espèces</option>
+                      <option value="ccp">CCP</option>
+                      <option value="carte">Carte</option>
+                    </select>
+                  </div>
+
+                  {/* Total calculé */}
+                  <div style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 14px", borderRadius: 10,
+                    background: "#f8fafc", border: "1.5px solid #e2e8f0",
+                  }}>
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
+                      Total à facturer :
+                    </span>
+                    <span style={{ fontSize: "1rem", fontWeight: 800, color: "#d97706" }}>
+                      {total.toLocaleString("fr-DZ")} DA
+                    </span>
+                  </div>
+
+                  {/* Détail */}
+                  {prixSeance > 0 && (
+                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", textAlign: "center", marginTop: -6 }}>
+                      {nbSeances} séance(s) × {prixSeance.toLocaleString("fr-DZ")} DA
+                    </div>
+                  )}
+
+                  {/* Erreur */}
+                  {billError && (
+                    <div style={{
+                      padding: "8px 12px", borderRadius: 8,
+                      background: "#fef2f2", border: "1px solid #fca5a5",
+                      color: "#dc2626", fontSize: "0.75rem", fontWeight: 500,
+                    }}>
+                      ⚠ {billError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: "0 24px 20px",
+          display: "flex", justifyContent: isCompleted || billed ? "center" : "space-between",
+          gap: 10,
+        }}>
+          {isCompleted || billed ? (
+            <button onClick={onClose} style={{
+              padding: "10px 36px", borderRadius: 10,
+              background: isCompleted ? "#16a34a" : "#d97706",
+              border: "none", color: "#fff",
+              fontFamily: "'Poppins',sans-serif",
+              fontSize: "0.88rem", fontWeight: 700, cursor: "pointer",
+            }}>
+              Compris
+            </button>
+          ) : (
+            <>
+              <button onClick={onClose} style={{
+                padding: "9px 20px", borderRadius: 10,
+                background: "#f1f5f9", border: "none", color: "#64748b",
+                fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer",
+              }}>
+                Ignorer
+              </button>
+              <button
+                onClick={handleFacturer}
+                disabled={sending || prixSeance <= 0}
+                style={{
+                  padding: "9px 22px", borderRadius: 10,
+                  background: sending || prixSeance <= 0 ? "#94a3b8" : "#d97706",
+                  border: "none", color: "#fff",
+                  fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 700,
+                  cursor: sending || prixSeance <= 0 ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", gap: 7,
+                }}
+              >
+                {sending ? (
+                  <>
+                    <div style={{
+                      width: 13, height: 13, borderRadius: "50%",
+                      border: "2px solid rgba(255,255,255,0.4)",
+                      borderTop: "2px solid #fff",
+                      animation: "spin .7s linear infinite",
+                    }} />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>💰 Facturer {total > 0 ? `${total.toLocaleString("fr-DZ")} DA` : ""}</>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODALE GROUPE DE SÉANCES ──────────────────────────────────────────────────
 function GroupModal({ sessions, onClose, onDelete, onEdit }) {
   if (!sessions || sessions.length === 0) return null;
   const first = sessions[0];
@@ -465,7 +743,6 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
   function assignColumns(daySessions) {
     const sorted = [...daySessions].sort((a, b) => a.startH - b.startH);
     const columns = [];
-
     const withCol = sorted.map(s => {
       const endH = s.startH + s.dur;
       let colIdx = columns.findIndex(colEnd => colEnd <= s.startH);
@@ -473,7 +750,6 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
       else { columns[colIdx] = endH; }
       return { session: s, colIdx };
     });
-
     const items = withCol.map(({ session: s, colIdx }) => {
       const overlappingCount = withCol.filter(({ session: other }) =>
         other.id !== s.id &&
@@ -482,13 +758,11 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
       ).length;
       return { session: s, colIdx, localCols: overlappingCount + 1 };
     });
-
     return { items };
   }
 
   return (
     <div style={{ border:"1px solid #e2e8f0", borderRadius:12, overflow:"hidden", background:"#fff", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-      {/* Header */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)", background:"#f8fafc", borderBottom:"2px solid #e2e8f0", position:"sticky", top:0, zIndex:10 }}>
         <div style={{ borderRight:"1px solid #e2e8f0", fontSize:"0.65rem", color:"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:600 }}>Heure</div>
         {weekDates.map((date,i) => {
@@ -504,20 +778,16 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
           );
         })}
       </div>
-
-      {/* Body */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)" }}>
         <div style={{ borderRight:"1px solid #e2e8f0" }}>
           {HOURS.map(h => (
             <div key={h} style={{ height:CELL_H, borderBottom:"1px solid #f1f5f9", display:"flex", alignItems:"flex-start", padding:"5px 8px 0", fontSize:"0.62rem", fontWeight:600, color:"#94a3b8" }}>{h}:00</div>
           ))}
         </div>
-
         {weekDates.map((_, dayIdx) => {
           const isToday = dayIdx === todayIdx;
           const daySessions = sessions.filter(s => s.day === dayIdx);
           const { items: columnedSessions } = assignColumns(daySessions);
-
           return (
             <div key={dayIdx} style={{ position:"relative", borderRight:"1px solid #e2e8f0", background: isToday ? "rgba(37,99,235,0.015)" : "transparent" }}>
               {HOURS.map((h, hIdx) => {
@@ -530,12 +800,10 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                   </div>
                 );
               })}
-
               {columnedSessions.map(({ session: s, colIdx, localCols }) => {
                 const firstHour = HOURS[0];
                 const topPx = (s.startH - firstHour) * CELL_H;
                 if (s.startH < firstHour || s.startH >= firstHour + HOURS.length) return null;
-
                 const colData    = COLORS[s.type] || COLORS.code;
                 const isDragging = dragging === s.id;
                 const overlapping = findOverlapping(daySessions, s);
@@ -543,10 +811,8 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                 const groupSessions = hasOverlap
                   ? [s, ...overlapping].filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
                   : [s];
-
                 const widthPct = 100 / localCols;
                 const leftPct  = colIdx * widthPct;
-
                 return (
                   <div key={s.id}
                     draggable
@@ -557,22 +823,13 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                       hasOverlap ? onGroupClick(groupSessions) : onSessionClick(s, e.currentTarget.getBoundingClientRect());
                     }}
                     style={{
-                      position:  "absolute",
-                      left:      `calc(${leftPct}% + 2px)`,
-                      width:     `calc(${widthPct}% - 4px)`,
-                      top:       topPx + 2,
-                      height:    s.dur * CELL_H - 4,
-                      borderRadius: 8,
-                      padding:   "5px 8px",
-                      cursor:    isDragging ? "grabbing" : "pointer",
-                      userSelect:"none",
-                      background:  colData.light,
-                      borderLeft:  `3px solid ${colData.bg}`,
-                      boxShadow:   hasOverlap ? `0 0 0 2px ${colData.bg}, 0 2px 8px ${colData.bg}50` : `0 1px 4px ${colData.bg}30`,
-                      opacity:     isDragging ? 0.4 : 1,
-                      transition:  "transform 0.15s, box-shadow 0.15s",
-                      overflow:    "hidden",
-                      zIndex:      isDragging ? 1 : 2,
+                      position:"absolute", left:`calc(${leftPct}% + 2px)`, width:`calc(${widthPct}% - 4px)`,
+                      top:topPx + 2, height:s.dur * CELL_H - 4, borderRadius:8, padding:"5px 8px",
+                      cursor:isDragging ? "grabbing" : "pointer", userSelect:"none",
+                      background:colData.light, borderLeft:`3px solid ${colData.bg}`,
+                      boxShadow:hasOverlap ? `0 0 0 2px ${colData.bg}, 0 2px 8px ${colData.bg}50` : `0 1px 4px ${colData.bg}30`,
+                      opacity:isDragging ? 0.4 : 1, transition:"transform 0.15s, box-shadow 0.15s",
+                      overflow:"hidden", zIndex:isDragging ? 1 : 2,
                     }}
                     onMouseEnter={e => { if (!isDragging) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.zIndex=5; }}}
                     onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.zIndex=2; }}
@@ -580,7 +837,7 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                     <div style={{ fontSize:"0.72rem", fontWeight:700, color:colData.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cap(s.name)}</div>
                     <div style={{ fontSize:"0.62rem", color:"#64748b", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.monitor}</div>
                     {hasOverlap && (
-                      <div style={{ position:"absolute", top:4, right:4, width:18, height:18, borderRadius:"50%", background: colData.bg, color:"white", fontSize:"0.6rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <div style={{ position:"absolute", top:4, right:4, width:18, height:18, borderRadius:"50%", background:colData.bg, color:"white", fontSize:"0.6rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         {groupSessions.length}
                       </div>
                     )}
@@ -597,18 +854,20 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function AgendaPage() {
-  const [sessions,   setSessions]   = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [toast,      setToast]      = useState(null);
-  const [weekBase,   setWeekBase]   = useState(() => getMondayOfWeek(new Date()));
-  const [showModal,  setShowModal]  = useState(false);
-  const [editing,    setEditing]    = useState(null);
-  const [popup,      setPopup]      = useState({ session:null, anchor:null });
-  const [groupModal, setGroupModal] = useState(null);
-  const [search,     setSearch]     = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterMon,  setFilterMon]  = useState("");
+  const [sessions,       setSessions]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [saving,         setSaving]         = useState(false);
+  const [toast,          setToast]          = useState(null);
+  const [weekBase,       setWeekBase]       = useState(() => getMondayOfWeek(new Date()));
+  const [showModal,      setShowModal]      = useState(false);
+  const [editing,        setEditing]        = useState(null);
+  const [popup,          setPopup]          = useState({ session:null, anchor:null });
+  const [groupModal,     setGroupModal]     = useState(null);
+  const [search,         setSearch]         = useState("");
+  const [filterType,     setFilterType]     = useState("");
+  const [filterMon,      setFilterMon]      = useState("");
+  const [milestoneModal, setMilestoneModal] = useState(null);
+  // { type: "completed" | "extra", candidatName: string, candidatId: number }
 
   const weekDates = getWeekDates(weekBase);
   const weekLabel = formatWeekLabel(weekDates);
@@ -696,20 +955,62 @@ export default function AgendaPage() {
     setSaving(true);
     try {
       if (api?.updateSeance && editing) {
-        await api.updateSeance({ id: editing.id, date: _formData.date, heure: _formData.heure, type: _formData.type, statut: _formData.statut, moniteur_id: _formData.moniteur_id, duree: _formData.duree, candidatId: _formData.candidatIds?.[0] || null });
-        await loadSeances(); showToast("Séance modifiée avec succès.");
+        await api.updateSeance({
+          id: editing.id, date: _formData.date, heure: _formData.heure,
+          type: _formData.type, statut: _formData.statut,
+          moniteur_id: _formData.moniteur_id, duree: _formData.duree,
+          candidatId: _formData.candidatIds?.[0] || null,
+        });
+        await loadSeances();
+        showToast("Séance modifiée avec succès.");
+
       } else if (api?.addSeance && !editing) {
         const result = await api.addSeance(_formData);
-        if (result?.success) { await loadSeances(); showToast("Séance créée avec succès."); }
-        else throw new Error(result?.message || "Erreur lors de la création.");
+        if (result?.success) {
+          await loadSeances();
+          showToast("Séance créée avec succès.");
+
+          // ── Vérification milestone ──────────────────────────────────────
+          const candidatId = _formData.candidatIds?.[0];
+          if (candidatId) {
+            try {
+              const allRows     = await api.getSeances();
+              const allSessions = Array.isArray(allRows) ? allRows.map(dbRowToSession) : [];
+              const nbSessions  = allSessions.filter(s => {
+                if (!s._raw?.candidatsIds) return false;
+                const ids = String(s._raw.candidatsIds).split(",").map(id => parseInt(id.trim()));
+                return ids.includes(candidatId);
+              }).length;
+
+              const nomCandidat = sessionObj.name || "Ce candidat";
+              if (nbSessions === 20) {
+                setMilestoneModal({ type: "completed", candidatName: nomCandidat, candidatId });
+              } else if (nbSessions > 20) {
+                setMilestoneModal({ type: "extra", candidatName: nomCandidat, candidatId });
+              }
+            } catch (milestoneErr) {
+              console.error("Erreur vérification milestone :", milestoneErr);
+            }
+          }
+          // ────────────────────────────────────────────────────────────────
+
+        } else {
+          throw new Error(result?.message || "Erreur lors de la création.");
+        }
+
       } else {
         const { _formData: _fd, ...calendarFields } = sessionObj;
         if (editing) setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
         else setSessions(p => [...p, { ...calendarFields, id: Date.now() }]);
         showToast(editing ? "Séance modifiée (mode démo)." : "Séance créée (mode démo).", "info");
       }
-    } catch (err) { showToast(err.message || "Une erreur est survenue.", "error"); }
-    finally { setSaving(false); setShowModal(false); setEditing(null); }
+    } catch (err) {
+      showToast(err.message || "Une erreur est survenue.", "error");
+    } finally {
+      setSaving(false);
+      setShowModal(false);
+      setEditing(null);
+    }
   };
 
   const monitors = [...new Set(sessions.map(s=>s.monitor))].sort();
@@ -719,7 +1020,7 @@ export default function AgendaPage() {
       <style>{FONT_LINK}</style>
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden", background:"#f1f5f9", fontFamily:"'Poppins',sans-serif", color:"#1e293b" }}>
 
-        {/* HERO — sans les boutons Jour/Semaine/Aujourd'hui */}
+        {/* HERO */}
         <div style={{ position:"relative", background:"linear-gradient(135deg,#dbeafe 0%,#bfdbfe 50%,#e0f2fe 100%)", borderBottom:"1px solid #bfdbfe", padding:"0 28px", flexShrink:0, overflow:"hidden", minHeight:110 }}>
           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:6, background:"repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 30px,transparent 30px,transparent 60px)", opacity:0.6 }} />
           <div style={{ position:"absolute", right:120, bottom:8, opacity:0.9 }}>
@@ -847,6 +1148,7 @@ export default function AgendaPage() {
         </div>
       </div>
 
+      {/* POPUPS & MODALES */}
       {popup.session && (
         <SessionPopup
           session={popup.session}
@@ -874,6 +1176,15 @@ export default function AgendaPage() {
           editing={editing}
           saving={saving}
           sessions={sessions}
+        />
+      )}
+
+      {milestoneModal && (
+        <MilestoneModal
+          type={milestoneModal.type}
+          candidatName={milestoneModal.candidatName}
+          candidatId={milestoneModal.candidatId}
+          onClose={() => setMilestoneModal(null)}
         />
       )}
 

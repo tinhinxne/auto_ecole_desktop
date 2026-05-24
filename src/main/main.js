@@ -908,3 +908,34 @@ ipcMain.handle("send-examen-notification", async (event, { email, candidat, type
     return { success: false };
   }
 });
+
+ipcMain.handle("send-candidat-message", async (event, { email, nomCandidat, sujet, message }) => {
+  const html = `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">
+      <div style="background:#2b537e;padding:24px;text-align:center;">
+        <h1 style="color:#fff;margin:0;font-size:20px;">🚗 Auto-École</h1>
+      </div>
+      <div style="padding:28px;">
+        <p style="color:#475569;font-size:15px;margin-bottom:16px;">
+          Bonjour <strong>${nomCandidat}</strong>,
+        </p>
+        <div style="background:#F8FAFC;border-radius:10px;padding:20px;color:#1e293b;font-size:14px;line-height:1.7;white-space:pre-wrap;">${message}</div>
+        <p style="color:#94A3B8;font-size:12px;margin-top:20px;">
+          Ce message vous a été envoyé par votre auto-école. Merci de ne pas y répondre directement.
+        </p>
+      </div>
+    </div>
+  `;
+  try {
+    await transporter.sendMail({
+      from: '"Auto-École 🚗" <tinhinanethequeen@gmail.com>',
+      to: email,
+      subject: sujet || "Message de votre auto-école",
+      html,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("Erreur envoi message candidat:", err.message);
+    return { success: false, message: err.message };
+  }
+});

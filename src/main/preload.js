@@ -47,5 +47,6 @@ forgotPasswordReset:     (data) => ipcRenderer.invoke("forgot-password-reset",  
 getCandidatsDebiteursMoniteur: (moniteurId) => ipcRenderer.invoke('get-candidats-debiteurs-moniteur', moniteurId),
 sendExamenNotification: (data) => ipcRenderer.invoke("send-examen-notification", data),
 
+sendCandidatMessage: (data) => ipcRenderer.invoke("send-candidat-message", data),
 
 });
