@@ -8,6 +8,10 @@ const DEFAULT_EXAM_RULES = {
   tentativesMax: 3,
   blocageImpaye: true,
   joursAutorises: ["Lun", "Mer", "Ven"],
+  // ── Congé annuel ──────────────────────────────────────────────
+  congeActif: true,        // Le blocage est-il activé ?
+  congeMoisDebut: 8,       // Août (1 = Janvier … 12 = Décembre)
+  congeMoisFin: 8,         // Par défaut : tout le mois d'août
 };
 
 export function ExamenRulesProvider({ children }) {
@@ -27,8 +31,15 @@ export function ExamenRulesProvider({ children }) {
     localStorage.setItem("examRules", JSON.stringify(rules));
   };
 
+  /** Utilitaire : renvoie true si la date passée est dans la période de congé */
+  const isConge = (date = new Date()) => {
+    if (!examRules.congeActif) return false;
+    const mois = date.getMonth() + 1; // getMonth() est 0-indexé
+    return mois >= examRules.congeMoisDebut && mois <= examRules.congeMoisFin;
+  };
+
   return (
-    <ExamenRulesContext.Provider value={{ examRules, saveExamRules }}>
+    <ExamenRulesContext.Provider value={{ examRules, saveExamRules, isConge }}>
       {children}
     </ExamenRulesContext.Provider>
   );

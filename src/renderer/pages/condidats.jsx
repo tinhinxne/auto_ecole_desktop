@@ -4,8 +4,18 @@ import Button from "../components/Button";
 import "../../styles/condidats.css";
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
-import { SquarePen, Trash, Phone, Mail, X, Send } from "lucide-react";
+import { SquarePen, Trash, Phone, Mail, X, Send, PlusCircle, Filter } from "lucide-react"; 
 import AddCandidatModal from "../components/addCondidat";
+
+// ─────────────────────────────────────────────
+// LISTE COMPLÈTE DES CATÉGORIES DE PERMIS
+// ─────────────────────────────────────────────
+const TOUTES_CATEGORIES = [
+  "Tous",
+  "A1", "A","B", "C1", 
+  "C", "D", "F", "BE", 
+  "C1E", "CE", "DE",
+];
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -32,8 +42,8 @@ function ContactModal({ candidat, onClose }) {
   const [sent,        setSent]        = useState(false);
   const [error,       setError]       = useState("");
 
-  const email      = candidat._raw?.email;
-  const hasEmail   = !!email;
+  const email = candidat._raw?.email;
+  const hasEmail = !!email;
   const nomComplet = `${candidat.prenom} ${candidat.nom}`;
 
   const handleSend = async () => {
@@ -158,7 +168,6 @@ function ContactModal({ candidat, onClose }) {
                 {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
               </select>
 
-              {/* Champ libre si "Autre" est choisi */}
               {sujet === "Autre" && (
                 <input
                   type="text"
@@ -193,12 +202,10 @@ function ContactModal({ candidat, onClose }) {
               />
             </div>
 
-            {/* Compteur */}
             <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "right", marginTop: -8 }}>
               {message.length} caractère{message.length !== 1 ? "s" : ""}
             </div>
 
-            {/* Erreur */}
             {error && (
               <div style={{
                 padding: "9px 13px", borderRadius: 9,
@@ -209,7 +216,6 @@ function ContactModal({ candidat, onClose }) {
               </div>
             )}
 
-            {/* Pas d'email */}
             {!hasEmail && (
               <div style={{
                 padding: "9px 13px", borderRadius: 9,
@@ -273,24 +279,37 @@ function ContactModal({ candidat, onClose }) {
 // Composant principal
 // ─────────────────────────────────────────────
 const Condidats = () => {
-  const [candidats,       setCandidats]       = useState([]);
-  const [showModal,       setShowModal]       = useState(false);
-  const [editCandidat,    setEditCandidat]    = useState(null);
-  const [searchQuery,     setSearchQuery]     = useState("");
-  const [contactCandidat, setContactCandidat] = useState(null);
+  const [candidats,         setCandidats]        = useState([]);
+  const [showModal,         setShowModal]        = useState(false);
+  const [editCandidat,     setEditCandidat]     = useState(null);
+  const [isReinscription,  setIsReinscription]  = useState(false); 
+  const [searchQuery,      setSearchQuery]      = useState("");
+  const [selectedCategorie, setSelectedCategorie] = useState("Tous"); 
+  const [contactCandidat,  setContactCandidat]  = useState(null);
 
   const th = { padding: "15px 16px", textAlign: "left", color: "#fff", fontWeight: "600", fontSize: "14px" };
   const td = { padding: "14px 16px", borderBottom: "1px solid #E5E7EB", fontSize: "14px", color: "#1F2937" };
 
+  // ── LOGIQUE DE FILTRAGE ULTRA PRÉCISE ──────────────────────────────────────
   const candidatsFiltres = candidats.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
+    const matchesSearch = !q || (
       c.nom.toLowerCase().includes(q) ||
       c.prenom.toLowerCase().includes(q) ||
       c.tel.toLowerCase().includes(q) ||
       (c.status && c.status.toLowerCase().includes(q))
     );
+
+    const dbCategorie = (
+      c._raw?.categoriePermis || 
+      c._raw?.categorie || 
+      c._raw?.categorie_permis || 
+      "B"
+    ).toString().trim().toUpperCase();
+
+    const matchesCategorie = selectedCategorie === "Tous" || dbCategorie === selectedCategorie.toUpperCase();
+
+    return matchesSearch && matchesCategorie;
   });
 
   const loadCandidats = async () => {
@@ -299,17 +318,24 @@ const Condidats = () => {
       const seances = await window.electron.getSeances();
 
       const formatted = data.map((c) => {
+        const currentCat = (c.categoriePermis || c.categorie || c.categorie_permis || "B").toString().trim().toUpperCase();
+
         const nbSessions = seances.filter((s) => {
           if (!s.candidatsIds) return false;
           const ids = String(s.candidatsIds).split(",").map((id) => parseInt(id.trim()));
-          return ids.includes(c.idCandidat);
+          const matchCandidat = ids.includes(c.idCandidat);
+          const seanceCat = (s.categoriePermis || "").toString().trim().toUpperCase();
+          const matchCategorie = seanceCat === currentCat; 
+          
+          return matchCandidat && matchCategorie;
         }).length;
 
         return {
-          id:          c.idCandidat,
-          nom:         c.nom,
-          prenom:      c.prenom,
-          tel:         c.telephone,
+          id:              c.idCandidat,
+          nom:             c.nom,
+          prenom:          c.prenom,
+          tel:             c.telephone,
+          categoriePermis: currentCat, 
           inscription: c.date_inscription
             ? new Date(c.date_inscription).toISOString().split("T")[0]
             : "",
@@ -317,7 +343,7 @@ const Condidats = () => {
             ? new Date(c.date_naissance).toISOString().split("T")[0]
             : "",
           sessions: nbSessions,
-          status:   c.statut,
+          status:   c.statut, 
           sexe:     c.sexe,
           photo:    c.photo || null,
           _raw:     c,
@@ -334,11 +360,19 @@ const Condidats = () => {
   useEffect(() => { loadCandidats(); }, []);
 
   const handleEdit = (candidat) => {
+    setIsReinscription(false); 
+    setEditCandidat(candidat._raw);
+    setShowModal(true);
+  };
+
+  const handleReinscrire = (candidat) => {
+    setIsReinscription(true); 
     setEditCandidat(candidat._raw);
     setShowModal(true);
   };
 
   const handleAdd = () => {
+    setIsReinscription(false);
     setEditCandidat(null);
     setShowModal(true);
   };
@@ -355,13 +389,26 @@ const Condidats = () => {
   };
 
   const handleSave = async (data) => {
-    if (data.idCandidat) {
-      await window.electron.updateCandidat(data);
-    } else {
-      await window.electron.addCandidat(data);
+    const categorieSelectionnee = data.categoriePermis || data.categorie || data.categorie_permis || "B";
+    const cleanData = {
+      ...data,
+      categoriePermis: categorieSelectionnee.toString().trim().toUpperCase()
+    };
+
+    try {
+      if (data.isReinscription) {
+        await window.electron.reinscrireCandidat(cleanData);
+      } else if (data.idCandidat) {
+        await window.electron.updateCandidat(cleanData);
+      } else {
+        await window.electron.addCandidat(cleanData);
+      }
+      await loadCandidats();
+      setShowModal(false);
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement :", error);
+      alert("Une erreur est survenue.");
     }
-    await loadCandidats();
-    setShowModal(false);
   };
 
   return (
@@ -386,26 +433,69 @@ const Condidats = () => {
             <Button text="+ Ajouter candidat" onClick={handleAdd} />
           </div>
 
-          {/* BARRE DE RECHERCHE */}
-          <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
-            <div style={{
-              flex: 1, background: "#fff", padding: "12px 20px",
-              borderRadius: "15px", display: "flex", gap: "15px",
-              alignItems: "center", border: "1px solid #E2E8F0",
-            }}>
-              <input
-                type="text"
-                placeholder="🔍 Rechercher un candidat..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+          {/* ── DESIGN ULTRA COMPACT : RECHERCHE + SELECT SUR UNE SEULE LIGNE ──────────────────────── */}
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            marginBottom: "20px",
+            background: "#fff", 
+            padding: "10px 14px",
+            borderRadius: "12px",
+            border: "1px solid #E2E8F0",
+            alignItems: "center"
+          }}>
+            {/* Input recherche principale */}
+            <input
+              type="text"
+              placeholder="🔍 Rechercher un candidat (Nom, prénom, téléphone...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1, 
+                padding: "10px 14px", 
+                border: "1px solid #E2E8F0",
+                borderRadius: "8px", 
+                outline: "none", 
+                fontSize: "14px",
+                background: "#F8FAFC"
+              }}
+            />
+
+            {/* Dropdown de Filtrage Propre pour le permis */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
+              <Filter size={16} color="#64748b" style={{ marginLeft: "4px" }} />
+              <select
+                value={selectedCategorie}
+                onChange={(e) => setSelectedCategorie(e.target.value)}
                 style={{
-                  flex: 1, padding: "10px", border: "1px solid #CBD5E0",
-                  borderRadius: "10px", outline: "none", fontSize: "14px",
+                  padding: "10px 32px 10px 14px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                  background: "#F1F5F9",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  outline: "none",
+                  minWidth: "160px",
+                  appearance: "none",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 12px center",
+                  backgroundSize: "14px",
+                  transition: "all 0.15s ease",
                 }}
-              />
+              >
+                {TOUTES_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat === "Tous" ? "Tous les permis" : `Permis ${cat}`}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
+          {/* TABLEAU */}
           <div style={{ background: "#fff", borderRadius: "15px", overflow: "hidden", boxShadow: "0 5px 15px rgba(0,0,0,0.05)" }}>
             <div style={{ maxHeight: "500px", overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -414,8 +504,8 @@ const Condidats = () => {
                     <th style={th}>Candidat</th>
                     <th style={th}>Contact</th>
                     <th style={th}>Date d'inscription</th>
-                    <th style={th}>Progress</th>
-                    <th style={th}>Status</th>
+                    <th style={th}>Progression</th>
+                    <th style={th}>Statut</th>
                     <th style={th}>Actions</th>
                   </tr>
                 </thead>
@@ -423,14 +513,19 @@ const Condidats = () => {
                   {candidatsFiltres.length === 0 ? (
                     <tr>
                       <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#A0AEC0" }}>
-                        Aucun candidat trouvé
+                        Aucun candidat trouvé pour cette sélection.
                       </td>
                     </tr>
                   ) : (
                     candidatsFiltres.map((c, index) => (
                       <tr key={c.id} style={{ background: index % 2 === 0 ? "#fff" : "#F8FAFC" }}>
 
-                        <td style={td}>{c.nom} {c.prenom}</td>
+                        <td style={td}>
+                          <div style={{ fontWeight: 600 }}>{c.nom} {c.prenom}</div>
+                          <span style={{ fontSize: "11px", background: "#e0f2fe", color: "#0369a1", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold", marginTop: "4px", display: "inline-block" }}>
+                            Catégorie {c.categoriePermis}
+                          </span>
+                        </td>
 
                         <td style={td}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -453,15 +548,22 @@ const Condidats = () => {
 
                         <td style={td}>
                           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-
-                            {/* Modifier */}
                             <SquarePen
                               size={17} color="blue"
                               style={{ cursor: "pointer" }}
+                              title="Modifier la fiche"
                               onClick={() => handleEdit(c)}
                             />
 
-                            {/* Contacter par email */}
+                            {c.status === "obtenu" && (
+                              <PlusCircle
+                                size={17} color="green"
+                                style={{ cursor: "pointer" }}
+                                title="Inscrire à une nouvelle catégorie"
+                                onClick={() => handleReinscrire(c)}
+                              />
+                            )}
+
                             <Mail
                               size={17}
                               color={c._raw?.email ? "#2b537e" : "#cbd5e1"}
@@ -470,13 +572,11 @@ const Condidats = () => {
                               onClick={() => { if (c._raw?.email) setContactCandidat(c); }}
                             />
 
-                            {/* Supprimer */}
                             <Trash
                               size={17} color="red"
                               style={{ cursor: "pointer" }}
                               onClick={() => handleDelete(c.id)}
                             />
-
                           </div>
                         </td>
 
@@ -490,15 +590,14 @@ const Condidats = () => {
         </div>
       </div>
 
-      {/* MODALE AJOUT / EDIT */}
       <AddCandidatModal
         showModal={showModal}
         setShowModal={setShowModal}
         candidat={editCandidat}
+        isReinscription={isReinscription} 
         onSave={handleSave}
       />
 
-      {/* MODALE CONTACT EMAIL */}
       {contactCandidat && (
         <ContactModal
           candidat={contactCandidat}

@@ -5,8 +5,49 @@ import SmallCar from "../../assets/SmallCar.png";
 import Button from "../components/Button";
 import AddMoniteurModal from "../components/addMoniteur";
 
+// Couleurs par famille de permis
+const CATEGORY_COLORS = {
+  A1: { bg: "#FEF3C7", color: "#92400E", border: "#FCD34D" },
+  A:  { bg: "#FEF3C7", color: "#92400E", border: "#FCD34D" },
+  B:  { bg: "#DBEAFE", color: "#1E40AF", border: "#93C5FD" },
+  BE: { bg: "#EDE9FE", color: "#5B21B6", border: "#C4B5FD" },
+  C1: { bg: "#D1FAE5", color: "#065F46", border: "#6EE7B7" },
+  C:  { bg: "#D1FAE5", color: "#065F46", border: "#6EE7B7" },
+  C1E:{ bg: "#ECFDF5", color: "#047857", border: "#A7F3D0" },
+  CE: { bg: "#ECFDF5", color: "#047857", border: "#A7F3D0" },
+  D:  { bg: "#FCE7F3", color: "#9D174D", border: "#F9A8D4" },
+  DE: { bg: "#FDF2F8", color: "#831843", border: "#F0ABFC" },
+  F:  { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1" },
+};
+
+const CategoryBadge = ({ cat }) => {
+  const colors = CATEGORY_COLORS[cat] || { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1" };
+  return (
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      padding: "2px 9px",
+      borderRadius: "20px",
+      fontSize: "11px",
+      fontWeight: "700",
+      letterSpacing: "0.4px",
+      background: colors.bg,
+      color: colors.color,
+      border: `1.5px solid ${colors.border}`,
+      fontFamily: "'Sora', sans-serif",
+    }}>
+      {cat}
+    </span>
+  );
+};
+
 const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
   const initials = `${moniteur.prenom?.[0] || ""}${moniteur.nom?.[0] || ""}`.toUpperCase();
+
+  // Convertir la chaîne "B,C,D" en tableau ["B","C","D"]
+  const categories = moniteur.categories_habilitees
+    ? moniteur.categories_habilitees.split(",").map(c => c.trim()).filter(Boolean)
+    : ["B"];
 
   return (
     <div className="moniteur-card-proto">
@@ -37,6 +78,26 @@ const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
           <div className="info-item-proto">
             <i className="fa-solid fa-phone" />
             <span>{moniteur.telephone}</span>
+          </div>
+        </div>
+
+        {/* ── Catégories de permis ── */}
+        <div style={{ marginTop: "12px" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            marginBottom: "6px",
+          }}>
+            <i className="fa-solid fa-id-card" style={{ fontSize: "11px", color: "#94A3B8" }} />
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Habilitations
+            </span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+            {categories.map(cat => (
+              <CategoryBadge key={cat} cat={cat} />
+            ))}
           </div>
         </div>
       </div>
@@ -95,35 +156,20 @@ const Moniteur = () => {
   };
 
   const handleDelete = async (id) => {
-    console.log("Tentative de suppression de l'ID:", id);
-    if (!id) {
-      alert("Erreur : ID introuvable");
-      return;
-    }
-
+    if (!id) { alert("Erreur : ID introuvable"); return; }
     if (window.confirm("Supprimer ce moniteur définitivement ?")) {
       try {
         const result = await window.electron.deleteMoniteur(id);
-        if (result.success) {
-          await loadMoniteurs();
-        } else {
-          alert("Erreur BDD : " + result.error);
-        }
+        if (result.success) await loadMoniteurs();
+        else alert("Erreur BDD : " + result.error);
       } catch (err) {
         console.error("Erreur appel IPC delete:", err);
       }
     }
   };
 
-  const handleEditClick = (moniteur) => {
-    setSelectedMoniteur(moniteur);
-    setShowModal(true);
-  };
-
-  const handleAddClick = () => {
-    setSelectedMoniteur(null);
-    setShowModal(true);
-  };
+  const handleEditClick  = (moniteur) => { setSelectedMoniteur(moniteur); setShowModal(true); };
+  const handleAddClick   = ()          => { setSelectedMoniteur(null);     setShowModal(true); };
 
   const filteredMoniteurs = moniteurs.filter((m) => {
     const fullName = `${m.prenom} ${m.nom}`.toLowerCase();
@@ -150,17 +196,11 @@ const Moniteur = () => {
             <Button text="  + Ajouter moniteur" onClick={handleAddClick} />
           </div>
 
-          {/* BARRE DE RECHERCHE — même style que Payments */}
           <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
             <div style={{
-              flex: 1,
-              background: "#fff",
-              padding: "12px 20px",
-              borderRadius: "15px",
-              display: "flex",
-              gap: "15px",
-              alignItems: "center",
-              border: "1px solid #E2E8F0"
+              flex: 1, background: "#fff", padding: "12px 20px",
+              borderRadius: "15px", display: "flex", gap: "15px",
+              alignItems: "center", border: "1px solid #E2E8F0"
             }}>
               <input
                 type="text"
@@ -168,12 +208,8 @@ const Moniteur = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
-                  flex: 1,
-                  padding: "10px",
-                  border: "1px solid #CBD5E0",
-                  borderRadius: "10px",
-                  outline: "none",
-                  fontSize: "14px"
+                  flex: 1, padding: "10px", border: "1px solid #CBD5E0",
+                  borderRadius: "10px", outline: "none", fontSize: "14px"
                 }}
               />
               <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#4A5568" }}>
@@ -182,14 +218,9 @@ const Moniteur = () => {
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   style={{
-                    padding: "8px 12px",
-                    border: "1px solid #CBD5E0",
-                    borderRadius: "8px",
-                    outline: "none",
-                    fontSize: "14px",
-                    color: "#4A5568",
-                    background: "#fff",
-                    cursor: "pointer"
+                    padding: "8px 12px", border: "1px solid #CBD5E0",
+                    borderRadius: "8px", outline: "none", fontSize: "14px",
+                    color: "#4A5568", background: "#fff", cursor: "pointer"
                   }}
                 >
                   <option value="tous">Tous</option>

@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRulesCtx } from "../context/RulesContext";
 
+// ── Liste officielle et complète des catégories de permis ────────────────────
+const PERMIS_CATEGORIES = [
+  { id: "A1", label: "A1 - Moto < 125 cm³ / Scooter" },
+  { id: "A",  label: "A - Grosse Cylindrée (> 125 cm³)" },
+  { id: "B",  label: "B - Véhicule Léger (Tourisme / < 3.5t)" },
+  { id: "BE", label: "BE - Véhicule Léger avec Remorque" },
+  { id: "C1", label: "C1 - Camionnette (Entre 3.5t et 7.5t)" },
+  { id: "C",  label: "C - Poids Lourd (Camion > 7.5t)" },
+  { id: "C1E",label: "C1E - Camionnette (C1) avec Remorque" },
+  { id: "CE", label: "CE - Super Lourd (Semi-remorque)" },
+  { id: "D",  label: "D - Transport de Personnes (Bus / Autocar)" },
+  { id: "DE", label: "DE - Transport de Personnes avec Remorque" },
+  { id: "F",  label: "F - Véhicule Aménagé (Handicap / Spécifique)" }
+];
+
 // ── Calcul d'âge précis ──────────────────────────────────────────────────────
 const calculateAge = (dob) => {
   if (!dob) return null;
@@ -15,7 +30,7 @@ const calculateAge = (dob) => {
 // ── Règles d'âge ────────────────────────────────────────────────────────────
 const evaluateRules = (rules, dob) => {
   const age = calculateAge(dob);
-  if (age === null) return { blocked: false, needsParent: false, age: null };
+  if (age === null || !rules) return { blocked: false, needsParent: false, age: null };
   let blocked = false;
   let needsParent = false;
   rules.forEach((rule) => {
@@ -51,7 +66,7 @@ const validateEmail = (email) => {
   return { valid: true, msg: "" };
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 Mo
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ACCEPTED_EXTS  = ".pdf,.jpg,.jpeg,.png";
 
@@ -70,7 +85,6 @@ const formatSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 };
 
-// ── Icônes SVG inline ─────────────────────────────────────────────────────────
 const IconX = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -79,7 +93,7 @@ const IconX = ({ size = 18 }) => (
   </svg>
 );
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles CSS injectés ───────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
   :root {
@@ -144,14 +158,15 @@ const css = `
 
   .field input[type="text"],
   .field input[type="date"],
-  .field input[type="email"] {
+  .field input[type="email"],
+  .field select {
     height: 40px; padding: 0 12px;
     border: 1.5px solid var(--gray-200); border-radius: 9px;
     font-family: 'Sora', sans-serif; font-size: 13px; color: var(--gray-900);
     background: var(--gray-50); outline: none; transition: border .15s, background .15s;
   }
-  .field input:focus         { border-color: var(--blue);   background: #fff; }
-  .field input.input-error   { border-color: var(--red);    background: var(--red-light); }
+  .field input:focus, .field select:focus { border-color: var(--blue);   background: #fff; }
+  .field input.input-error, .field select.input-error { border-color: var(--red);    background: var(--red-light); }
   .field input.input-warning { border-color: var(--orange); background: var(--orange-light); }
 
   .field-error {
@@ -168,7 +183,6 @@ const css = `
   .gender-option input[type="radio"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
   .gender-option label { font-size: 13px; color: var(--gray-900); cursor: pointer; font-weight: 500; }
 
-  /* ── Bannière âge ── */
   .age-banner {
     display: flex; align-items: flex-start; gap: 10px;
     padding: 12px 14px; border-radius: 10px;
@@ -180,7 +194,6 @@ const css = `
   .age-banner.ok      { background: var(--green-light);  color: #065f46;            border: 1px solid #6ee7b7; }
   .age-banner .banner-icon { font-size: 18px; flex-shrink: 0; }
 
-  /* ── Upload zone autorisation parentale ── */
   .upload-section { display: flex; flex-direction: column; gap: 10px; animation: fadeIn .2s ease; }
 
   .upload-zone {
@@ -199,7 +212,6 @@ const css = `
   .upload-label { font-size: 13px; font-weight: 600; color: var(--orange-dark); }
   .upload-hint  { font-size: 11.5px; color: #b45309; }
 
-  /* ── Aperçu fichier uploadé ── */
   .file-preview {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 13px; border-radius: 10px;
@@ -221,7 +233,6 @@ const css = `
   }
   .file-preview-remove:hover { opacity: 1; }
 
-  /* ── Footer ── */
   .modal-footer {
     display: flex; justify-content: flex-end; gap: 10px;
     padding: 16px 24px 20px; border-top: 1px solid var(--gray-200);
@@ -243,23 +254,24 @@ const css = `
   .btn-save:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; }
 `;
 
-// ── Composant principal ───────────────────────────────────────────────────────
 export default function AddCandidatModal({ showModal, setShowModal, candidat = null, onSave }) {
   const isEdit = !!candidat;
   const { inscriptionRules } = useRulesCtx();
 
-  const emptyForm = { nom: "", prenom: "", dob: "", inscription: "", tel: "", sexe: "", email: "" };
+  const emptyForm = { nom: "", prenom: "", dob: "", inscription: "", tel: "", sexe: "", email: "", categoriePermis: "" };
   const [form, setForm]           = useState(emptyForm);
   const [errors, setErrors]       = useState({});
   const [touched, setTouched]     = useState({});
-  const [parentAuthFile, setParentAuthFile] = useState(null); // File | null
+  const [parentAuthFile, setParentAuthFile] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
   const { blocked, needsParent, age } = evaluateRules(inscriptionRules, form.dob);
-  const canSave = !blocked && (!needsParent || parentAuthFile !== null);
+  
+  const hasValidationErrors = Object.keys(errors).length > 0;
+  const canSave = !blocked && (!needsParent || parentAuthFile !== null) && !hasValidationErrors;
 
-  // ── Validation ──────────────────────────────────────────────────────────────
+  // ── Validation intégrale ───────────────────────────────────────────────────
   const validate = (f = form, file = parentAuthFile) => {
     const errs = {};
 
@@ -271,14 +283,15 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
     } else {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const birth = new Date(f.dob);
-      if (birth >= today)
-        errs.dob = "La date de naissance ne peut pas être aujourd'hui ou dans le futur.";
+      if (birth >= today) errs.dob = "La date de naissance est invalide.";
     }
 
     if (!f.inscription) {
       errs.inscription = "La date d'inscription est requise.";
-    } else if (f.dob && f.inscription === f.dob) {
-      errs.inscription = "La date d'inscription ne peut pas être identique à la date de naissance.";
+    }
+
+    if (!f.categoriePermis) {
+      errs.categoriePermis = "Veuillez sélectionner une catégorie de permis.";
     }
 
     const emailCheck = validateEmail(f.email);
@@ -289,29 +302,35 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
 
     if (!f.sexe) errs.sexe = "Le sexe est requis.";
 
-    // Fichier autorisation parentale requis uniquement si la règle s'applique
     const { needsParent: np } = evaluateRules(inscriptionRules, f.dob);
-    if (np) {
-      const fileCheck = validateFile(file);
-      if (!fileCheck.valid) errs.parentFile = fileCheck.msg;
+    if (np && !file) {
+      errs.parentFile = "L'autorisation parentale est requise.";
     }
 
     return errs;
   };
 
   const handleChange = (field, value) => {
-    const updated = { ...form, [field]: value };
+    // 🌟 SÉCURITÉ : Si on change la catégorie, on force la valeur en MAJUSCULES
+    const cleanValue = field === "categoriePermis" ? String(value).toUpperCase() : value;
+    const updated = { ...form, [field]: cleanValue };
     setForm(updated);
-    if (touched[field]) setErrors(validate(updated));
-    if (field === "dob") setParentAuthFile(null); // reset le fichier si la date change
+
+    if (field === "dob") {
+      setParentAuthFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+
+    if (touched[field] || field === "dob" || field === "categoriePermis") {
+      setErrors(validate(updated, field === "dob" ? null : parentAuthFile));
+    }
   };
 
   const handleBlur = (field) => {
     setTouched((t) => ({ ...t, [field]: true }));
-    setErrors(validate());
+    setErrors(validate(form, parentAuthFile));
   };
 
-  // ── Gestion du fichier ───────────────────────────────────────────────────────
   const applyFile = (file) => {
     if (!file) return;
     const check = validateFile(file);
@@ -324,56 +343,46 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
   };
 
   const handleFileChange = (e) => applyFile(e.target.files?.[0]);
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    applyFile(e.dataTransfer.files?.[0]);
-  };
-
+  const handleDrop = (e) => { e.preventDefault(); setIsDragOver(false); applyFile(e.dataTransfer.files?.[0]); };
   const handleDragOver = (e) => { e.preventDefault(); setIsDragOver(true); };
   const handleDragLeave = ()  => setIsDragOver(false);
 
-  const removeFile = (e) => {
-    e.stopPropagation();
-    setParentAuthFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setTouched((t) => ({ ...t, parentFile: true }));
-    setErrors((e) => ({ ...e, parentFile: "L'autorisation parentale est requise." }));
-  };
-
-  // ── Pré-remplissage ──────────────────────────────────────────────────────────
+  // ── Écouteur de props / Reset ──────────────────────────────────────────────
   useEffect(() => {
-    setParentAuthFile(null);
-    setErrors({});
-    setTouched({});
-    if (candidat) {
-      setForm({
-        nom:         candidat.nom         || "",
-        prenom:      candidat.prenom       || "",
-        dob:         candidat.date_naissance
-                       ? new Date(candidat.date_naissance).toISOString().split("T")[0]
-                       : "",
-        inscription: candidat.date_inscription
-                       ? new Date(candidat.date_inscription).toISOString().split("T")[0]
-                       : "",
-        tel:         candidat.telephone    || "",
-        sexe:        candidat.sexe === "M" ? "homme" : candidat.sexe === "F" ? "femme" : "",
-        email:       candidat.email        || "",
-      });
-    } else {
-      const today = new Date().toISOString().split("T")[0];
-      setForm({ nom: "", prenom: "", dob: "", inscription: today, tel: "", sexe: "", email: "" });
+    if (showModal) {
+      setParentAuthFile(null);
+      setErrors({});
+      setTouched({});
+      
+      if (candidat) {
+        // 🌟 SÉCURITÉ EXTRA : Récupération et conversion automatique en Majuscules
+        const dbCategory = candidat.categoriePermis || candidat.categorie || candidat.categorie_permis || "";
+        
+        setForm({
+          nom:         candidat.nom         || "",
+          prenom:      candidat.prenom      || "",
+          dob:         candidat.date_naissance ? new Date(candidat.date_naissance).toISOString().split("T")[0] : "",
+          inscription: candidat.date_inscription ? new Date(candidat.date_inscription).toISOString().split("T")[0] : "",
+          tel:         candidat.telephone    || "",
+          sexe:        candidat.sexe === "M" ? "homme" : candidat.sexe === "F" ? "femme" : "",
+          email:       candidat.email        || "",
+          categoriePermis: String(dbCategory).toUpperCase().trim(), 
+        });
+      } else {
+        const today = new Date().toISOString().split("T")[0];
+        setForm({ nom: "", prenom: "", dob: "", inscription: today, tel: "", sexe: "", email: "", categoriePermis: "" });
+      }
     }
   }, [candidat, showModal]);
 
-  // ── Sauvegarde ───────────────────────────────────────────────────────────────
   const handleSave = () => {
-    const allTouched = { nom: true, prenom: true, dob: true, inscription: true, tel: true, sexe: true, email: true, parentFile: true };
+    const allTouched = { nom: true, prenom: true, dob: true, inscription: true, tel: true, sexe: true, email: true, parentFile: true, categoriePermis: true };
     setTouched(allTouched);
+    
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length > 0 || !canSave) return;
+    
+    if (Object.keys(errs).length > 0 || blocked || (needsParent && !parentAuthFile)) return;
 
     onSave?.({
       idCandidat:            candidat?.idCandidat,
@@ -383,222 +392,128 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
       date_naissance:        form.dob,
       date_inscription:      form.inscription,
       sexe:                  form.sexe === "homme" ? "M" : "F",
-      statut:                "actif",
+      statut:                candidat?.statut || "actif",
+      categoriePermis:       String(form.categoriePermis).toUpperCase(), // Force Majuscules vers l'IpcRenderer !
       autorisationParentale: needsParent && parentAuthFile !== null,
-      parentAuthFile:        parentAuthFile ?? null, // File object — à envoyer via FormData côté appelant
+      parentAuthFile:        parentAuthFile ?? null,
       email:                 form.email || null,
     });
   };
 
   if (!showModal) return null;
 
-  // ── Bannière âge ─────────────────────────────────────────────────────────────
-  const renderAgeBanner = () => {
-    if (!form.dob || errors.dob) return null;
-    if (blocked) return (
-      <div className="age-banner blocked">
-        <span className="banner-icon">🚫</span>
-        <span>
-          Inscription <strong>interdite</strong> — le candidat a <strong>{age} ans</strong>.
-          Cette règle est activée dans les paramètres.
-        </span>
-      </div>
-    );
-    if (needsParent) return (
-      <div className="age-banner warning">
-        <span className="banner-icon">📑</span>
-        <span>
-          Le candidat a <strong>{age} ans</strong> — une <strong>autorisation parentale</strong> est requise.
-          Importez le document ci-dessous.
-        </span>
-      </div>
-    );
-    return (
-      <div className="age-banner ok">
-        <span className="banner-icon">✅</span>
-        <span>Inscription <strong>autorisée</strong> — le candidat a <strong>{age} ans</strong>.</span>
-      </div>
-    );
-  };
-
-  // ── Zone upload autorisation parentale ────────────────────────────────────────
- const renderParentUpload = () => {
-  if (!needsParent || blocked) return null;
-
-  return (
-    <div className="upload-section">
-
-      {/* Zone d'upload — toujours visible tant qu'il n'y a pas de fichier */}
-      {!parentAuthFile && (
-        <>
-          <div
-            className={`upload-zone${isDragOver ? " drag-over" : ""}${touched.parentFile && errors.parentFile ? " has-error" : ""}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_EXTS}
-              onChange={handleFileChange}
-            />
-            <span className="upload-icon">☁️</span>
-            <span className="upload-label">Cliquez ou glissez le fichier ici</span>
-            <span className="upload-hint">PDF, JPG ou PNG — max 5 Mo</span>
-          </div>
-          {touched.parentFile && errors.parentFile && (
-            <span className="field-error">{errors.parentFile}</span>
-          )}
-        </>
-      )}
-
-      {/* Aperçu du fichier — visible une fois uploadé */}
-      {parentAuthFile && (
-        <div className="file-preview">
-          <span className="file-preview-icon">📄</span>
-          <div className="file-preview-info">
-            <div className="file-preview-name">{parentAuthFile.name}</div>
-            <div className="file-preview-meta">
-              {formatSize(parentAuthFile.size)} ·{" "}
-              {parentAuthFile.type === "application/pdf"
-                ? "PDF"
-                : parentAuthFile.type.split("/")[1].toUpperCase()}
-            </div>
-          </div>
-          <button
-            className="file-preview-remove"
-            onClick={removeFile}
-            title="Supprimer le fichier"
-            type="button"
-          >
-            <IconX size={16} />
-          </button>
-        </div>
-      )}
-
-    </div>
-  );
-};
-
   return (
     <>
       <style>{css}</style>
-      <div
-        className="modal-overlay"
-        onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
-      >
+      <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
         <div className="modal">
 
-          {/* ── Header ── */}
+          {/* Header */}
           <div className="modal-header">
             <div className="modal-title-wrap">
-              <h2>{isEdit ? "Modifier le candidat" : "Ajouter un candidat"}</h2>
+              <h2>{isEdit ? "Fiche Candidat / Apprentissage" : "Ajouter un candidat"}</h2>
               <span className={`mode-badge ${isEdit ? "edit" : "add"}`}>
-                {isEdit ? "Édition" : "Nouveau"}
+                {isEdit ? "Dossier Unique" : "Nouveau"}
               </span>
             </div>
-            <button className="modal-close" onClick={() => setShowModal(false)}>
-              <IconX />
-            </button>
+            <button className="modal-close" onClick={() => setShowModal(false)}><IconX /></button>
           </div>
           <hr className="modal-divider" />
 
-          {/* ── Body ── */}
+          {/* Body */}
           <div className="modal-body">
+
+            {/* Sélection de la catégorie de permis exacte */}
+            <div className="field">
+              <label>Catégorie de permis visée <span className="req">*</span></label>
+              <select
+                value={form.categoriePermis}
+                className={touched.categoriePermis && errors.categoriePermis ? "input-error" : ""}
+                onChange={(e) => handleChange("categoriePermis", e.target.value)}
+                onBlur={() => handleBlur("categoriePermis")}
+              >
+                <option value="">-- Sélectionner la catégorie exacte --</option>
+                {PERMIS_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.label}</option>
+                ))}
+              </select>
+              {touched.categoriePermis && errors.categoriePermis && (
+                <span className="field-error">{errors.categoriePermis}</span>
+              )}
+            </div>
 
             {/* Nom */}
             <div className="field">
               <label>Nom du candidat <span className="req">*</span></label>
-              <input
-                type="text"
-                placeholder="Saisir le nom"
-                value={form.nom}
-                className={touched.nom && errors.nom ? "input-error" : ""}
-                onChange={(e) => handleChange("nom", e.target.value)}
-                onBlur={() => handleBlur("nom")}
-              />
+              <input type="text" placeholder="Saisir le nom" value={form.nom} className={touched.nom && errors.nom ? "input-error" : ""} onChange={(e) => handleChange("nom", e.target.value)} onBlur={() => handleBlur("nom")} />
               {touched.nom && errors.nom && <span className="field-error">{errors.nom}</span>}
             </div>
 
             {/* Prénom */}
             <div className="field">
               <label>Prénom du candidat <span className="req">*</span></label>
-              <input
-                type="text"
-                placeholder="Saisir le prénom"
-                value={form.prenom}
-                className={touched.prenom && errors.prenom ? "input-error" : ""}
-                onChange={(e) => handleChange("prenom", e.target.value)}
-                onBlur={() => handleBlur("prenom")}
-              />
+              <input type="text" placeholder="Saisir le prénom" value={form.prenom} className={touched.prenom && errors.prenom ? "input-error" : ""} onChange={(e) => handleChange("prenom", e.target.value)} onBlur={() => handleBlur("prenom")} />
               {touched.prenom && errors.prenom && <span className="field-error">{errors.prenom}</span>}
             </div>
 
-            {/* Date naissance + inscription */}
+            {/* Dates */}
             <div className="row-2">
               <div className="field">
                 <label>Date de naissance <span className="req">*</span></label>
-                <input
-                  type="date"
-                  value={form.dob}
-                  className={
-                    (touched.dob && errors.dob) ? "input-error"
-                    : blocked       ? "input-error"
-                    : needsParent   ? "input-warning"
-                    : ""
-                  }
-                  onChange={(e) => handleChange("dob", e.target.value)}
-                  onBlur={() => handleBlur("dob")}
-                />
+                <input type="date" value={form.dob} className={(touched.dob && errors.dob) ? "input-error" : blocked ? "input-error" : needsParent ? "input-warning" : ""} onChange={(e) => handleChange("dob", e.target.value)} onBlur={() => handleBlur("dob")} />
                 {touched.dob && errors.dob && <span className="field-error">{errors.dob}</span>}
               </div>
               <div className="field">
                 <label>Date d'inscription <span className="req">*</span></label>
-                <input
-                  type="date"
-                  value={form.inscription}
-                  className={touched.inscription && errors.inscription ? "input-error" : ""}
-                  onChange={(e) => handleChange("inscription", e.target.value)}
-                  onBlur={() => handleBlur("inscription")}
-                />
-                {touched.inscription && errors.inscription && (
-                  <span className="field-error">{errors.inscription}</span>
-                )}
+                <input type="date" value={form.inscription} className={touched.inscription && errors.inscription ? "input-error" : ""} onChange={(e) => handleChange("inscription", e.target.value)} onBlur={() => handleBlur("inscription")} />
+                {touched.inscription && errors.inscription && <span className="field-error">{errors.inscription}</span>}
               </div>
             </div>
 
-            {/* Bannière âge */}
-            {renderAgeBanner()}
+            {/* Bannières réglementaires basées sur l'âge */}
+            {(!form.dob || errors.dob) ? null : blocked ? (
+              <div className="age-banner blocked"><span className="banner-icon">🚫</span><span>Âge ({age} ans) : Inscription non valide selon les règles.</span></div>
+            ) : needsParent ? (
+              <div className="age-banner warning"><span className="banner-icon">📑</span><span>Candidat mineur ({age} ans) : Autorisation parentale requise.</span></div>
+            ) : (
+              <div className="age-banner ok"><span className="banner-icon">✅</span><span>Âge vérifié ({age} ans) : Inscription valide.</span></div>
+            )}
 
-            {/* Upload autorisation parentale */}
-            {renderParentUpload()}
+            {/* Zone d'autorisation parentale */}
+            {needsParent && !blocked && (
+              <div className="upload-section">
+                {!parentAuthFile ? (
+                  <>
+                    <div className={`upload-zone${isDragOver ? " drag-over" : ""}${touched.parentFile && errors.parentFile ? " has-error" : ""}`} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}>
+                      <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTS} onChange={handleFileChange} />
+                      <span className="upload-icon">☁️</span>
+                      <span className="upload-label">Importer l'autorisation parentale</span>
+                    </div>
+                    {touched.parentFile && errors.parentFile && <span className="field-error">{errors.parentFile}</span>}
+                  </>
+                ) : (
+                  <div className="file-preview">
+                    <span className="file-preview-icon">📄</span>
+                    <div className="file-preview-info">
+                      <div className="file-preview-name">{parentAuthFile.name}</div>
+                      <div className="file-preview-meta">{formatSize(parentAuthFile.size)}</div>
+                    </div>
+                    <button className="file-preview-remove" onClick={() => setParentAuthFile(null)} type="button"><IconX size={16} /></button>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Email */}
+            {/* Contact & Profil */}
             <div className="field">
               <label>Email <span className="req">*</span></label>
-              <input
-                type="email"
-                placeholder="email@exemple.com"
-                value={form.email}
-                className={touched.email && errors.email ? "input-error" : ""}
-                onChange={(e) => handleChange("email", e.target.value)}
-                onBlur={() => handleBlur("email")}
-              />
+              <input type="email" placeholder="email@exemple.com" value={form.email} className={touched.email && errors.email ? "input-error" : ""} onChange={(e) => handleChange("email", e.target.value)} onBlur={() => handleBlur("email")} />
               {touched.email && errors.email && <span className="field-error">{errors.email}</span>}
             </div>
 
-            {/* Téléphone */}
             <div className="field">
               <label>Numéro de téléphone <span className="req">*</span></label>
-              <input
-                type="text"
-                placeholder="06XXXXXXXX ou 07XXXXXXXX"
-                value={form.tel}
-                className={touched.tel && errors.tel ? "input-error" : ""}
-                onChange={(e) => handleChange("tel", e.target.value)}
-                onBlur={() => handleBlur("tel")}
-              />
+              <input type="text" placeholder="06XXXXXXXX ou 07XXXXXXXX" value={form.tel} className={touched.tel && errors.tel ? "input-error" : ""} onChange={(e) => handleChange("tel", e.target.value)} onBlur={() => handleBlur("tel")} />
               {touched.tel && errors.tel && <span className="field-error">{errors.tel}</span>}
             </div>
 
@@ -608,39 +523,24 @@ export default function AddCandidatModal({ showModal, setShowModal, candidat = n
               <div className="gender-group">
                 {["homme", "femme"].map((s) => (
                   <div className="gender-option" key={s}>
-                    <input
-                      type="radio"
-                      name="sexe"
-                      id={`c-${s}`}
-                      value={s}
-                      checked={form.sexe === s}
-                      onChange={() => handleChange("sexe", s)}
-                    />
-                    <label htmlFor={`c-${s}`}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </label>
+                    <input type="radio" name="sexe" id={`c-${s}`} value={s} checked={form.sexe === s} onChange={() => handleChange("sexe", s)} />
+                    <label htmlFor={`c-${s}`}>{s.charAt(0).toUpperCase() + s.slice(1)}</label>
                   </div>
                 ))}
               </div>
-              {touched.sexe && errors.sexe && <span className="field-error">{errors.sexe}</span>}
             </div>
 
           </div>
 
-          {/* ── Footer ── */}
+          {/* Footer */}
           <div className="modal-footer">
             <button className="btn-cancel" onClick={() => setShowModal(false)}>Annuler</button>
             <button
               className={`btn-save ${isEdit ? "edit-mode" : ""}`}
               onClick={handleSave}
-              disabled={blocked}
-              title={
-                blocked                           ? "Inscription interdite pour cet âge" :
-                needsParent && !parentAuthFile    ? "Importez l'autorisation parentale d'abord" :
-                ""
-              }
+              disabled={!canSave}
             >
-              {isEdit ? "Mettre à jour" : "Sauvegarder"}
+              {isEdit ? "Enregistrer l'apprentissage" : "Inscrire le candidat"}
             </button>
           </div>
 

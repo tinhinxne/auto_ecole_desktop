@@ -13,6 +13,23 @@ const COLORS = {
   circulation: { bg:"#10b981", light:"rgba(16,185,129,0.18)",  border:"rgba(16,185,129,0.4)",  text:"#065f46" },
 };
 
+// Catégories de permis (mêmes valeurs que sur la page Candidats)
+const CATEGORIES_PERMIS = ["A1","A","B","C1","C","D","F","BE","C1E","CE","DE"];
+
+// Normalise un libellé de catégorie (espaces, accents, casse)
+const normCat = v => (v || "").toString().trim().toUpperCase();
+
+// Renvoie le tableau des catégories qu'un moniteur est habilité à enseigner
+const moniteurCategories = (m) => {
+  const raw = m?.categories_habilitees;
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : String(raw).split(",");
+  return arr.map(normCat).filter(Boolean);
+};
+
+// Récupère la catégorie de permis d'un candidat (gère les différents noms de champ possibles)
+const candidatCategorie = (c) => normCat(c?.categoriePermis || c?.categorie || c?.categorie_permis || "B");
+
 const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
 
 function floatToHHMM(h) {
@@ -54,6 +71,7 @@ function dbRowToSession(row) {
     startH,
     dur:     parseFloat(row.duree) || 1,
     notes:   row.statut || "",
+    categoriePermis: normCat(row.categoriePermis || row.categorie || row.categorie_permis),
     _raw:    row,
   };
 }
@@ -561,6 +579,42 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  // ── Compatibilité candidat / moniteur selon la catégorie de permis ─────────
+  const selectedCandidatObj = candidats.find(c => String(c.idCandidat) === String(form.candidatId));
+  const candidatCat = selectedCandidatObj ? candidatCategorie(selectedCandidatObj) : "";
+
+  // Liste des moniteurs habilités pour la catégorie du candidat sélectionné.
+  // Le moniteur déjà assigné (mode édition) reste visible même si les données
+  // historiques ne correspondent pas exactement, pour ne pas perdre l'info.
+  const moniteursDisponibles = moniteurs.filter(m => {
+    if (!candidatCat) return true;
+    return moniteurCategories(m).includes(candidatCat) || String(m.id) === String(form.moniteur_id);
+  });
+
+  const handleCandidatChange = (e) => {
+    const id = e.target.value;
+    const s  = candidats.find(c => String(c.idCandidat) === String(id));
+    set("candidatId", id);
+    set("candidat", s ? `${s.nom} ${s.prenom}` : "");
+
+    // Si le moniteur déjà choisi n'enseigne pas la catégorie du nouveau candidat, on le retire
+    if (s && form.moniteur_id) {
+      const newCat = candidatCategorie(s);
+      const currentMon = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
+      if (currentMon && !moniteurCategories(currentMon).includes(newCat)) {
+        set("moniteur_id", "");
+        set("moniteur", "");
+      }
+    }
+  };
+
+  const handleMoniteurChange = (e) => {
+    const id = e.target.value;
+    const s  = moniteurs.find(m => String(m.id) === String(id));
+    set("moniteur_id", id);
+    set("moniteur", s ? `${s.nom} ${s.prenom}` : "");
+  };
+
   const inpS = {
     width:"100%", boxSizing:"border-box",
     background:"#fff", border:"1px solid #cbd5e1",
@@ -573,6 +627,13 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
     if (!form.date || !form.heure || !form.type) return;
     if (!form.candidatId) { alert("Veuillez sélectionner un candidat."); return; }
     if (!form.moniteur_id) { alert("Veuillez sélectionner un moniteur."); return; }
+
+    const moniteurSel = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
+    if (selectedCandidatObj && moniteurSel && !moniteurCategories(moniteurSel).includes(candidatCat)) {
+      alert(`Ce moniteur n'est pas habilité pour la catégorie ${candidatCat}. Veuillez choisir un moniteur habilité pour cette catégorie.`);
+      return;
+    }
+
     onCreate({
       id:      editing ? editing.id : Date.now(),
       name:    form.candidat || "Nouveau Candidat",
@@ -590,6 +651,7 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
         moniteur_id: form.moniteur_id ? parseInt(form.moniteur_id) : null,
         candidatIds: form.candidatId ? [parseInt(form.candidatId)] : [],
         duree:       parseFloat(form.dur) || 1,
+        categoriePermis: candidatCat || null,
       },
     });
   };
@@ -647,19 +709,31 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Candidat <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.candidatId} onChange={e => { const s = candidats.find(c => c.idCandidat == e.target.value); set("candidatId", e.target.value); set("candidat", s ? `${s.nom} ${s.prenom}` : ""); }}>
+              <select style={inpS} value={form.candidatId} onChange={handleCandidatChange}>
                 <option value="">Sélectionner candidat...</option>
-                {candidats.map(c => <option key={c.idCandidat} value={c.idCandidat}>{c.nom} {c.prenom}</option>)}
+                {candidats.map(c => <option key={c.idCandidat} value={c.idCandidat}>{c.nom} {c.prenom} — {candidatCategorie(c)}</option>)}
               </select>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Moniteur <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.moniteur_id} onChange={e => { const s = moniteurs.find(m => m.id == e.target.value); set("moniteur_id", e.target.value); set("moniteur", s ? `${s.nom} ${s.prenom}` : ""); }}>
-                <option value="">Sélectionner moniteur...</option>
-                {moniteurs.map(m => <option key={m.id} value={m.id}>{m.nom} {m.prenom}</option>)}
+              <select style={inpS} value={form.moniteur_id} disabled={!form.candidatId} onChange={handleMoniteurChange}>
+                <option value="">{form.candidatId ? "Sélectionner moniteur..." : "Choisissez d'abord un candidat"}</option>
+                {moniteursDisponibles.map(m => <option key={m.id} value={m.id}>{m.nom} {m.prenom}</option>)}
               </select>
             </div>
           </div>
+
+          {form.candidatId && (
+            moniteursDisponibles.length > 0 ? (
+              <div style={{ padding:"8px 12px", borderRadius:8, background:"#eff6ff", border:"1px solid #bfdbfe", fontSize:"0.73rem", color:"#1d4ed8", fontWeight:600 }}>
+                🎓 Catégorie {candidatCat} — seuls les moniteurs habilités pour cette catégorie sont proposés.
+              </div>
+            ) : (
+              <div style={{ padding:"8px 12px", borderRadius:8, background:"#fef2f2", border:"1px solid #fca5a5", fontSize:"0.73rem", color:"#dc2626", fontWeight:600 }}>
+                ⚠️ Aucun moniteur n'est habilité pour la catégorie {candidatCat}.
+              </div>
+            )
+          )}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Type <span style={{ color:"#ef4444" }}>*</span></label>
@@ -866,6 +940,7 @@ export default function AgendaPage() {
   const [search,         setSearch]         = useState("");
   const [filterType,     setFilterType]     = useState("");
   const [filterMon,      setFilterMon]      = useState("");
+  const [filterCat,      setFilterCat]      = useState("");
   const [milestoneModal, setMilestoneModal] = useState(null);
   // { type: "completed" | "extra", candidatName: string, candidatId: number }
 
@@ -894,8 +969,8 @@ export default function AgendaPage() {
   const nextWeek = () => setWeekBase(d => { const n=new Date(d); n.setDate(n.getDate()+7); return n; });
   const goToday  = () => setWeekBase(getMondayOfWeek(new Date()));
 
-  const hasFilters = search || filterType || filterMon;
-  const resetFilters = () => { setSearch(""); setFilterType(""); setFilterMon(""); };
+  const hasFilters = search || filterType || filterMon || filterCat;
+  const resetFilters = () => { setSearch(""); setFilterType(""); setFilterMon(""); setFilterCat(""); };
 
   const filtered = sessions.filter(s => {
     const sessionISO   = toLocalISO(s._raw?.date);
@@ -905,7 +980,8 @@ export default function AgendaPage() {
     return inWeek &&
       (!search     || s.name.toLowerCase().includes(search.toLowerCase()) || s.monitor.toLowerCase().includes(search.toLowerCase())) &&
       (!filterType || s.type    === filterType) &&
-      (!filterMon  || s.monitor === filterMon);
+      (!filterMon  || s.monitor === filterMon) &&
+      (!filterCat  || s.categoriePermis === filterCat);
   });
 
   const handleDrop = useCallback(async (id, day, hour) => {
@@ -1106,6 +1182,12 @@ export default function AgendaPage() {
             value={filterMon} onChange={e=>setFilterMon(e.target.value)}>
             <option value="">Tous</option>
             {monitors.map(m=><option key={m}>{m}</option>)}
+          </select>
+          <span style={{ fontSize:"0.75rem", color:"#94a3b8", fontWeight:500 }}>Catégorie :</span>
+          <select style={{ padding:"7px 10px", borderRadius:8, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#334155", fontFamily:"'Poppins',sans-serif", fontSize:"0.8rem", outline:"none", cursor:"pointer" }}
+            value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
+            <option value="">Toutes</option>
+            {CATEGORIES_PERMIS.map(cat=><option key={cat} value={cat}>{cat}</option>)}
           </select>
           {hasFilters && (
             <button onClick={resetFilters} style={{ padding:"6px 12px", borderRadius:8, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", color:"#ef4444", fontFamily:"'Poppins',sans-serif", fontSize:"0.75rem", fontWeight:600, cursor:"pointer" }}>✕ Réinitialiser</button>

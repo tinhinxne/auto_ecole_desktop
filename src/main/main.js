@@ -1,7 +1,35 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const db = require('./db');
-
+// ── SÉCURISATION FORCE DE LA BASE DE DONNÉES ───────────────────────────────
+db.query(`
+  ALTER TABLE Candidat 
+  MODIFY COLUMN categoriePermis VARCHAR(10) NOT NULL DEFAULT 'B'
+`, (err) => {
+  if (err) {
+    db.query(`ALTER TABLE Candidat ADD COLUMN categoriePermis VARCHAR(10) NOT NULL DEFAULT 'B'`, (err2) => {
+      if (err2) {
+        console.log("ℹ️ Structure de la table Candidat déjà en place ou gérée.");
+      } else {
+        console.log("✅ Colonne 'categoriePermis' ajoutée avec succès à la table Candidat !");
+      }
+    });
+  } else {
+    console.log("✅ Structure de la colonne 'categoriePermis' synchronisée avec succès !");
+  }
+});
+// ── SÉCURISATION : colonne categories_habilitees pour les moniteurs ────────
+db.query(`
+  ALTER TABLE Moniteur 
+  ADD COLUMN categories_habilitees VARCHAR(100) NOT NULL DEFAULT 'B'
+`, (err) => {
+  if (err) {
+    console.log("ℹ️ Colonne 'categories_habilitees' déjà présente sur Moniteur (ou erreur ignorée) :", err.code || err.message);
+  } else {
+    console.log("✅ Colonne 'categories_habilitees' ajoutée avec succès à la table Moniteur !");
+  }
+});
+// ──────────────────────────────────────────────────────────────────────────
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { registerMoniteurHandlers } = require('./moniteurHandlers');
@@ -18,7 +46,7 @@ const transporter = nodemailer.createTransport({
     pass: 'gjgw vqfa qzkp wbfa',
   },
 });
-// Ajouter cette fonction avec les autres templates email en haut du fichier
+
 function buildSeanceEmailHtml({ prenomCandidat, nomCandidat, prenomMoniteur, nomMoniteur, date, heure, duree, type }) {
   const typeLabel = type === "code" ? "Code" : type === "circulation" ? "Circulation" : "Créneau";
   const [h, m] = heure.split(":");
@@ -61,6 +89,7 @@ function buildSeanceEmailHtml({ prenomCandidat, nomCandidat, prenomMoniteur, nom
     </div>
   `;
 }
+
 function generatePassword(length = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   return Array.from(crypto.randomBytes(length))
@@ -132,7 +161,6 @@ app.on("window-all-closed", () => {
 const otpStore = new Map();
 
 // Étape 1 : envoyer le code OTP
-
 ipcMain.handle("forgot-password-send-otp", async (event, { email }) => {
   return new Promise((resolve) => {
     db.query(
@@ -202,22 +230,20 @@ ipcMain.handle("forgot-password-reset", async (event, { email, newPassword }) =>
         if (err)
           return resolve({ success: false, message: "Erreur base de données." });
 
-        // affectedRows = 0 → email introuvable en BDD
         if (result.affectedRows === 0)
           return resolve({ success: false, message: "Aucun compte trouvé avec cet email." });
 
-        // ✅ Supprimer l'OTP seulement après succès confirmé
         otpStore.delete(email);
         resolve({ success: true });
       }
     );
   });
 });
+
 // 1. LOGIN
 ipcMain.handle("login", async (event, credentials) => {
   const { email, password } = credentials;
 
-  // JOIN with Moniteur to also fetch the `actif` flag when applicable
   const sql = `
   SELECT u.id, u.nom, u.prenom, u.type_utilisateur, m.actif
   FROM Utilisateur u
@@ -233,7 +259,6 @@ ipcMain.handle("login", async (event, credentials) => {
       if (result && result.length > 0) {
         const user = result[0];
 
-        // Block inactive moniteurs
         if (user.type_utilisateur === 'moniteur' && user.actif === 0) {
           return resolve({ success: false, inactive: true });
         }
@@ -270,7 +295,6 @@ ipcMain.handle("get-candidats", async () => {
         console.error(err);
         resolve([]);
       } else {
-        // Optional: Convert the comma-separated strings back into arrays
         const formattedRes = res.map(row => ({
           ...row,
           seanceIds: row.seanceIds ? row.seanceIds.split(',').map(Number) : [],
@@ -285,18 +309,22 @@ ipcMain.handle("get-candidats", async () => {
 ipcMain.handle("add-candidat", async (event, data) => {
   const { nom, prenom, telephone, date_naissance, sexe, photo, statut, email } = data;
   
-  // ← cette partie manquait
+  let categoriePermis = 'B';
+  if (data.categoriePermis && data.categoriePermis.trim() !== "") {
+    categoriePermis = data.categoriePermis.trim().toUpperCase();
+  }
+
   let photoBuffer = null;
   if (photo && photo.startsWith("data:image")) {
     photoBuffer = Buffer.from(photo.split(",")[1], "base64");
   }
 
   const sql = `
-    INSERT INTO Candidat (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut, email)
-    VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)
+    INSERT INTO Candidat (nom, prenom, telephone, date_naissance, date_inscription, sexe, photo, statut, email, categoriePermis)
+    VALUES (?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?)
   `;
   return new Promise((resolve) => {
-    db.query(sql, [nom, prenom, telephone, date_naissance || null, sexe, photoBuffer, statut, email || null], (err) => {
+    db.query(sql, [nom, prenom, telephone, date_naissance || null, sexe, photoBuffer, statut, email || null, categoriePermis], (err) => {
       if (err) { console.error('add-candidat error:', err); resolve(false); }
       else resolve(true);
     });
@@ -306,25 +334,32 @@ ipcMain.handle("add-candidat", async (event, data) => {
 ipcMain.handle("update-candidat", async (event, c) => {
   console.log("📝 update-candidat reçu:", c);
   return new Promise((resolve) => {
+    
+    let categorieNettoyee = 'B';
+    if (c.categoriePermis && String(c.categoriePermis).trim() !== "") {
+      categorieNettoyee = String(c.categoriePermis).trim().toUpperCase();
+    }
+
     const sql = `UPDATE Candidat 
-      SET nom=?, prenom=?, telephone=?, date_naissance=?, sexe=?, photo=?, statut=?, email=?
+      SET nom=?, prenom=?, telephone=?, date_naissance=?, sexe=?, photo=?, statut=?, email=?, categoriePermis=?
       WHERE idCandidat=?`;
     db.query(sql, [
       c.nom,
       c.prenom,
-      c.telephone   || null,
+      c.telephone     || null,
       c.date_naissance && c.date_naissance !== "" ? c.date_naissance : null,
       c.sexe,
-      c.photo       || null,
+      c.photo         || null,
       c.statut,
-      c.email       || null,
+      c.email         || null,
+      categorieNettoyee,
       c.idCandidat,
     ], (err) => {
       if (err) {
         console.error("❌ update-candidat error:", err.message);
         resolve({ success: false, error: err.message });
       } else {
-        console.log("✅ update-candidat OK pour idCandidat:", c.idCandidat);
+        console.log("✅ update-candidat OK en BDD avec Categorie:", categorieNettoyee);
         resolve({ success: true });
       }
     });
@@ -349,7 +384,8 @@ ipcMain.handle("get-moniteurs", async () => {
   return new Promise((resolve) => {
     const sql = `
   SELECT u.id, u.nom, u.prenom, u.mail as email, m.numeroTelephone as telephone, 
-         m.photo, IF(m.actif, 'actif', 'inactif') as statut
+         m.photo, IF(m.actif, 'actif', 'inactif') as statut,
+         m.categories_habilitees
   FROM Utilisateur u
   JOIN Moniteur m ON u.id = m.id
   WHERE u.deleted_at IS NULL
@@ -363,6 +399,12 @@ ipcMain.handle("get-moniteurs", async () => {
 
 ipcMain.handle("add-moniteur", async (event, m) => {
   const password = generatePassword();
+
+  // ── Nettoyage des catégories ─────────────────────────────────────────────
+  const categoriesHabilitees = (m.categories_habilitees && m.categories_habilitees.trim() !== "")
+    ? m.categories_habilitees.trim()
+    : 'B';
+
   return new Promise((resolve) => {
     const sqlUser = `
       INSERT INTO Utilisateur (nom, prenom, mail, mot_de_passe, type_utilisateur)
@@ -377,19 +419,22 @@ ipcMain.handle("add-moniteur", async (event, m) => {
 
       const newId = res.insertId;
 
+      // ✅ categories_habilitees est maintenant inclus dans l'INSERT
       const sqlMoniteur = `
-        INSERT INTO Moniteur (id, numeroTelephone, actif, photo)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO Moniteur (id, numeroTelephone, actif, photo, categories_habilitees)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
       db.query(
         sqlMoniteur,
-        [newId, m.telephone, m.statut === "actif" ? 1 : 0, m.photo],
+        [newId, m.telephone, m.statut === "actif" ? 1 : 0, m.photo, categoriesHabilitees],
         async (err2) => {
           if (err2) {
             console.error("Moniteur Insert Error:", err2.message);
             return resolve({ success: false, error: err2.message });
           }
+
+          console.log("✅ Moniteur créé avec catégories:", categoriesHabilitees);
 
           let emailSent = false;
           try {
@@ -442,14 +487,32 @@ ipcMain.handle("reset-moniteur-password", async (event, data) => {
 });
 
 ipcMain.handle("update-moniteur", async (event, m) => {
+  // ── Nettoyage des catégories ─────────────────────────────────────────────
+  const categoriesHabilitees = (m.categories_habilitees && m.categories_habilitees.trim() !== "")
+    ? m.categories_habilitees.trim()
+    : 'B';
+
   return new Promise((resolve) => {
     const sqlUser = `UPDATE Utilisateur SET nom=?, prenom=?, mail=? WHERE id=?`;
     db.query(sqlUser, [m.nom, m.prenom, m.email, m.id], (err) => {
       if (err) return resolve({ success: false });
-      const sqlMon = `UPDATE Moniteur SET numeroTelephone=?, actif=?, photo=? WHERE id=?`;
-      db.query(sqlMon, [m.telephone, m.statut === 'actif' ? 1 : 0, m.photo || null, m.id], (err2) => {
-        if (err2) resolve({ success: false });
-        else resolve({ success: true });
+
+      // ✅ categories_habilitees est maintenant inclus dans l'UPDATE
+      const sqlMon = `UPDATE Moniteur SET numeroTelephone=?, actif=?, photo=?, categories_habilitees=? WHERE id=?`;
+      db.query(sqlMon, [
+        m.telephone,
+        m.statut === 'actif' ? 1 : 0,
+        m.photo || null,
+        categoriesHabilitees,
+        m.id
+      ], (err2) => {
+        if (err2) {
+          console.error("❌ update-moniteur error:", err2.message);
+          resolve({ success: false });
+        } else {
+          console.log("✅ Moniteur mis à jour avec catégories:", categoriesHabilitees);
+          resolve({ success: true });
+        }
       });
     });
   });
@@ -602,7 +665,6 @@ ipcMain.handle('get-candidats-debiteurs', async () => {
         console.error('get-candidats-debiteurs error:', err); 
         resolve([]); 
       } else {
-        // Clean up the strings into arrays for React
         const formattedRes = res.map(row => ({
           ...row,
           seanceIds: row.seanceIds ? row.seanceIds.split(',').map(Number) : [],
@@ -793,13 +855,15 @@ ipcMain.handle('get-candidats-debiteurs-moniteur', async (event, moniteurId) => 
     });
   });
 });
+
 // MONITEUR : récupérer ses infos personnelles
 ipcMain.handle('get-moniteur-profile', async (event, moniteurId) => {
   return new Promise((resolve) => {
     const sql = `
       SELECT u.id, u.nom, u.prenom, u.mail as email,
              m.numeroTelephone as telephone, m.photo,
-             IF(m.actif, 'actif', 'inactif') as statut
+             IF(m.actif, 'actif', 'inactif') as statut,
+             m.categories_habilitees
       FROM Utilisateur u
       JOIN Moniteur m ON u.id = m.id
       WHERE u.id = ?
@@ -814,7 +878,6 @@ ipcMain.handle('get-moniteur-profile', async (event, moniteurId) => {
 // MONITEUR : modifier son mot de passe
 ipcMain.handle('update-moniteur-password', async (event, { moniteurId, oldPassword, newPassword }) => {
   return new Promise((resolve) => {
-    // Vérifier l'ancien mot de passe
     db.query(
       'SELECT id FROM Utilisateur WHERE id = ? AND mot_de_passe = ?',
       [moniteurId, oldPassword],
@@ -822,7 +885,6 @@ ipcMain.handle('update-moniteur-password', async (event, { moniteurId, oldPasswo
         if (err) return resolve({ success: false, message: "Erreur base de données." });
         if (!res.length) return resolve({ success: false, message: "Ancien mot de passe incorrect." });
 
-        // Mettre à jour
         db.query(
           'UPDATE Utilisateur SET mot_de_passe = ? WHERE id = ?',
           [newPassword, moniteurId],
@@ -835,7 +897,6 @@ ipcMain.handle('update-moniteur-password', async (event, { moniteurId, oldPasswo
     );
   });
 });
-// ── AJOUTE CE BLOC À LA FIN DE main.js ──────────────────────────────────────
 
 ipcMain.handle("send-examen-notification", async (event, { email, candidat, type, date, heure, lieu }) => {
   const dateFormatee = new Date(date + "T12:00:00").toLocaleDateString("fr-FR", {
