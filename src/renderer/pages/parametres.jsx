@@ -1,17 +1,18 @@
+// src/renderer/pages/Parametres.jsx
 import React, { useState, useEffect } from "react";
 import '../../styles/parametres.css';
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import {
   ChevronRight, UserCog, ClipboardList,
-  BookOpen, Check, X, Save,
+  BookOpen, Check, X, Save, CalendarOff,
 } from "lucide-react";
-import { useRulesCtx } from "../context/RulesContext";
-import { usePermissionsCtx } from "../context/PermissionsContext";
-import { useExamenRulesCtx } from "../context/ExamenRulesContext";
+import { useRulesCtx }        from "../context/RulesContext";
+import { usePermissionsCtx }  from "../context/PermissionsContext";
+import { useExamenRulesCtx }  from "../context/ExamenRulesContext";
+import ModalConges            from "../components/ModalConges";
 
-/* ─── COMPOSANTS REUTILISABLES ─── */
-
+/* ─── COMPOSANTS RÉUTILISABLES ─────────────────────────────────────────── */
 const Toggle = ({ value, onChange }) => (
   <div onClick={() => onChange(!value)} style={{
     width: 42, height: 24, borderRadius: 12,
@@ -28,49 +29,17 @@ const Toggle = ({ value, onChange }) => (
   </div>
 );
 
-const Select = ({ value, onChange, options }) => (
-  <select value={value} onChange={e => onChange(e.target.value)} style={{
-    padding: "4px 8px", borderRadius: 8,
-    border: "1px solid #ccc", fontSize: 13,
-    background: "#f8faff", cursor: "pointer",
-  }}>
-    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-  </select>
-);
-
-/* ─── NOMS DES MOIS ─── */
-const MOIS = [
-  { value: 1,  label: "Janvier"   },
-  { value: 2,  label: "Février"   },
-  { value: 3,  label: "Mars"      },
-  { value: 4,  label: "Avril"     },
-  { value: 5,  label: "Mai"       },
-  { value: 6,  label: "Juin"      },
-  { value: 7,  label: "Juillet"   },
-  { value: 8,  label: "Août"      },
-  { value: 9,  label: "Septembre" },
-  { value: 10, label: "Octobre"   },
-  { value: 11, label: "Novembre"  },
-  { value: 12, label: "Décembre"  },
-];
-
-/* ─── MODALE 1 : EXAMENS + CONGÉ ─── */
+/* ─── MODALE 1 : EXAMENS ─────────────────────────────────────────────────
+   (inchangée — congé annuel retiré, il est maintenant dans ModalConges)
+─────────────────────────────────────────────────────────────────────────── */
 const ModalExamens = ({ onClose }) => {
   const { examRules, saveExamRules } = useExamenRulesCtx();
 
-  // Règles existantes
   const [rules, setRules] = useState([
     { id: 1, icon: "🕐", label: "Délai après échec",        value: String(examRules.delaiApresEchec), unit: "Jours", color: "#a78bfa", type: "select", rulesKey: "delaiApresEchec" },
     { id: 2, icon: "🔴", label: "Tentatives max",           value: String(examRules.tentativesMax),   unit: null,    color: "#f87171", type: "select", rulesKey: "tentativesMax" },
     { id: 4, icon: "📅", label: "Jours d'examen autorisés", selectedDays: examRules.joursAutorises,   color: "#60a5fa", type: "days",   rulesKey: "joursAutorises" },
   ]);
-
-  // État du congé séparé pour plus de clarté
-  const [conge, setConge] = useState({
-    actif:      examRules.congeActif      ?? true,
-    moisDebut:  examRules.congeMoisDebut  ?? 8,
-    moisFin:    examRules.congeMoisFin    ?? 8,
-  });
 
   const daysOptions = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 
@@ -93,19 +62,14 @@ const ModalExamens = ({ onClose }) => {
       tentativesMax:   Number(rules.find(r => r.rulesKey === "tentativesMax")?.value   || 3),
       blocageImpaye:   examRules.blocageImpaye ?? true,
       joursAutorises:  rules.find(r => r.rulesKey === "joursAutorises")?.selectedDays || ["Lun","Mer","Ven"],
-      // ── Congé ──
-      congeActif:     conge.actif,
-      congeMoisDebut: conge.moisDebut,
-      congeMoisFin:   conge.moisFin,
+      // On conserve les données congé si elles existaient dans examRules (compatibilité)
+      congeActif:     examRules.congeActif,
+      congeMoisDebut: examRules.congeMoisDebut,
+      congeMoisFin:   examRules.congeMoisFin,
     };
     saveExamRules(newRules);
     onClose();
   };
-
-  // Label du mois pour l'affichage
-  const moisDebutLabel = MOIS.find(m => m.value === conge.moisDebut)?.label || "Août";
-  const moisFinLabel   = MOIS.find(m => m.value === conge.moisFin)?.label   || "Août";
-  const memesMois      = conge.moisDebut === conge.moisFin;
 
   return (
     <div className="modal-overlay">
@@ -115,8 +79,6 @@ const ModalExamens = ({ onClose }) => {
           <span className="close" onClick={onClose}><X size={16}/></span>
         </div>
         <hr/>
-
-        {/* ── Règles existantes ── */}
         <p className="new-modal-subtitle">Règles des examens :</p>
         <div className="new-rules-list">
           {rules.map(r => (
@@ -162,103 +124,6 @@ const ModalExamens = ({ onClose }) => {
             </div>
           ))}
         </div>
-
-        {/* ── Section Congé Annuel ── */}
-        <p className="new-modal-subtitle" style={{ marginTop: 20 }}>Congé annuel :</p>
-
-        <div style={{
-          background: conge.actif ? "#fff7ed" : "#f1f5f9",
-          border: `1.5px solid ${conge.actif ? "#fb923c" : "#cbd5e1"}`,
-          borderRadius: 12,
-          padding: 16,
-          transition: "all 0.25s",
-        }}>
-          {/* En-tête : icône + titre + toggle */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: conge.actif ? 14 : 0 }}>
-            <span style={{ fontSize: 22 }}>🏖️</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: conge.actif ? "#c2410c" : "#64748b" }}>
-                Période de fermeture
-              </div>
-              <div style={{ fontSize: 11, color: conge.actif ? "#ea580c" : "#94a3b8", marginTop: 2 }}>
-                {conge.actif
-                  ? memesMois
-                    ? `Séances bloquées en ${moisDebutLabel}`
-                    : `Séances bloquées de ${moisDebutLabel} à ${moisFinLabel}`
-                  : "Aucun blocage actif — les séances restent ouvertes toute l'année"}
-              </div>
-            </div>
-            <Toggle value={conge.actif} onChange={v => setConge(c => ({ ...c, actif: v }))} />
-          </div>
-
-          {/* Sélecteurs de mois (visibles seulement si actif) */}
-          {conge.actif && (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
-              marginTop: 4,
-            }}>
-              {/* Mois de début */}
-              <div style={{
-                background: "#fff",
-                border: "1px solid #fed7aa",
-                borderRadius: 10,
-                padding: "10px 14px",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#9a3412", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                  Début du congé
-                </div>
-                <select
-                  value={conge.moisDebut}
-                  onChange={e => setConge(c => ({ ...c, moisDebut: Number(e.target.value) }))}
-                  style={{
-                    width: "100%", padding: "6px 8px", borderRadius: 8,
-                    border: "1px solid #fed7aa", fontSize: 13,
-                    background: "#fff7ed", cursor: "pointer", color: "#7c2d12",
-                    fontWeight: 600, outline: "none",
-                  }}
-                >
-                  {MOIS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-              </div>
-
-              {/* Mois de fin */}
-              <div style={{
-                background: "#fff",
-                border: "1px solid #fed7aa",
-                borderRadius: 10,
-                padding: "10px 14px",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#9a3412", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                  Fin du congé
-                </div>
-                <select
-                  value={conge.moisFin}
-                  onChange={e => setConge(c => ({ ...c, moisFin: Number(e.target.value) }))}
-                  style={{
-                    width: "100%", padding: "6px 8px", borderRadius: 8,
-                    border: "1px solid #fed7aa", fontSize: 13,
-                    background: "#fff7ed", cursor: "pointer", color: "#7c2d12",
-                    fontWeight: 600, outline: "none",
-                  }}
-                >
-                  {MOIS.filter(m => m.value >= conge.moisDebut).map(m => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Avertissement si période invalide */}
-          {conge.actif && conge.moisFin < conge.moisDebut && (
-            <div style={{ marginTop: 10, fontSize: 12, color: "#dc2626", fontWeight: 600 }}>
-              ⚠️ Le mois de fin doit être après le mois de début.
-            </div>
-          )}
-        </div>
-
         <div className="new-modal-footer">
           <button className="btn cancel"  onClick={onClose}><X    size={13}/> Fermer</button>
           <button className="btn primary" onClick={handleSave}><Save size={13}/> Sauvegarder</button>
@@ -268,10 +133,9 @@ const ModalExamens = ({ onClose }) => {
   );
 };
 
-/* ─── MODALE 2 : PERMISSIONS MONITEURS ─── */
+/* ─── MODALE 2 : PERMISSIONS MONITEURS ─────────────────────────────────── */
 const ModalMoniteurs = ({ onClose }) => {
   const { getPermissions, updatePermissions } = usePermissionsCtx();
-
   const [moniteurs,  setMoniteurs]  = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [localPerms, setLocalPerms] = useState({});
@@ -327,7 +191,6 @@ const ModalMoniteurs = ({ onClose }) => {
           <span className="close" onClick={onClose}><X size={16}/></span>
         </div>
         <hr/>
-
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
           <p className="new-modal-subtitle" style={{ margin: 0 }}>Moniteur concerné :</p>
           {loading ? (
@@ -344,7 +207,6 @@ const ModalMoniteurs = ({ onClose }) => {
             </select>
           )}
         </div>
-
         {selectedMoniteur && (
           <div style={{
             background: activeCount > 0 ? "rgba(108,99,255,0.06)" : "rgba(148,163,184,0.08)",
@@ -362,7 +224,6 @@ const ModalMoniteurs = ({ onClose }) => {
             </span>
           </div>
         )}
-
         <div className="new-rules-list">
           {PERMS_LABELS.map(({ key, icon, label }) => {
             const val = !!localPerms[key];
@@ -384,7 +245,6 @@ const ModalMoniteurs = ({ onClose }) => {
             );
           })}
         </div>
-
         <div className="new-modal-footer">
           <button className="btn cancel" onClick={onClose}><X size={13}/> Annuler</button>
           <button className="btn primary" onClick={handleSave} style={{
@@ -399,18 +259,13 @@ const ModalMoniteurs = ({ onClose }) => {
   );
 };
 
-/* ─── MODALE 3 : INSCRIPTION ─── */
+/* ─── MODALE 3 : INSCRIPTION ─────────────────────────────────────────────── */
 const ModalInscription = ({ onClose }) => {
   const { inscriptionRules, saveInscriptionRules } = useRulesCtx();
-
-  const [rules, setRules] = useState(() =>
-    inscriptionRules.map(r => ({ ...r }))
-  );
+  const [rules, setRules] = useState(() => inscriptionRules.map(r => ({ ...r })));
 
   const toggle = (id) =>
-    setRules(prev => prev.map(r =>
-      r.id === id ? { ...r, enabled: !r.enabled } : r
-    ));
+    setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
 
   const handleSave = () => {
     saveInscriptionRules(rules);
@@ -453,15 +308,40 @@ const ModalInscription = ({ onClose }) => {
   );
 };
 
-/* ─── PAGE PRINCIPALE ─── */
+/* ─── PAGE PRINCIPALE ───────────────────────────────────────────────────── */
 const Parametres = () => {
-  const [activeModal,   setActiveModal]   = useState(null);
-  const [savedSections, setSavedSections] = useState([]);
+  const [activeModal,    setActiveModal]    = useState(null);
+  const [savedSections,  setSavedSections]  = useState([]);
 
   const sections = [
-    { id: "inscription", icon: <ClipboardList size={20}/>, title: "Règles d'inscriptions",    description: "Définir les conditions d'âge et documents" },
-    { id: "examens",     icon: <BookOpen      size={20}/>, title: "Règles des examens",        description: "Définir délais, tentatives, jours et congé annuel" },
-    { id: "moniteurs",   icon: <UserCog       size={20}/>, title: "Permissions des moniteurs", description: "Gérer les accès aux fonctionnalités moniteur" },
+    {
+      id: "inscription",
+      icon: <ClipboardList size={20}/>,
+      title: "Règles d'inscriptions",
+      description: "Définir les conditions d'âge et documents",
+      accentColor: "#6c63ff",
+    },
+    {
+      id: "examens",
+      icon: <BookOpen size={20}/>,
+      title: "Règles des examens",
+      description: "Définir délais, tentatives et jours autorisés",
+      accentColor: "#3b82f6",
+    },
+    {
+      id: "conges",
+      icon: <CalendarOff size={20}/>,
+      title: "Gestion des congés",
+      description: "Congé annuel auto-école & congés personnels moniteurs",
+      accentColor: "#f97316",
+    },
+    {
+      id: "moniteurs",
+      icon: <UserCog size={20}/>,
+      title: "Permissions des moniteurs",
+      description: "Gérer les accès aux fonctionnalités moniteur",
+      accentColor: "#8b5cf6",
+    },
   ];
 
   const openModal  = (id) => setActiveModal(id);
@@ -487,9 +367,18 @@ const Parametres = () => {
           </div>
           <div className="params-grid">
             {sections.map((s) => (
-              <div className="param-card" key={s.id}>
+              <div
+                className="param-card"
+                key={s.id}
+                style={{ borderLeft: `4px solid ${s.accentColor}20` }}
+              >
                 <div className="param-card-left">
-                  <div className="param-icon">{s.icon}</div>
+                  <div
+                    className="param-icon"
+                    style={{ color: s.accentColor, background: s.accentColor + "15" }}
+                  >
+                    {s.icon}
+                  </div>
                   <div className="param-info">
                     <h3>{s.title}</h3>
                     <p>{s.description}</p>
@@ -499,7 +388,11 @@ const Parametres = () => {
                   {savedSections.includes(s.id) && (
                     <span className="saved-badge"><Check size={12}/> Configuré</span>
                   )}
-                  <button className="btn-configurer" onClick={() => openModal(s.id)}>
+                  <button
+                    className="btn-configurer"
+                    onClick={() => openModal(s.id)}
+                    style={{ borderColor: s.accentColor + "40", color: s.accentColor }}
+                  >
                     Configurer <ChevronRight size={14}/>
                   </button>
                 </div>
@@ -508,9 +401,11 @@ const Parametres = () => {
           </div>
         </div>
       </div>
+
       {activeModal === "examens"     && <ModalExamens     onClose={closeModal}/>}
       {activeModal === "moniteurs"   && <ModalMoniteurs   onClose={closeModal}/>}
       {activeModal === "inscription" && <ModalInscription onClose={closeModal}/>}
+      {activeModal === "conges"      && <ModalConges      onClose={closeModal}/>}
     </div>
   );
 };
