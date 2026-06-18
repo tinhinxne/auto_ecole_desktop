@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PaymentModal from "../components/PaymentModal";
+import InvoiceGenerator from "../components/InvoiceGenerator"; // 1. Import du nouveau composant
 import ConnexionImg from "../../assets/Connexion.png";
 import SmallCar from "../../assets/SmallCar.png";
 import "../../styles/payment.css";
-
 
 /**
  * Transforme une ligne retournée par get-payments (JOIN Versement+Paiement+Candidat)
@@ -39,11 +39,12 @@ function methodeLabel(methode) {
   return map[methode] ?? methode;
 }
 
-// ─── Composant ───────────────────────────────────────────────────────────────
+// ─── Composant Principal ───────────────────────────────────────────────────────
 
 const Payments = () => {
   const [selected, setSelected] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showInvoices, setShowInvoices] = useState(false); // 2. État pour afficher/masquer InvoiceGenerator
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("2024-01-01");
   const [endDate, setEndDate] = useState("2026-12-31");
@@ -92,17 +93,12 @@ const Payments = () => {
   });
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  // totalEncaisse : somme de chaque versement individuel (pas de doublon possible)
   const totalEncaisse = paymentsData.reduce((acc, p) => acc + (Number(p.montant) || 0), 0);
 
-  // totalRestant : montantRestant appartient à Paiement, pas à Versement.
-  // Comme get-payments retourne 1 ligne par Versement, un même idPaiement peut
-  // apparaître plusieurs fois → on déduplique avant de sommer.
   const totalRestant = (() => {
-    const seen = new Map(); // idPaiement → montantRestant le plus récent
+    const seen = new Map();
     for (const row of paymentsData) {
       if (row.idPaiement !== undefined && row.idPaiement !== null) {
-        // On garde la première occurrence (ORDER BY dateVersement DESC = la plus récente)
         if (!seen.has(row.idPaiement)) {
           seen.set(row.idPaiement, Number(row.montantRestant) || 0);
         }
@@ -111,11 +107,10 @@ const Payments = () => {
     return Array.from(seen.values()).reduce((acc, v) => acc + v, 0);
   })();
 
-  // ── Styles ────────────────────────────────────────────────────────────────
+  // ── Styles inline temporaires ─────────────────────────────────────────────
   const th = { padding: '15px 16px', textAlign: 'left', color: '#fff', fontWeight: '600', fontSize: '14px' };
   const td = { padding: '14px 16px', borderBottom: '1px solid #E5E7EB', fontSize: '14px', color: '#1F2937' };
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="container">
       <div className="main">
@@ -130,7 +125,7 @@ const Payments = () => {
           <p>Suivi en temps réel des versements et soldes candidats</p>
         </div>
 
-        {/* SECTION STATS — 2 cartes */}
+        {/* SECTION STATS */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(2, 1fr)",
@@ -172,7 +167,7 @@ const Payments = () => {
           ))}
         </div>
 
-        {/* FILTRES & ACTIONS */}
+        {/* FILTRES & ACTIONS — 3. Version modifiée incluant le bouton Factures */}
         <div style={{ display: "flex", gap: "15px", marginBottom: "20px", alignItems: "center" }}>
           <div style={{
             flex: 1, background: "#fff", padding: "12px 20px",
@@ -196,6 +191,19 @@ const Payments = () => {
             </div>
           </div>
 
+          {/* Bouton Factures & Historiques */}
+          <button
+            onClick={() => setShowInvoices(true)}
+            style={{
+              background: "#2b537e", color: "#fff", border: "none",
+              padding: "15px 25px", borderRadius: "12px", cursor: "pointer",
+              fontWeight: "700", boxShadow: "0 4px 6px rgba(43,83,126,0.2)",
+            }}
+          >
+            📄 Factures & Historiques
+          </button>
+
+          {/* Bouton Nouveau Paiement */}
           <button
             onClick={() => { setSelected(null); setShowModal(true); }}
             style={{
@@ -268,7 +276,7 @@ const Payments = () => {
           </div>
         </div>
 
-        {/* MODALE */}
+        {/* MODALE REÇUS DE PAIEMENTS EXISTANTE */}
         {showModal && (
           <PaymentModal
             candidate={selected}
@@ -276,6 +284,28 @@ const Payments = () => {
             onClose={() => { setShowModal(false); setSelected(null); }}
             onAddPayment={handleAddPayment}
           />
+        )}
+
+        {/* 4. MODALE INVOICE GENERATOR (FACTURES & HISTORIQUES) */}
+        {showInvoices && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1500, overflowY: "auto" }}>
+            <div style={{ background: "#F0F4FA", minHeight: "100vh", maxWidth: "960px", margin: "0 auto", position: "relative" }}>
+              <button
+                onClick={() => setShowInvoices(false)}
+                style={{
+                  position: "fixed", top: "20px", right: "calc(50% - 460px)",
+                  background: "#2b537e", color: "#fff", border: "none",
+                  borderRadius: "50%", width: "40px", height: "40px",
+                  fontSize: "18px", cursor: "pointer", zIndex: 1600,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                ✕
+              </button>
+              <InvoiceGenerator />
+            </div>
+          </div>
         )}
       </div>
     </div>
