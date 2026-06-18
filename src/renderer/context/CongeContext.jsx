@@ -1,75 +1,143 @@
 // src/renderer/context/CongeContext.jsx
-// Gère UNIQUEMENT les congés personnels des moniteurs (date début → fin + raison).
-// Le congé annuel de l'auto-école reste dans ExamenRulesContext (congeActif, congeMoisDebut, congeMoisFin).
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const CongeContext = createContext(null);
 
 export function CongeProvider({ children }) {
-  // Structure : { [moniteurId]: [ { id, dateDebut, dateFin, raison }, ... ] }
-  const [congesMoniteurs, setCongesMoniteurs] = useState(() => {
-    try {
-      const saved = localStorage.getItem("congesMoniteurs");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
+  const [congesMoniteurs, setCongesMoniteurs] = useState({});
+  const [congeAnnuel,     setCongeAnnuel]     = useState(null);
+  const [loaded,          setLoaded]          = useState(false);
+
+  // Chargement initial
+  useEffect(() => {
+    async function loadAll() {
+      try {
+        const [rows, annuel] = await Promise.all([
+          window.electron.getAllConges(),
+          window.electron.getCongeAnnuel(),
+        ]);
+        const map = {};
+        for (const row of rows) {
+          const mid = String(row.moniteur_id);
+          if (!map[mid]) map[mid] = [];
+          map[mid].push({
+            ...row,
+            dateDebut: row.dateDebut instanceof Date
+              ? row.dateDebut.toISOString().split("T")[0]
+              : String(row.dateDebut).split("T")[0],
+            dateFin: row.dateFin instanceof Date
+              ? row.dateFin.toISOString().split("T")[0]
+              : String(row.dateFin).split("T")[0],
+          });
+        }
+        setCongesMoniteurs(map);
+        setCongeAnnuel(annuel || null);
+      } catch (err) {
+        console.error("CongeContext loadAll:", err);
+      } finally {
+        setLoaded(true);
+      }
     }
-  });
+    loadAll();
+  }, []);
 
-  const _persist = (data) => {
-    setCongesMoniteurs(data);
-    localStorage.setItem("congesMoniteurs", JSON.stringify(data));
-  };
+  const refreshMoniteur = useCallback(async (moniteurId) => {
+    try {
+      const rows = await window.electron.getCongesMoniteur(moniteurId);
+      const normalized = rows.map(row => ({
+        ...row,
+        dateDebut: row.dateDebut instanceof Date
+          ? row.dateDebut.toISOString().split("T")[0]
+          : String(row.dateDebut).split("T")[0],
+        dateFin: row.dateFin instanceof Date
+          ? row.dateFin.toISOString().split("T")[0]
+          : String(row.dateFin).split("T")[0],
+      }));
+      setCongesMoniteurs(prev => ({ ...prev, [String(moniteurId)]: normalized }));
+    } catch (err) {
+      console.error("CongeContext refreshMoniteur:", err);
+    }
+  }, []);
 
-  /** Ajouter un congé pour un moniteur */
-  const addCongeMoniteur = (moniteurId, conge) => {
-    const current = congesMoniteurs[moniteurId] || [];
-    _persist({ ...congesMoniteurs, [moniteurId]: [...current, { ...conge, id: Date.now() }] });
-  };
+  const addCongeMoniteur = useCallback(async (moniteurId, conge) => {
+    try {
+      const result = await window.electron.addCongeMoniteur({
+        moniteurId,
+        dateDebut:  conge.dateDebut,
+        dateFin:    conge.dateFin,
+        raison:     conge.raison    || "autre",
+        precision:  conge.precision || null,
+      });
+      if (result?.success) await refreshMoniteur(moniteurId);
+    } catch (err) {
+      console.error("addCongeMoniteur:", err);
+    }
+  }, [refreshMoniteur]);
 
-  /** Supprimer un congé par son id */
-  const removeCongeMoniteur = (moniteurId, congeId) => {
-    const current = congesMoniteurs[moniteurId] || [];
-    _persist({ ...congesMoniteurs, [moniteurId]: current.filter(c => c.id !== congeId) });
-  };
+  const removeCongeMoniteur = useCallback(async (moniteurId, congeId) => {
+    try {
+      await window.electron.removeCongeMoniteur(congeId);
+      await refreshMoniteur(moniteurId);
+    } catch (err) {
+      console.error("removeCongeMoniteur:", err);
+    }
+  }, [refreshMoniteur]);
 
-  /** Récupérer tous les congés d'un moniteur */
-  const getCongesMoniteur = (moniteurId) => congesMoniteurs[moniteurId] || [];
+  const getCongesMoniteur = useCallback((moniteurId) => {
+    return congesMoniteurs[String(moniteurId)] || [];
+  }, [congesMoniteurs]);
 
-  /**
-   * Vérifie si un moniteur est en congé personnel à une date donnée.
-   * @param {number|string} moniteurId
-   * @param {Date|string} date  — défaut : aujourd'hui
-   */
-  const isMoniteurEnConge = (moniteurId, date = new Date()) => {
+  const isMoniteurEnConge = useCallback((moniteurId, date = new Date()) => {
     const d = new Date(date);
-    return (congesMoniteurs[moniteurId] || []).some(c => {
+    return (congesMoniteurs[String(moniteurId)] || []).some(c => {
       const debut = new Date(c.dateDebut); debut.setHours(0, 0, 0, 0);
       const fin   = new Date(c.dateFin);   fin.setHours(23, 59, 59, 999);
       return d >= debut && d <= fin;
     });
-  };
+  }, [congesMoniteurs]);
 
-  /**
-   * Retourne le congé personnel actif d'un moniteur à une date donnée, ou null.
-   */
-  const getCongeActifMoniteur = (moniteurId, date = new Date()) => {
+  const getCongeActifMoniteur = useCallback((moniteurId, date = new Date()) => {
     const d = new Date(date);
-    return (congesMoniteurs[moniteurId] || []).find(c => {
+    return (congesMoniteurs[String(moniteurId)] || []).find(c => {
       const debut = new Date(c.dateDebut); debut.setHours(0, 0, 0, 0);
       const fin   = new Date(c.dateFin);   fin.setHours(23, 59, 59, 999);
       return d >= debut && d <= fin;
     }) || null;
-  };
+  }, [congesMoniteurs]);
+
+  /** Vérifie si une date tombe dans le congé annuel de l'auto-école */
+  const isCongeAnnuel = useCallback((date = new Date()) => {
+    if (!congeAnnuel?.actif || !congeAnnuel?.dateDebut || !congeAnnuel?.dateFin) return false;
+    const d     = new Date(date);
+    const debut = new Date(congeAnnuel.dateDebut); debut.setHours(0, 0, 0, 0);
+    const fin   = new Date(congeAnnuel.dateFin);   fin.setHours(23, 59, 59, 999);
+    return d >= debut && d <= fin;
+  }, [congeAnnuel]);
+
+  const saveCongeAnnuel = useCallback(async (data) => {
+    try {
+      const result = await window.electron.setCongeAnnuel(data);
+      if (result?.success) setCongeAnnuel(data);
+      return result;
+    } catch (err) {
+      console.error("saveCongeAnnuel:", err);
+      return { success: false };
+    }
+  }, []);
 
   return (
     <CongeContext.Provider value={{
       congesMoniteurs,
+      congeAnnuel,
+      loaded,
       addCongeMoniteur,
       removeCongeMoniteur,
       getCongesMoniteur,
       isMoniteurEnConge,
       getCongeActifMoniteur,
+      isCongeAnnuel,
+      saveCongeAnnuel,
+      refreshMoniteur,
     }}>
       {children}
     </CongeContext.Provider>

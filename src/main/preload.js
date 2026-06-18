@@ -1,6 +1,6 @@
-const { contextBridge, ipcRenderer } = require('electron');
+  const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('electron', {
+  contextBridge.exposeInMainWorld('electron', {
   // Auth
   login: (creds) => ipcRenderer.invoke('login', creds),
   
@@ -8,8 +8,8 @@ contextBridge.exposeInMainWorld('electron', {
    // Candidats
   getCandidats:    ()       => ipcRenderer.invoke('get-candidats'),
   forgotPasswordSendOtp:   (data) => ipcRenderer.invoke("forgot-password-send-otp",   data),
-forgotPasswordVerifyOtp: (data) => ipcRenderer.invoke("forgot-password-verify-otp", data),
-forgotPasswordReset:     (data) => ipcRenderer.invoke("forgot-password-reset",       data),
+  forgotPasswordVerifyOtp: (data) => ipcRenderer.invoke("forgot-password-verify-otp", data),
+  forgotPasswordReset:     (data) => ipcRenderer.invoke("forgot-password-reset",       data),
   addCandidat:     (data)   => ipcRenderer.invoke('add-candidat', data),
   updateCandidat:  (data)   => ipcRenderer.invoke('update-candidat', data),
   deleteCandidat:  (id)     => ipcRenderer.invoke('delete-candidat', id),
@@ -44,9 +44,17 @@ forgotPasswordReset:     (data) => ipcRenderer.invoke("forgot-password-reset",  
   
   
   getPaymentsByMoniteur:       (moniteurId) => ipcRenderer.invoke('get-payments-by-moniteur', moniteurId),
-getCandidatsDebiteursMoniteur: (moniteurId) => ipcRenderer.invoke('get-candidats-debiteurs-moniteur', moniteurId),
-sendExamenNotification: (data) => ipcRenderer.invoke("send-examen-notification", data),
+  getCandidatsDebiteursMoniteur: (moniteurId) => ipcRenderer.invoke('get-candidats-debiteurs-moniteur', moniteurId),
+  sendExamenNotification: (data) => ipcRenderer.invoke("send-examen-notification", data),
+  sendCandidatMessage: (data) => ipcRenderer.invoke("send-candidat-message", data),
 
-sendCandidatMessage: (data) => ipcRenderer.invoke("send-candidat-message", data),
+// Congés moniteurs
+  getCongesMoniteur:   (moniteurId) => ipcRenderer.invoke("get-conges-moniteur", moniteurId),
+  getAllConges:         ()           => ipcRenderer.invoke("get-all-conges"),
+  addCongeMoniteur:    (data)       => ipcRenderer.invoke("add-conge-moniteur", data),
+  removeCongeMoniteur: (congeId)    => ipcRenderer.invoke("remove-conge-moniteur", congeId),
 
+  // Congé annuel
+  getCongeAnnuel: ()     => ipcRenderer.invoke("get-conge-annuel"),
+  setCongeAnnuel: (data) => ipcRenderer.invoke("set-conge-annuel", data),
 });

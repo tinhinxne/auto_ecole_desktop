@@ -1000,3 +1000,85 @@ ipcMain.handle("send-candidat-message", async (event, { email, nomCandidat, suje
     return { success: false, message: err.message };
   }
 });
+
+// ── CONGÉS MONITEURS ─────────────────────────────────────────────────────────
+
+ipcMain.handle("get-all-conges", async () => {
+  return new Promise((resolve) => {
+    db.query("SELECT * FROM CongeMoniteur", (err, res) => {
+      if (err) { console.error("get-all-conges:", err); resolve([]); }
+      else resolve(res);
+    });
+  });
+});
+
+ipcMain.handle("get-conges-moniteur", async (event, moniteurId) => {
+  return new Promise((resolve) => {
+    db.query(
+      "SELECT * FROM CongeMoniteur WHERE moniteur_id = ? ORDER BY dateDebut DESC",
+      [moniteurId],
+      (err, res) => {
+        if (err) { console.error("get-conges-moniteur:", err); resolve([]); }
+        else resolve(res);
+      }
+    );
+  });
+});
+
+ipcMain.handle("add-conge-moniteur", async (event, data) => {
+  const { moniteurId, dateDebut, dateFin, raison, precision } = data;
+  return new Promise((resolve) => {
+    db.query(
+      "INSERT INTO CongeMoniteur (moniteur_id, dateDebut, dateFin, raison, `precision`) VALUES (?, ?, ?, ?, ?)",
+      [moniteurId, dateDebut, dateFin, raison || "autre", precision || null],
+      (err, res) => {
+        if (err) { console.error("add-conge-moniteur:", err); resolve({ success: false, error: err.message }); }
+        else resolve({ success: true, id: res.insertId });
+      }
+    );
+  });
+});
+
+ipcMain.handle("remove-conge-moniteur", async (event, congeId) => {
+  return new Promise((resolve) => {
+    db.query(
+      "DELETE FROM CongeMoniteur WHERE id = ?",
+      [congeId],
+      (err) => {
+        if (err) resolve({ success: false });
+        else resolve({ success: true });
+      }
+    );
+  });
+});
+// ── CONGÉ ANNUEL AUTO-ÉCOLE ───────────────────────────────────────────────────
+
+ipcMain.handle("get-conge-annuel", async () => {
+  return new Promise((resolve) => {
+    db.query(
+      "SELECT valeurParametre FROM ConfigurationSysteme WHERE cleParametre = 'CONGE_ANNUEL'",
+      (err, res) => {
+        if (err || !res.length) return resolve(null);
+        try { resolve(JSON.parse(res[0].valeurParametre)); }
+        catch { resolve(null); }
+      }
+    );
+  });
+});
+
+ipcMain.handle("set-conge-annuel", async (event, data) => {
+  // data = { actif: bool, dateDebut: "YYYY-MM-DD", dateFin: "YYYY-MM-DD" } | null
+  const val = JSON.stringify(data);
+  return new Promise((resolve) => {
+    db.query(
+      `INSERT INTO ConfigurationSysteme (cleParametre, valeurParametre)
+       VALUES ('CONGE_ANNUEL', ?)
+       ON DUPLICATE KEY UPDATE valeurParametre = ?`,
+      [val, val],
+      (err) => {
+        if (err) { console.error("set-conge-annuel:", err); resolve({ success: false }); }
+        else resolve({ success: true });
+      }
+    );
+  });
+});

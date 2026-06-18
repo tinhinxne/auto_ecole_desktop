@@ -53,12 +53,14 @@ const formatDate = (iso) => {
   });
 };
 
+const CONGE_PULSE_CSS = `@keyframes congePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }`;
+
 /* ── Mini-modale congé rapide ────────────────────────────────────────────── */
 const CongeQuickModal = ({ moniteur, onClose }) => {
   const { getCongesMoniteur, addCongeMoniteur, removeCongeMoniteur } = useCongeCtx();
   const [conges, setConges]     = useState(getCongesMoniteur(moniteur.id));
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]         = useState({ dateDebut: "", dateFin: "", raison: "maladie" });
+  const [form, setForm]         = useState({ dateDebut: "", dateFin: "", raison: "maladie", precision: "" });
   const [error, setError]       = useState("");
 
   const refresh = () => setTimeout(() => setConges(getCongesMoniteur(moniteur.id)), 50);
@@ -66,9 +68,10 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
   const handleAdd = () => {
     if (!form.dateDebut || !form.dateFin) { setError("Renseignez les deux dates."); return; }
     if (new Date(form.dateFin) < new Date(form.dateDebut)) { setError("La fin doit être après le début."); return; }
-    addCongeMoniteur(moniteur.id, form);
+    if (form.raison === "autre" && !form.precision.trim()) { setError("Précisez la raison du congé."); return; }
+    addCongeMoniteur(moniteur.id, { ...form, precision: form.precision.trim() });
     refresh();
-    setForm({ dateDebut: "", dateFin: "", raison: "maladie" });
+    setForm({ dateDebut: "", dateFin: "", raison: "maladie", precision: "" });
     setShowForm(false);
     setError("");
   };
@@ -91,16 +94,23 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
         {/* Header */}
         <div style={{
           background: "linear-gradient(135deg, #f97316, #fb923c)",
-          padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <CalendarOff size={15} color="white" />
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 9,
+              background: "rgba(255,255,255,0.22)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <CalendarOff size={16} color="white" strokeWidth={2.3} />
+            </div>
             <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>
               Congés — {moniteur.prenom} {moniteur.nom}
             </span>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <X size={16} color="white" />
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.18)", border: "none", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <X size={14} color="white" />
           </button>
         </div>
 
@@ -108,8 +118,14 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
           {/* Liste congés */}
           <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: 10 }}>
             {conges.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "22px 0", color: "#94a3b8", fontSize: 12 }}>
-                <CalendarOff size={26} style={{ opacity: 0.25, display: "block", margin: "0 auto 6px" }} />
+              <div style={{ textAlign: "center", padding: "26px 0", color: "#94a3b8", fontSize: 12 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: "50%", background: "#fff7ed",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 8px",
+                }}>
+                  <CalendarOff size={22} color="#fdba74" strokeWidth={2} />
+                </div>
                 Aucun congé enregistré pour ce moniteur
               </div>
             ) : (
@@ -117,18 +133,26 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
                 const r      = RAISONS.find(x => x.value === c.raison) || RAISONS[3];
                 const actif  = isActive(c.dateDebut, c.dateFin);
                 const expire = isExpired(c.dateFin);
+                const titre  = c.raison === "autre" && c.precision ? c.precision : r.label.slice(3);
                 return (
                   <div key={c.id} style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "8px 10px", borderRadius: 8, marginBottom: 6,
+                    display: "flex", alignItems: "center", gap: 9,
+                    padding: "8px 10px", borderRadius: 10, marginBottom: 6,
                     background: actif ? "#f0fdf4" : expire ? "#f8fafc" : "#fefce8",
                     border: `1px solid ${actif ? "#bbf7d0" : expire ? "#e2e8f0" : "#fde68a"}`,
                     opacity: expire ? 0.65 : 1,
                   }}>
-                    <span style={{ fontSize: 16 }}>{r.label.split(" ")[0]}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>
-                        {r.label.slice(3)}
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                      background: `${r.color}1A`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14,
+                    }}>
+                      {r.label.split(" ")[0]}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {titre}
                       </div>
                       <div style={{ fontSize: 11, color: "#64748b" }}>
                         {formatDate(c.dateDebut)} → {formatDate(c.dateFin)}
@@ -150,7 +174,7 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
                     )}
                     <button
                       onClick={() => { removeCongeMoniteur(moniteur.id, c.id); refresh(); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 2 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 2, flexShrink: 0 }}
                     >
                       <Trash size={12} />
                     </button>
@@ -185,6 +209,28 @@ const CongeQuickModal = ({ moniteur, onClose }) => {
                   </button>
                 ))}
               </div>
+
+              {form.raison === "autre" && (
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{
+                    fontSize: 10, fontWeight: 600, color: "#64748b",
+                    display: "block", marginBottom: 3,
+                  }}>
+                    PRÉCISEZ LA RAISON
+                  </label>
+                  <input
+                    type="text"
+                    value={form.precision}
+                    onChange={e => { setForm(f => ({ ...f, precision: e.target.value })); setError(""); }}
+                    placeholder="Ex : formation, déménagement, examen personnel..."
+                    style={{
+                      width: "100%", padding: "6px 9px", borderRadius: 7,
+                      border: "1px solid #c7d2fe", fontSize: 12,
+                      background: "white", boxSizing: "border-box", outline: "none",
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Dates */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
@@ -295,11 +341,15 @@ const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
           <div style={{
             position: "absolute", top: 10, right: 10,
             background: "#fff7ed", border: "1px solid #fed7aa",
-            borderRadius: 20, padding: "3px 8px",
-            display: "flex", alignItems: "center", gap: 4,
+            borderRadius: 20, padding: "3px 9px 3px 7px",
+            display: "flex", alignItems: "center", gap: 5,
             fontSize: 10, fontWeight: 700, color: "#ea580c",
             zIndex: 1,
           }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: "50%", background: "#f97316",
+              flexShrink: 0, animation: "congePulse 1.6s ease-in-out infinite",
+            }} />
             {raisonIcon} En congé
           </div>
         )}
@@ -361,14 +411,19 @@ const MoniteurCard = ({ moniteur, onDelete, onEdit }) => {
             onClick={() => setShowCongeModal(true)}
             title="Gérer les congés"
             style={{
-              width: 30, height: 30, borderRadius: 8, border: "none",
-              background: enConge ? "#fff7ed" : "#f1f5f9",
-              color: enConge ? "#f97316" : "#94a3b8",
-              cursor: "pointer", display: "flex", alignItems: "center",
-              justifyContent: "center", flexShrink: 0, transition: "all 0.15s",
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "0 10px", height: 30, borderRadius: 8,
+              border: `1.5px solid ${enConge ? "transparent" : "#fed7aa"}`,
+              background: enConge ? "linear-gradient(135deg,#f97316,#fb923c)" : "#fff7ed",
+              color: enConge ? "#fff" : "#ea580c",
+              cursor: "pointer", fontSize: 11.5, fontWeight: 700,
+              fontFamily: "'Sora', sans-serif", whiteSpace: "nowrap",
+              boxShadow: enConge ? "0 3px 10px rgba(249,115,22,0.35)" : "none",
+              transition: "all 0.15s", flexShrink: 0,
             }}
           >
-            <CalendarOff size={13} />
+            <CalendarOff size={13} strokeWidth={2.4} />
+            Congé
           </button>
 
           <button className="btn-edit-proto" onClick={() => onEdit(moniteur)}>
@@ -450,6 +505,7 @@ const Moniteur = () => {
 
   return (
     <div className="container">
+      <style>{CONGE_PULSE_CSS}</style>
       <div className="main">
         <div className="header">
           <img src={ConnexionImg} alt="illustration" className="header-img" />

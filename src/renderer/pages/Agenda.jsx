@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Button from "../components/Button";
+import { useCongeCtx } from "../context/CongeContext";
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
 const HOURS      = [7,8,9,10,11,12,13,14,15,16,17,18];
@@ -541,10 +542,61 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
   );
 }
 
+// ── PETITE MODALE D'ALERTE (remplace alert()) ─────────────────────────────────
+function AlertModal({ icon, title, message, color = "#ef4444", onClose }) {
+  return (
+    <div
+      style={{
+        position:"fixed", inset:0, zIndex:700,
+        background:"rgba(15,23,42,0.55)", backdropFilter:"blur(4px)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Poppins',sans-serif",
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background:"#fff", borderRadius:18, width:340, maxWidth:"88vw",
+        boxShadow:"0 30px 70px rgba(0,0,0,0.22)", overflow:"hidden",
+        animation:"alertPop .22s cubic-bezier(.34,1.56,.64,1)",
+      }}>
+        <style>{`@keyframes alertPop{from{transform:translateY(18px) scale(.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}`}</style>
+        <div style={{ padding:"24px 22px 18px", textAlign:"center" }}>
+          <div style={{
+            width:52, height:52, borderRadius:"50%", margin:"0 auto 14px",
+            background:`${color}1A`, display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:24,
+          }}>
+            {icon}
+          </div>
+          <div style={{ fontSize:"0.95rem", fontWeight:700, color:"#1e293b", marginBottom:7 }}>{title}</div>
+          <div style={{ fontSize:"0.8rem", color:"#64748b", lineHeight:1.55 }}>{message}</div>
+        </div>
+        <div style={{ padding:"0 22px 22px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              width:"100%", padding:"10px 0", borderRadius:10, border:"none",
+              background:color, color:"#fff",
+              fontFamily:"'Poppins',sans-serif", fontSize:"0.86rem", fontWeight:700,
+              cursor:"pointer", transition:"filter 0.15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.93)"}
+            onMouseLeave={e => e.currentTarget.style.filter = "none"}
+          >
+            Compris
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CREATE / EDIT MODAL ───────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }) {
   const [candidats, setCandidats] = useState([]);
   const [moniteurs, setMoniteurs] = useState([]);
+  const [alertInfo, setAlertInfo] = useState(null); // { icon, title, message, color }
+  const { isMoniteurEnConge } = useCongeCtx();
 
   useEffect(() => {
     async function loadData() {
@@ -583,13 +635,37 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
   const selectedCandidatObj = candidats.find(c => String(c.idCandidat) === String(form.candidatId));
   const candidatCat = selectedCandidatObj ? candidatCategorie(selectedCandidatObj) : "";
 
-  // Liste des moniteurs habilités pour la catégorie du candidat sélectionné.
+  // Date de la séance sous forme d'objet Date (pour vérifier les congés)
+  const seanceDateObj = form.date ? new Date(form.date + "T12:00:00") : null;
+  const isMoniteurAbsent = (m) => !!(seanceDateObj && isMoniteurEnConge(m.id, seanceDateObj));
+
+  // Liste des moniteurs habilités pour la catégorie du candidat sélectionné ET
+  // disponibles (pas en congé) à la date choisie.
   // Le moniteur déjà assigné (mode édition) reste visible même si les données
   // historiques ne correspondent pas exactement, pour ne pas perdre l'info.
   const moniteursDisponibles = moniteurs.filter(m => {
-    if (!candidatCat) return true;
-    return moniteurCategories(m).includes(candidatCat) || String(m.id) === String(form.moniteur_id);
+    if (String(m.id) === String(form.moniteur_id)) return true;
+    const matchCategorie = !candidatCat || moniteurCategories(m).includes(candidatCat);
+    return matchCategorie && !isMoniteurAbsent(m);
   });
+
+  const moniteurActuelEnConge = (() => {
+    if (!form.moniteur_id || !seanceDateObj) return false;
+    const m = moniteurs.find(mm => String(mm.id) === String(form.moniteur_id));
+    return m ? isMoniteurAbsent(m) : false;
+  })();
+
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    set("date", newDate);
+    if (form.moniteur_id && newDate) {
+      const currentMon = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
+      if (currentMon && isMoniteurEnConge(currentMon.id, new Date(newDate + "T12:00:00"))) {
+        set("moniteur_id", "");
+        set("moniteur", "");
+      }
+    }
+  };
 
   const handleCandidatChange = (e) => {
     const id = e.target.value;
@@ -625,12 +701,22 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   const handleSubmit = () => {
     if (!form.date || !form.heure || !form.type) return;
-    if (!form.candidatId) { alert("Veuillez sélectionner un candidat."); return; }
-    if (!form.moniteur_id) { alert("Veuillez sélectionner un moniteur."); return; }
+    if (!form.candidatId) { setAlertInfo({ icon:"🧑", title:"Candidat manquant", message:"Veuillez sélectionner un candidat avant d'enregistrer la séance.", color:"#ef4444" }); return; }
+    if (!form.moniteur_id) { setAlertInfo({ icon:"🧑‍🏫", title:"Moniteur manquant", message:"Veuillez sélectionner un moniteur avant d'enregistrer la séance.", color:"#ef4444" }); return; }
 
     const moniteurSel = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
     if (selectedCandidatObj && moniteurSel && !moniteurCategories(moniteurSel).includes(candidatCat)) {
-      alert(`Ce moniteur n'est pas habilité pour la catégorie ${candidatCat}. Veuillez choisir un moniteur habilité pour cette catégorie.`);
+      setAlertInfo({
+        icon: "🎓", title: "Catégorie incompatible", color: "#3b82f6",
+        message: `Ce moniteur n'est pas habilité pour la catégorie ${candidatCat}. Choisissez un moniteur habilité pour cette catégorie.`,
+      });
+      return;
+    }
+    if (moniteurSel && seanceDateObj && isMoniteurEnConge(moniteurSel.id, seanceDateObj)) {
+      setAlertInfo({
+        icon: "🌴", title: "Moniteur en congé", color: "#f97316",
+        message: `${form.moniteur} est en congé le ${form.date.split("-").reverse().join("/")}. Choisissez un autre moniteur ou une autre date.`,
+      });
       return;
     }
 
@@ -726,13 +812,18 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           {form.candidatId && (
             moniteursDisponibles.length > 0 ? (
               <div style={{ padding:"8px 12px", borderRadius:8, background:"#eff6ff", border:"1px solid #bfdbfe", fontSize:"0.73rem", color:"#1d4ed8", fontWeight:600 }}>
-                🎓 Catégorie {candidatCat} — seuls les moniteurs habilités pour cette catégorie sont proposés.
+                🎓 Catégorie {candidatCat} — seuls les moniteurs habilités et disponibles (non en congé) à cette date sont proposés.
               </div>
             ) : (
               <div style={{ padding:"8px 12px", borderRadius:8, background:"#fef2f2", border:"1px solid #fca5a5", fontSize:"0.73rem", color:"#dc2626", fontWeight:600 }}>
-                ⚠️ Aucun moniteur n'est habilité pour la catégorie {candidatCat}.
+                ⚠️ Aucun moniteur n'est habilité ou disponible (congé) pour la catégorie {candidatCat} à cette date.
               </div>
             )
+          )}
+          {moniteurActuelEnConge && (
+            <div style={{ padding:"8px 12px", borderRadius:8, background:"#fff7ed", border:"1px solid #fed7aa", fontSize:"0.73rem", color:"#ea580c", fontWeight:600 }}>
+              🌴 {form.moniteur} est en congé à cette date — choisissez un autre moniteur ou une autre date.
+            </div>
           )}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
@@ -745,7 +836,7 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Date <span style={{ color:"#ef4444" }}>*</span></label>
-              <input style={inpS} type="date" value={form.date} onChange={e => set("date", e.target.value)} />
+              <input style={inpS} type="date" value={form.date} onChange={handleDateChange} />
             </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
@@ -791,12 +882,21 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           </button>
         </div>
       </div>
+      {alertInfo && (
+        <AlertModal
+          icon={alertInfo.icon}
+          title={alertInfo.title}
+          message={alertInfo.message}
+          color={alertInfo.color}
+          onClose={() => setAlertInfo(null)}
+        />
+      )}
     </div>
   );
 }
 
 // ── CALENDAR GRID ─────────────────────────────────────────────────────────────
-function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, onDrop }) {
+function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, onDrop, isMoniteurEnConge }) {
   const [dragging, setDragging] = React.useState(null);
   const [dragOver, setDragOver] = React.useState(null);
   const dragRef = useRef(null);
@@ -887,6 +987,7 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                   : [s];
                 const widthPct = 100 / localCols;
                 const leftPct  = colIdx * widthPct;
+                const congeConflict = !!(isMoniteurEnConge && s._raw?.moniteur_id && isMoniteurEnConge(s._raw.moniteur_id, weekDates[dayIdx]));
                 return (
                   <div key={s.id}
                     draggable
@@ -896,11 +997,13 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                       e.stopPropagation();
                       hasOverlap ? onGroupClick(groupSessions) : onSessionClick(s, e.currentTarget.getBoundingClientRect());
                     }}
+                    title={congeConflict ? `⚠️ ${s.monitor} est en congé ce jour-là` : undefined}
                     style={{
                       position:"absolute", left:`calc(${leftPct}% + 2px)`, width:`calc(${widthPct}% - 4px)`,
                       top:topPx + 2, height:s.dur * CELL_H - 4, borderRadius:8, padding:"5px 8px",
                       cursor:isDragging ? "grabbing" : "pointer", userSelect:"none",
-                      background:colData.light, borderLeft:`3px solid ${colData.bg}`,
+                      background:colData.light, borderLeft:`3px solid ${congeConflict ? "#f97316" : colData.bg}`,
+                      outline: congeConflict ? "1.5px dashed #f97316" : "none", outlineOffset: congeConflict ? -1 : 0,
                       boxShadow:hasOverlap ? `0 0 0 2px ${colData.bg}, 0 2px 8px ${colData.bg}50` : `0 1px 4px ${colData.bg}30`,
                       opacity:isDragging ? 0.4 : 1, transition:"transform 0.15s, box-shadow 0.15s",
                       overflow:"hidden", zIndex:isDragging ? 1 : 2,
@@ -913,6 +1016,11 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                     {hasOverlap && (
                       <div style={{ position:"absolute", top:4, right:4, width:18, height:18, borderRadius:"50%", background:colData.bg, color:"white", fontSize:"0.6rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
                         {groupSessions.length}
+                      </div>
+                    )}
+                    {congeConflict && (
+                      <div style={{ position:"absolute", top:4, left:4, width:16, height:16, borderRadius:"50%", background:"#f97316", color:"white", fontSize:"0.58rem", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        🌴
                       </div>
                     )}
                   </div>
@@ -942,6 +1050,7 @@ export default function AgendaPage() {
   const [filterMon,      setFilterMon]      = useState("");
   const [filterCat,      setFilterCat]      = useState("");
   const [milestoneModal, setMilestoneModal] = useState(null);
+  const { isMoniteurEnConge } = useCongeCtx();
   // { type: "completed" | "extra", candidatName: string, candidatId: number }
 
   const weekDates = getWeekDates(weekBase);
@@ -987,6 +1096,11 @@ export default function AgendaPage() {
   const handleDrop = useCallback(async (id, day, hour) => {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
+    const targetDateObj = new Date(toLocalISO(weekDates[day]) + "T12:00:00");
+    if (session._raw?.moniteur_id && isMoniteurEnConge(session._raw.moniteur_id, targetDateObj)) {
+      showToast(`⚠️ ${session.monitor} est en congé ce jour-là — déplacement annulé.`, "error");
+      return;
+    }
     setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
     const newDate = toLocalISO(weekDates[day]); const newHeure = floatToHHMM(hour);
     if (api?.updateSeance) {
@@ -995,7 +1109,7 @@ export default function AgendaPage() {
         await loadSeances(); showToast("Séance déplacée avec succès.");
       } catch (err) { showToast("Erreur lors du déplacement.", "error"); await loadSeances(); }
     }
-  }, [sessions, weekDates, api]);
+  }, [sessions, weekDates, api, isMoniteurEnConge]);
 
   const handleDelete = async (id) => {
     setSessions(p => p.filter(s => s.id !== id));
@@ -1213,6 +1327,7 @@ export default function AgendaPage() {
             onSessionClick={(s, rect) => setPopup({ session:s, anchor:rect })}
             onGroupClick={(group) => setGroupModal(group)}
             onDrop={handleDrop}
+            isMoniteurEnConge={isMoniteurEnConge}
           />
         </div>
 
