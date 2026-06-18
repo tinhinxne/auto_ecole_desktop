@@ -14,13 +14,10 @@ const COLORS = {
   circulation: { bg:"#10b981", light:"rgba(16,185,129,0.18)",  border:"rgba(16,185,129,0.4)",  text:"#065f46" },
 };
 
-// Catégories de permis (mêmes valeurs que sur la page Candidats)
 const CATEGORIES_PERMIS = ["A1","A","B","C1","C","D","F","BE","C1E","CE","DE"];
 
-// Normalise un libellé de catégorie (espaces, accents, casse)
 const normCat = v => (v || "").toString().trim().toUpperCase();
 
-// Renvoie le tableau des catégories qu'un moniteur est habilité à enseigner
 const moniteurCategories = (m) => {
   const raw = m?.categories_habilitees;
   if (!raw) return [];
@@ -28,7 +25,6 @@ const moniteurCategories = (m) => {
   return arr.map(normCat).filter(Boolean);
 };
 
-// Récupère la catégorie de permis d'un candidat (gère les différents noms de champ possibles)
 const candidatCategorie = (c) => normCat(c?.categoriePermis || c?.categorie || c?.categorie_permis || "B");
 
 const cap = s => s.split(" ").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
@@ -46,6 +42,14 @@ function toLocalISO(dateVal) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day   = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+// ── NOUVEAU : formatage date lisible ─────────────────────────────────────────
+function formatDateFr(iso) {
+  if (!iso) return "";
+  return new Date(iso + "T12:00:00").toLocaleDateString("fr-DZ", {
+    day: "2-digit", month: "long", year: "numeric",
+  });
 }
 
 function dbRowToSession(row) {
@@ -102,7 +106,7 @@ const FONT_LINK = `@import url('https://fonts.googleapis.com/css2?family=Poppins
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function Toast({ message, type, onDone }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 3000);
+    const t = setTimeout(onDone, 4000);
     return () => clearTimeout(t);
   }, [onDone]);
   const bg = type === "success" ? "#22c55e" : type === "error" ? "#ef4444" : "#3b82f6";
@@ -114,6 +118,7 @@ function Toast({ message, type, onDone }) {
       fontFamily:"'Poppins',sans-serif", fontSize:"0.82rem", fontWeight:600,
       boxShadow:"0 8px 24px rgba(0,0,0,0.18)",
       animation:"slideUp 0.25s ease",
+      maxWidth: 420,
     }}>
       {message}
       <style>{`@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
@@ -142,7 +147,6 @@ function LoadingOverlay() {
 function MilestoneModal({ type, candidatName, candidatId, onClose }) {
   const isCompleted = type === "completed";
 
-  // États pour la facturation supplémentaire
   const [nbSeances,   setNbSeances]   = useState(1);
   const [prixSeance,  setPrixSeance]  = useState(0);
   const [methode,     setMethode]     = useState("especes");
@@ -201,24 +205,17 @@ function MilestoneModal({ type, candidatName, candidatId, onClose }) {
         animation: "milestoneUp .25s cubic-bezier(.34,1.56,.64,1)",
       }}>
         <style>{`@keyframes milestoneUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
-
-        {/* Bandeau coloré */}
         <div style={{
           background: isCompleted
             ? "linear-gradient(135deg,#22c55e,#16a34a)"
             : "linear-gradient(135deg,#f59e0b,#d97706)",
-          padding: "22px 24px 18px",
-          textAlign: "center",
+          padding: "22px 24px 18px", textAlign: "center",
         }}>
-          <div style={{ fontSize: 44, marginBottom: 4 }}>
-            {isCompleted ? "🎓" : "➕"}
-          </div>
+          <div style={{ fontSize: 44, marginBottom: 4 }}>{isCompleted ? "🎓" : "➕"}</div>
           <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
             {isCompleted ? "Permis complété !" : "Séance supplémentaire"}
           </div>
         </div>
-
-        {/* Corps */}
         <div style={{ padding: "20px 24px" }}>
           {isCompleted ? (
             <>
@@ -228,180 +225,68 @@ function MilestoneModal({ type, candidatName, candidatId, onClose }) {
               <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0 0 4px", textAlign: "center" }}>
                 Il peut désormais se présenter à l'examen du permis de conduire.
               </p>
-              <div style={{
-                marginTop: 14, padding: "10px 16px", borderRadius: 10,
-                background: "#f0fdf4", border: "1px solid #86efac",
-                fontSize: "0.78rem", color: "#166534", fontWeight: 600, textAlign: "center",
-              }}>
+              <div style={{ marginTop: 14, padding: "10px 16px", borderRadius: 10, background: "#f0fdf4", border: "1px solid #86efac", fontSize: "0.78rem", color: "#166534", fontWeight: 600, textAlign: "center" }}>
                 ✅ Formation théorique et pratique terminée
               </div>
             </>
           ) : (
             <>
-              {/* Info */}
-              <div style={{
-                padding: "10px 14px", borderRadius: 10, marginBottom: 16,
-                background: "#fffbeb", border: "1px solid #fcd34d",
-                fontSize: "0.78rem", color: "#92400e", fontWeight: 600,
-              }}>
-                ⚠️ <strong>{candidatName}</strong> dépasse les 20 séances du forfait permis.
-                Cette séance est <strong>hors forfait</strong> (3 000 000 DA).
+              <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 16, background: "#fffbeb", border: "1px solid #fcd34d", fontSize: "0.78rem", color: "#92400e", fontWeight: 600 }}>
+                ⚠️ <strong>{candidatName}</strong> dépasse les 20 séances du forfait permis. Cette séance est <strong>hors forfait</strong>.
               </div>
-
               {billed ? (
-                /* Succès facturation */
-                <div style={{
-                  padding: "20px", borderRadius: 12, textAlign: "center",
-                  background: "#f0fdf4", border: "1px solid #86efac",
-                }}>
+                <div style={{ padding: "20px", borderRadius: 12, textAlign: "center", background: "#f0fdf4", border: "1px solid #86efac" }}>
                   <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-                  <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#166534" }}>
-                    Versement enregistré avec succès !
-                  </div>
+                  <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#166534" }}>Versement enregistré avec succès !</div>
                   <div style={{ fontSize: "0.78rem", color: "#4ade80", marginTop: 4 }}>
-                    {nbSeances} séance(s) × {prixSeance.toLocaleString("fr-DZ")} DA
-                    = <strong>{total.toLocaleString("fr-DZ")} DA</strong>
-                  </div>
-                  <div style={{ fontSize: "0.74rem", color: "#64748b", marginTop: 4 }}>
-                    Visible dans la page Paiements
+                    {nbSeances} séance(s) × {prixSeance.toLocaleString("fr-DZ")} DA = <strong>{total.toLocaleString("fr-DZ")} DA</strong>
                   </div>
                 </div>
               ) : (
-                /* Formulaire facturation */
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{
-                    fontSize: "0.8rem", fontWeight: 700, color: "#1e293b",
-                    borderBottom: "1px solid #f1f5f9", paddingBottom: 8, marginBottom: 2,
-                  }}>
+                  <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: 8 }}>
                     💰 Facturer les séances supplémentaires
                   </div>
-
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    {/* Nb séances */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                        Nb de séances <span style={{ color: "#ef4444" }}>*</span>
-                      </label>
-                      <input
-                        type="number" min={1} value={nbSeances}
-                        onChange={e => { setNbSeances(Math.max(1, parseInt(e.target.value) || 1)); setBillError(""); }}
-                        style={inpS}
-                      />
+                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>Nb de séances *</label>
+                      <input type="number" min={1} value={nbSeances} onChange={e => { setNbSeances(Math.max(1, parseInt(e.target.value) || 1)); setBillError(""); }} style={inpS} />
                     </div>
-
-                    {/* Prix / séance */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                        Prix / séance (DA) <span style={{ color: "#ef4444" }}>*</span>
-                      </label>
-                      <input
-                        type="number" min={0} value={prixSeance}
-                        onChange={e => { setPrixSeance(parseFloat(e.target.value) || 0); setBillError(""); }}
-                        style={inpS}
-                        placeholder="ex: 150000"
-                      />
+                      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>Prix / séance (DA) *</label>
+                      <input type="number" min={0} value={prixSeance} onChange={e => { setPrixSeance(parseFloat(e.target.value) || 0); setBillError(""); }} style={inpS} placeholder="ex: 150000" />
                     </div>
                   </div>
-
-                  {/* Méthode paiement */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>
-                      Méthode de paiement
-                    </label>
+                    <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4 }}>Méthode de paiement</label>
                     <select value={methode} onChange={e => setMethode(e.target.value)} style={inpS}>
                       <option value="especes">Espèces</option>
                       <option value="ccp">CCP</option>
                       <option value="carte">Carte</option>
                     </select>
                   </div>
-
-                  {/* Total calculé */}
-                  <div style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "10px 14px", borderRadius: 10,
-                    background: "#f8fafc", border: "1.5px solid #e2e8f0",
-                  }}>
-                    <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-                      Total à facturer :
-                    </span>
-                    <span style={{ fontSize: "1rem", fontWeight: 800, color: "#d97706" }}>
-                      {total.toLocaleString("fr-DZ")} DA
-                    </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#f8fafc", border: "1.5px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Total à facturer :</span>
+                    <span style={{ fontSize: "1rem", fontWeight: 800, color: "#d97706" }}>{total.toLocaleString("fr-DZ")} DA</span>
                   </div>
-
-                  {/* Détail */}
-                  {prixSeance > 0 && (
-                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", textAlign: "center", marginTop: -6 }}>
-                      {nbSeances} séance(s) × {prixSeance.toLocaleString("fr-DZ")} DA
-                    </div>
-                  )}
-
-                  {/* Erreur */}
                   {billError && (
-                    <div style={{
-                      padding: "8px 12px", borderRadius: 8,
-                      background: "#fef2f2", border: "1px solid #fca5a5",
-                      color: "#dc2626", fontSize: "0.75rem", fontWeight: 500,
-                    }}>
-                      ⚠ {billError}
-                    </div>
+                    <div style={{ padding: "8px 12px", borderRadius: 8, background: "#fef2f2", border: "1px solid #fca5a5", color: "#dc2626", fontSize: "0.75rem", fontWeight: 500 }}>⚠ {billError}</div>
                   )}
                 </div>
               )}
             </>
           )}
         </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: "0 24px 20px",
-          display: "flex", justifyContent: isCompleted || billed ? "center" : "space-between",
-          gap: 10,
-        }}>
+        <div style={{ padding: "0 24px 20px", display: "flex", justifyContent: isCompleted || billed ? "center" : "space-between", gap: 10 }}>
           {isCompleted || billed ? (
-            <button onClick={onClose} style={{
-              padding: "10px 36px", borderRadius: 10,
-              background: isCompleted ? "#16a34a" : "#d97706",
-              border: "none", color: "#fff",
-              fontFamily: "'Poppins',sans-serif",
-              fontSize: "0.88rem", fontWeight: 700, cursor: "pointer",
-            }}>
+            <button onClick={onClose} style={{ padding: "10px 36px", borderRadius: 10, background: isCompleted ? "#16a34a" : "#d97706", border: "none", color: "#fff", fontFamily: "'Poppins',sans-serif", fontSize: "0.88rem", fontWeight: 700, cursor: "pointer" }}>
               Compris
             </button>
           ) : (
             <>
-              <button onClick={onClose} style={{
-                padding: "9px 20px", borderRadius: 10,
-                background: "#f1f5f9", border: "none", color: "#64748b",
-                fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer",
-              }}>
-                Ignorer
-              </button>
-              <button
-                onClick={handleFacturer}
-                disabled={sending || prixSeance <= 0}
-                style={{
-                  padding: "9px 22px", borderRadius: 10,
-                  background: sending || prixSeance <= 0 ? "#94a3b8" : "#d97706",
-                  border: "none", color: "#fff",
-                  fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 700,
-                  cursor: sending || prixSeance <= 0 ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", gap: 7,
-                }}
-              >
-                {sending ? (
-                  <>
-                    <div style={{
-                      width: 13, height: 13, borderRadius: "50%",
-                      border: "2px solid rgba(255,255,255,0.4)",
-                      borderTop: "2px solid #fff",
-                      animation: "spin .7s linear infinite",
-                    }} />
-                    Enregistrement…
-                  </>
-                ) : (
-                  <>💰 Facturer {total > 0 ? `${total.toLocaleString("fr-DZ")} DA` : ""}</>
-                )}
+              <button onClick={onClose} style={{ padding: "9px 20px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#64748b", fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer" }}>Ignorer</button>
+              <button onClick={handleFacturer} disabled={sending || prixSeance <= 0} style={{ padding: "9px 22px", borderRadius: 10, background: sending || prixSeance <= 0 ? "#94a3b8" : "#d97706", border: "none", color: "#fff", fontFamily: "'Poppins',sans-serif", fontSize: "0.84rem", fontWeight: 700, cursor: sending || prixSeance <= 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7 }}>
+                {sending ? <><div style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", borderTop: "2px solid #fff", animation: "spin .7s linear infinite" }} />Enregistrement…</> : <>💰 Facturer {total > 0 ? `${total.toLocaleString("fr-DZ")} DA` : ""}</>}
               </button>
             </>
           )}
@@ -418,49 +303,22 @@ function GroupModal({ sessions, onClose, onDelete, onEdit }) {
   const endH  = first.startH + first.dur;
 
   return (
-    <div
-      style={{
-        position:"fixed", inset:0, zIndex:400,
-        background:"rgba(15,23,42,0.55)",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Poppins',sans-serif",
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{
-        background:"#fff", borderRadius:18,
-        width:640, maxWidth:"95vw",
-        maxHeight:"82vh", display:"flex", flexDirection:"column",
-        boxShadow:"0 30px 80px rgba(0,0,0,0.2)", overflow:"hidden",
-      }}>
-        <div style={{
-          padding:"20px 26px 16px",
-          background:"#f8fafc",
-          borderBottom:"1px solid #e2e8f0",
-          display:"flex", justifyContent:"space-between", alignItems:"flex-start",
-          flexShrink: 0,
-        }}>
+    <div style={{ position:"fixed", inset:0, zIndex:400, background:"rgba(15,23,42,0.55)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Poppins',sans-serif" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:"#fff", borderRadius:18, width:640, maxWidth:"95vw", maxHeight:"82vh", display:"flex", flexDirection:"column", boxShadow:"0 30px 80px rgba(0,0,0,0.2)", overflow:"hidden" }}>
+        <div style={{ padding:"20px 26px 16px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }}>
           <div>
-            <div style={{ fontSize:"1rem", fontWeight:700, color:"#1e293b" }}>
-              Séances du {DAYS_SHORT[first.day]} — {floatToHHMM(first.startH)} → {floatToHHMM(endH)}
-            </div>
-            <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>
-              {sessions.length} séance{sessions.length > 1 ? "s" : ""} sur ce créneau
-            </div>
+            <div style={{ fontSize:"1rem", fontWeight:700, color:"#1e293b" }}>Séances du {DAYS_SHORT[first.day]} — {floatToHHMM(first.startH)} → {floatToHHMM(endH)}</div>
+            <div style={{ fontSize:"0.72rem", color:"#94a3b8", marginTop:4 }}>{sessions.length} séance{sessions.length > 1 ? "s" : ""} sur ce créneau</div>
           </div>
           <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", color:"#64748b", width:32, height:32, borderRadius:8, cursor:"pointer", fontSize:14, display:"grid", placeItems:"center" }}>✕</button>
         </div>
-
         <div style={{ overflowY:"auto", padding:"16px 24px", display:"flex", flexDirection:"column", gap:12 }}>
           {sessions.map((s) => {
             const col = COLORS[s.type] || COLORS.code;
             const sEnd = s.startH + s.dur;
             return (
-              <div key={s.id} style={{
-                border:`1px solid ${col.border}`, borderLeft:`4px solid ${col.bg}`,
-                borderRadius:12, padding:"14px 16px", background: col.light,
-                display:"flex", alignItems:"center", gap:16,
-              }}>
+              <div key={s.id} style={{ border:`1px solid ${col.border}`, borderLeft:`4px solid ${col.bg}`, borderRadius:12, padding:"14px 16px", background:col.light, display:"flex", alignItems:"center", gap:16 }}>
                 <div style={{ width:42, height:42, borderRadius:10, background:"white", border:`1px solid ${col.border}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   <div style={{ width:14, height:14, borderRadius:3, background:col.bg }} />
                 </div>
@@ -483,7 +341,6 @@ function GroupModal({ sessions, onClose, onDelete, onEdit }) {
             );
           })}
         </div>
-
         <div style={{ padding:"14px 24px", borderTop:"1px solid #e2e8f0", background:"#f8fafc", display:"flex", justifyContent:"flex-end", flexShrink:0 }}>
           <button onClick={onClose} style={{ padding:"9px 22px", borderRadius:8, background:"#1e293b", border:"none", color:"white", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:600, cursor:"pointer" }}>Fermer</button>
         </div>
@@ -515,7 +372,7 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
             {(() => { const endH = session.startH + session.dur; return `${DAYS_SHORT[session.day]} • ${floatToHHMM(session.startH)} – ${floatToHHMM(endH)}`; })()}
           </div>
         </div>
-        <button onClick={onClose} style={{ background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:16,lineHeight:1,padding:0 }}>✕</button>
+        <button onClick={onClose} style={{ background:"none", border:"none", color:"#94a3b8", cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>✕</button>
       </div>
       <div style={{ padding:"12px 15px", display:"flex", flexDirection:"column", gap:10 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", fontSize:"0.78rem" }}>
@@ -542,49 +399,51 @@ function SessionPopup({ session, anchor, onClose, onDelete, onEdit }) {
   );
 }
 
-// ── PETITE MODALE D'ALERTE (remplace alert()) ─────────────────────────────────
+// ── ALERTE MODALE ─────────────────────────────────────────────────────────────
 function AlertModal({ icon, title, message, color = "#ef4444", onClose }) {
   return (
-    <div
-      style={{
-        position:"fixed", inset:0, zIndex:700,
-        background:"rgba(15,23,42,0.55)", backdropFilter:"blur(4px)",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Poppins',sans-serif",
-      }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{
-        background:"#fff", borderRadius:18, width:340, maxWidth:"88vw",
-        boxShadow:"0 30px 70px rgba(0,0,0,0.22)", overflow:"hidden",
-        animation:"alertPop .22s cubic-bezier(.34,1.56,.64,1)",
-      }}>
+    <div style={{ position:"fixed", inset:0, zIndex:700, background:"rgba(15,23,42,0.55)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Poppins',sans-serif" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:"#fff", borderRadius:18, width:340, maxWidth:"88vw", boxShadow:"0 30px 70px rgba(0,0,0,0.22)", overflow:"hidden", animation:"alertPop .22s cubic-bezier(.34,1.56,.64,1)" }}>
         <style>{`@keyframes alertPop{from{transform:translateY(18px) scale(.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}`}</style>
         <div style={{ padding:"24px 22px 18px", textAlign:"center" }}>
-          <div style={{
-            width:52, height:52, borderRadius:"50%", margin:"0 auto 14px",
-            background:`${color}1A`, display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:24,
-          }}>
-            {icon}
-          </div>
+          <div style={{ width:52, height:52, borderRadius:"50%", margin:"0 auto 14px", background:`${color}1A`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{icon}</div>
           <div style={{ fontSize:"0.95rem", fontWeight:700, color:"#1e293b", marginBottom:7 }}>{title}</div>
           <div style={{ fontSize:"0.8rem", color:"#64748b", lineHeight:1.55 }}>{message}</div>
         </div>
         <div style={{ padding:"0 22px 22px" }}>
-          <button
-            onClick={onClose}
-            style={{
-              width:"100%", padding:"10px 0", borderRadius:10, border:"none",
-              background:color, color:"#fff",
-              fontFamily:"'Poppins',sans-serif", fontSize:"0.86rem", fontWeight:700,
-              cursor:"pointer", transition:"filter 0.15s",
-            }}
-            onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.93)"}
-            onMouseLeave={e => e.currentTarget.style.filter = "none"}
-          >
-            Compris
-          </button>
+          <button onClick={onClose} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:color, color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.86rem", fontWeight:700, cursor:"pointer" }}>Compris</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── BANNIÈRE CONGÉ ANNUEL (affichée dans le calendrier) ───────────────────────
+function CongeAnnuelBanner({ congeAnnuel }) {
+  if (!congeAnnuel?.actif || !congeAnnuel?.dateDebut || !congeAnnuel?.dateFin) return null;
+  const now   = new Date();
+  const debut = new Date(congeAnnuel.dateDebut + "T00:00:00");
+  const fin   = new Date(congeAnnuel.dateFin   + "T23:59:59");
+  if (now < debut || now > fin) return null;
+
+  return (
+    <div style={{
+      margin: "0 0 12px 0",
+      padding: "12px 18px",
+      borderRadius: 12,
+      background: "linear-gradient(135deg, #fff7ed, #ffedd5)",
+      border: "1.5px solid #fed7aa",
+      display: "flex", alignItems: "center", gap: 12,
+      fontFamily: "'Poppins',sans-serif",
+    }}>
+      <div style={{ fontSize: 24, flexShrink: 0 }}>🏖️</div>
+      <div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#c2410c" }}>
+          {congeAnnuel.label || "Congé annuel"} — Auto-école fermée
+        </div>
+        <div style={{ fontSize: "0.75rem", color: "#ea580c", marginTop: 2 }}>
+          Du {formatDateFr(congeAnnuel.dateDebut)} au {formatDateFr(congeAnnuel.dateFin)} · Aucune séance ne peut être créée durant cette période.
         </div>
       </div>
     </div>
@@ -595,8 +454,8 @@ function AlertModal({ icon, title, message, color = "#ef4444", onClose }) {
 function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }) {
   const [candidats, setCandidats] = useState([]);
   const [moniteurs, setMoniteurs] = useState([]);
-  const [alertInfo, setAlertInfo] = useState(null); // { icon, title, message, color }
-  const { isMoniteurEnConge } = useCongeCtx();
+  const [alertInfo, setAlertInfo] = useState(null);
+  const { isMoniteurEnConge, isCongeAnnuel, congeAnnuel } = useCongeCtx();
 
   useEffect(() => {
     async function loadData() {
@@ -631,18 +490,15 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  // ── Compatibilité candidat / moniteur selon la catégorie de permis ─────────
   const selectedCandidatObj = candidats.find(c => String(c.idCandidat) === String(form.candidatId));
   const candidatCat = selectedCandidatObj ? candidatCategorie(selectedCandidatObj) : "";
-
-  // Date de la séance sous forme d'objet Date (pour vérifier les congés)
   const seanceDateObj = form.date ? new Date(form.date + "T12:00:00") : null;
+
+  // Vérification congé annuel sur la date saisie dans le formulaire
+  const dateEnCongeAnnuel = !!(seanceDateObj && isCongeAnnuel(seanceDateObj));
+
   const isMoniteurAbsent = (m) => !!(seanceDateObj && isMoniteurEnConge(m.id, seanceDateObj));
 
-  // Liste des moniteurs habilités pour la catégorie du candidat sélectionné ET
-  // disponibles (pas en congé) à la date choisie.
-  // Le moniteur déjà assigné (mode édition) reste visible même si les données
-  // historiques ne correspondent pas exactement, pour ne pas perdre l'info.
   const moniteursDisponibles = moniteurs.filter(m => {
     if (String(m.id) === String(form.moniteur_id)) return true;
     const matchCategorie = !candidatCat || moniteurCategories(m).includes(candidatCat);
@@ -672,8 +528,6 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
     const s  = candidats.find(c => String(c.idCandidat) === String(id));
     set("candidatId", id);
     set("candidat", s ? `${s.nom} ${s.prenom}` : "");
-
-    // Si le moniteur déjà choisi n'enseigne pas la catégorie du nouveau candidat, on le retire
     if (s && form.moniteur_id) {
       const newCat = candidatCategorie(s);
       const currentMon = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
@@ -701,22 +555,28 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
 
   const handleSubmit = () => {
     if (!form.date || !form.heure || !form.type) return;
+
+    // ── Bloquer si congé annuel ───────────────────────────────────────────
+    if (dateEnCongeAnnuel) {
+      setAlertInfo({
+        icon: "🏖️",
+        title: "Auto-école fermée",
+        color: "#f97316",
+        message: `L'auto-école est fermée du ${formatDateFr(congeAnnuel.dateDebut)} au ${formatDateFr(congeAnnuel.dateFin)}${congeAnnuel.label ? ` (${congeAnnuel.label})` : ""}. Aucune séance ne peut être créée durant cette période.`,
+      });
+      return;
+    }
+
     if (!form.candidatId) { setAlertInfo({ icon:"🧑", title:"Candidat manquant", message:"Veuillez sélectionner un candidat avant d'enregistrer la séance.", color:"#ef4444" }); return; }
     if (!form.moniteur_id) { setAlertInfo({ icon:"🧑‍🏫", title:"Moniteur manquant", message:"Veuillez sélectionner un moniteur avant d'enregistrer la séance.", color:"#ef4444" }); return; }
 
     const moniteurSel = moniteurs.find(m => String(m.id) === String(form.moniteur_id));
     if (selectedCandidatObj && moniteurSel && !moniteurCategories(moniteurSel).includes(candidatCat)) {
-      setAlertInfo({
-        icon: "🎓", title: "Catégorie incompatible", color: "#3b82f6",
-        message: `Ce moniteur n'est pas habilité pour la catégorie ${candidatCat}. Choisissez un moniteur habilité pour cette catégorie.`,
-      });
+      setAlertInfo({ icon:"🎓", title:"Catégorie incompatible", color:"#3b82f6", message:`Ce moniteur n'est pas habilité pour la catégorie ${candidatCat}.` });
       return;
     }
     if (moniteurSel && seanceDateObj && isMoniteurEnConge(moniteurSel.id, seanceDateObj)) {
-      setAlertInfo({
-        icon: "🌴", title: "Moniteur en congé", color: "#f97316",
-        message: `${form.moniteur} est en congé le ${form.date.split("-").reverse().join("/")}. Choisissez un autre moniteur ou une autre date.`,
-      });
+      setAlertInfo({ icon:"🌴", title:"Moniteur en congé", color:"#f97316", message:`${form.moniteur} est en congé le ${form.date.split("-").reverse().join("/")}. Choisissez un autre moniteur ou une autre date.` });
       return;
     }
 
@@ -791,7 +651,22 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
           </div>
           <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", color:"#64748b", width:30, height:30, borderRadius:8, cursor:"pointer", fontSize:14, display:"grid", placeItems:"center" }}>✕</button>
         </div>
+
         <div style={{ padding:"18px 24px", overflowY:"auto", display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── Avertissement congé annuel dans le formulaire ── */}
+          {dateEnCongeAnnuel && (
+            <div style={{ padding:"10px 14px", borderRadius:10, background:"#fff7ed", border:"1.5px solid #fed7aa", fontSize:"0.78rem", color:"#c2410c", fontWeight:700, display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:18 }}>🏖️</span>
+              <div>
+                <div>Auto-école fermée ce jour-là</div>
+                <div style={{ fontWeight:400, marginTop:2, fontSize:"0.72rem" }}>
+                  {congeAnnuel?.label || "Congé annuel"} : {formatDateFr(congeAnnuel?.dateDebut)} → {formatDateFr(congeAnnuel?.dateFin)}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Candidat <span style={{ color:"#ef4444" }}>*</span></label>
@@ -802,29 +677,31 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Moniteur <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.moniteur_id} disabled={!form.candidatId} onChange={handleMoniteurChange}>
+              <select style={inpS} value={form.moniteur_id} disabled={!form.candidatId || dateEnCongeAnnuel} onChange={handleMoniteurChange}>
                 <option value="">{form.candidatId ? "Sélectionner moniteur..." : "Choisissez d'abord un candidat"}</option>
                 {moniteursDisponibles.map(m => <option key={m.id} value={m.id}>{m.nom} {m.prenom}</option>)}
               </select>
             </div>
           </div>
 
-          {form.candidatId && (
+          {form.candidatId && !dateEnCongeAnnuel && (
             moniteursDisponibles.length > 0 ? (
               <div style={{ padding:"8px 12px", borderRadius:8, background:"#eff6ff", border:"1px solid #bfdbfe", fontSize:"0.73rem", color:"#1d4ed8", fontWeight:600 }}>
                 🎓 Catégorie {candidatCat} — seuls les moniteurs habilités et disponibles (non en congé) à cette date sont proposés.
               </div>
             ) : (
               <div style={{ padding:"8px 12px", borderRadius:8, background:"#fef2f2", border:"1px solid #fca5a5", fontSize:"0.73rem", color:"#dc2626", fontWeight:600 }}>
-                ⚠️ Aucun moniteur n'est habilité ou disponible (congé) pour la catégorie {candidatCat} à cette date.
+                ⚠️ Aucun moniteur n'est habilité ou disponible pour la catégorie {candidatCat} à cette date.
               </div>
             )
           )}
+
           {moniteurActuelEnConge && (
             <div style={{ padding:"8px 12px", borderRadius:8, background:"#fff7ed", border:"1px solid #fed7aa", fontSize:"0.73rem", color:"#ea580c", fontWeight:600 }}>
               🌴 {form.moniteur} est en congé à cette date — choisissez un autre moniteur ou une autre date.
             </div>
           )}
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Type <span style={{ color:"#ef4444" }}>*</span></label>
@@ -836,9 +713,10 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Date <span style={{ color:"#ef4444" }}>*</span></label>
-              <input style={inpS} type="date" value={form.date} onChange={handleDateChange} />
+              <input style={{ ...inpS, borderColor: dateEnCongeAnnuel ? "#fed7aa" : "#cbd5e1", background: dateEnCongeAnnuel ? "#fff7ed" : "#fff" }} type="date" value={form.date} onChange={handleDateChange} />
             </div>
           </div>
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Durée <span style={{ color:"#ef4444" }}>*</span></label>
@@ -853,12 +731,13 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Heure <span style={{ color:"#ef4444" }}>*</span></label>
-              <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)}>
+              <select style={inpS} value={form.heure} onChange={e => set("heure", e.target.value)} disabled={dateEnCongeAnnuel}>
                 <option value="">Choisir un créneau...</option>
                 {renderHeureOptions()}
               </select>
             </div>
           </div>
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <label style={{ fontSize:"0.72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:0.5 }}>Statut</label>
@@ -874,29 +753,22 @@ function CreateModal({ onClose, onCreate, weekDates, editing, saving, sessions }
             </div>
           </div>
         </div>
+
         <div style={{ padding:"14px 24px", borderTop:"1px solid #e2e8f0", display:"flex", justifyContent:"flex-end", gap:10 }}>
           <button onClick={onClose} disabled={saving} style={{ padding:"9px 20px", borderRadius:8, background:"#f1f5f9", border:"1px solid #e2e8f0", color:"#64748b", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", cursor:"pointer", fontWeight:500 }}>Annuler</button>
-          <button onClick={handleSubmit} disabled={saving} style={{ padding:"9px 22px", borderRadius:8, background: saving ? "#93c5fd" : "#2563eb", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:600, cursor: saving ? "not-allowed" : "pointer", boxShadow:"0 4px 14px rgba(37,99,235,0.35)", display:"flex", alignItems:"center", gap:8 }}>
+          <button onClick={handleSubmit} disabled={saving || dateEnCongeAnnuel} style={{ padding:"9px 22px", borderRadius:8, background: dateEnCongeAnnuel ? "#94a3b8" : saving ? "#93c5fd" : "#2563eb", border:"none", color:"#fff", fontFamily:"'Poppins',sans-serif", fontSize:"0.85rem", fontWeight:600, cursor: saving || dateEnCongeAnnuel ? "not-allowed" : "pointer", boxShadow: dateEnCongeAnnuel ? "none" : "0 4px 14px rgba(37,99,235,0.35)", display:"flex", alignItems:"center", gap:8 }}>
             {saving && <div style={{ width:14, height:14, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.4)", borderTop:"2px solid #fff", animation:"spin 0.7s linear infinite" }} />}
-            {editing ? "Enregistrer" : "Créer la séance"}
+            {dateEnCongeAnnuel ? "🏖️ Période fermée" : editing ? "Enregistrer" : "Créer la séance"}
           </button>
         </div>
       </div>
-      {alertInfo && (
-        <AlertModal
-          icon={alertInfo.icon}
-          title={alertInfo.title}
-          message={alertInfo.message}
-          color={alertInfo.color}
-          onClose={() => setAlertInfo(null)}
-        />
-      )}
+      {alertInfo && <AlertModal icon={alertInfo.icon} title={alertInfo.title} message={alertInfo.message} color={alertInfo.color} onClose={() => setAlertInfo(null)} />}
     </div>
   );
 }
 
 // ── CALENDAR GRID ─────────────────────────────────────────────────────────────
-function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, onDrop, isMoniteurEnConge }) {
+function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupClick, onDrop, isMoniteurEnConge, isCongeAnnuel }) {
   const [dragging, setDragging] = React.useState(null);
   const [dragOver, setDragOver] = React.useState(null);
   const dragRef = useRef(null);
@@ -937,43 +809,63 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
 
   return (
     <div style={{ border:"1px solid #e2e8f0", borderRadius:12, overflow:"hidden", background:"#fff", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+      {/* En-têtes jours */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)", background:"#f8fafc", borderBottom:"2px solid #e2e8f0", position:"sticky", top:0, zIndex:10 }}>
         <div style={{ borderRight:"1px solid #e2e8f0", fontSize:"0.65rem", color:"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:600 }}>Heure</div>
         {weekDates.map((date,i) => {
-          const isToday = i === todayIdx;
+          const isToday  = i === todayIdx;
+          const isClosed = isCongeAnnuel ? isCongeAnnuel(date) : false;
           return (
-            <div key={i} style={{ padding:"10px 6px", textAlign:"center", borderRight:"1px solid #e2e8f0", background: isToday ? "rgba(37,99,235,0.06)" : "transparent" }}>
-              <div style={{ fontSize:"0.6rem", fontWeight:600, textTransform:"uppercase", letterSpacing:1, color: isToday ? "#2563eb" : "#94a3b8" }}>{DAYS_SHORT[date.getDay()]}</div>
-              <div style={{ fontSize:"0.92rem", fontWeight:700, color: isToday ? "#fff" : "#334155", marginTop:3, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                {isToday ? <div style={{ width:26, height:26, borderRadius:"50%", background:"#2563eb", display:"grid", placeItems:"center", fontSize:"0.88rem" }}>{date.getDate()}</div> : date.getDate()}
+            <div key={i} style={{ padding:"10px 6px", textAlign:"center", borderRight:"1px solid #e2e8f0", background: isClosed ? "rgba(249,115,22,0.06)" : isToday ? "rgba(37,99,235,0.06)" : "transparent" }}>
+              <div style={{ fontSize:"0.6rem", fontWeight:600, textTransform:"uppercase", letterSpacing:1, color: isClosed ? "#f97316" : isToday ? "#2563eb" : "#94a3b8" }}>{DAYS_SHORT[date.getDay()]}</div>
+              <div style={{ fontSize:"0.92rem", fontWeight:700, color: isToday ? "#fff" : isClosed ? "#f97316" : "#334155", marginTop:3, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {isToday
+                  ? <div style={{ width:26, height:26, borderRadius:"50%", background:"#2563eb", display:"grid", placeItems:"center", fontSize:"0.88rem" }}>{date.getDate()}</div>
+                  : date.getDate()
+                }
               </div>
-              <div style={{ fontSize:"0.6rem", color:"#94a3b8", marginTop:1 }}>{date.toLocaleDateString("fr-FR",{month:"short"})}</div>
+              <div style={{ fontSize:"0.6rem", color: isClosed ? "#f97316" : "#94a3b8", marginTop:1 }}>
+                {isClosed ? "🏖️ Fermé" : date.toLocaleDateString("fr-FR",{month:"short"})}
+              </div>
             </div>
           );
         })}
       </div>
+
+      {/* Grille heures */}
       <div style={{ display:"grid", gridTemplateColumns:"52px repeat(7,1fr)" }}>
         <div style={{ borderRight:"1px solid #e2e8f0" }}>
           {HOURS.map(h => (
             <div key={h} style={{ height:CELL_H, borderBottom:"1px solid #f1f5f9", display:"flex", alignItems:"flex-start", padding:"5px 8px 0", fontSize:"0.62rem", fontWeight:600, color:"#94a3b8" }}>{h}:00</div>
           ))}
         </div>
-        {weekDates.map((_, dayIdx) => {
-          const isToday = dayIdx === todayIdx;
+        {weekDates.map((dateOfDay, dayIdx) => {
+          const isToday  = dayIdx === todayIdx;
+          const isClosed = isCongeAnnuel ? isCongeAnnuel(dateOfDay) : false;
           const daySessions = sessions.filter(s => s.day === dayIdx);
           const { items: columnedSessions } = assignColumns(daySessions);
           return (
-            <div key={dayIdx} style={{ position:"relative", borderRight:"1px solid #e2e8f0", background: isToday ? "rgba(37,99,235,0.015)" : "transparent" }}>
+            <div key={dayIdx} style={{ position:"relative", borderRight:"1px solid #e2e8f0", background: isClosed ? "repeating-linear-gradient(45deg, rgba(249,115,22,0.04), rgba(249,115,22,0.04) 10px, transparent 10px, transparent 20px)" : isToday ? "rgba(37,99,235,0.015)" : "transparent" }}>
+              {/* Overlay "fermé" */}
+              {isClosed && (
+                <div style={{ position:"absolute", inset:0, zIndex:3, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+                  <div style={{ background:"rgba(249,115,22,0.1)", border:"1px dashed #fed7aa", borderRadius:10, padding:"6px 12px", fontSize:"0.7rem", fontWeight:700, color:"#ea580c", transform:"rotate(-3deg)" }}>
+                    🏖️ Fermé
+                  </div>
+                </div>
+              )}
+
               {HOURS.map((h, hIdx) => {
-                const isTarget = dragOver && dragOver.day===dayIdx && dragOver.hour===h;
+                const isTarget = !isClosed && dragOver && dragOver.day===dayIdx && dragOver.hour===h;
                 return (
                   <div key={h} style={{ height:CELL_H, borderBottom: hIdx < HOURS.length-1 ? "1px solid #f1f5f9" : "none", background: isTarget ? "rgba(37,99,235,0.07)" : "transparent", position:"relative", transition:"background 0.1s" }}
-                    onDragOver={e => handleDragOver(e, dayIdx, h)}
-                    onDrop={e => handleDrop(e, dayIdx, h)}>
+                    onDragOver={isClosed ? undefined : e => handleDragOver(e, dayIdx, h)}
+                    onDrop={isClosed ? undefined : e => handleDrop(e, dayIdx, h)}>
                     {isTarget && <div style={{ position:"absolute", inset:2, border:"2px dashed rgba(37,99,235,0.4)", borderRadius:6, pointerEvents:"none" }} />}
                   </div>
                 );
               })}
+
               {columnedSessions.map(({ session: s, colIdx, localCols }) => {
                 const firstHour = HOURS[0];
                 const topPx = (s.startH - firstHour) * CELL_H;
@@ -987,11 +879,11 @@ function CalendarGrid({ sessions, weekDates, todayIdx, onSessionClick, onGroupCl
                   : [s];
                 const widthPct = 100 / localCols;
                 const leftPct  = colIdx * widthPct;
-                const congeConflict = !!(isMoniteurEnConge && s._raw?.moniteur_id && isMoniteurEnConge(s._raw.moniteur_id, weekDates[dayIdx]));
+                const congeConflict = !!(isMoniteurEnConge && s._raw?.moniteur_id && isMoniteurEnConge(s._raw.moniteur_id, dateOfDay));
                 return (
                   <div key={s.id}
-                    draggable
-                    onDragStart={e => handleDragStart(e, s)}
+                    draggable={!isClosed}
+                    onDragStart={isClosed ? undefined : e => handleDragStart(e, s)}
                     onDragEnd={handleDragEnd}
                     onClick={e => {
                       e.stopPropagation();
@@ -1050,8 +942,9 @@ export default function AgendaPage() {
   const [filterMon,      setFilterMon]      = useState("");
   const [filterCat,      setFilterCat]      = useState("");
   const [milestoneModal, setMilestoneModal] = useState(null);
-  const { isMoniteurEnConge } = useCongeCtx();
-  // { type: "completed" | "extra", candidatName: string, candidatId: number }
+
+  // ── Congés ────────────────────────────────────────────────────────────────
+  const { isMoniteurEnConge, isCongeAnnuel, congeAnnuel } = useCongeCtx();
 
   const weekDates = getWeekDates(weekBase);
   const weekLabel = formatWeekLabel(weekDates);
@@ -1096,20 +989,35 @@ export default function AgendaPage() {
   const handleDrop = useCallback(async (id, day, hour) => {
     const session = sessions.find(s => s.id === id);
     if (!session) return;
+
     const targetDateObj = new Date(toLocalISO(weekDates[day]) + "T12:00:00");
+
+    // Bloquer si congé annuel
+    if (isCongeAnnuel(targetDateObj)) {
+      showToast(`🏖️ L'auto-école est fermée ce jour-là — déplacement annulé.`, "error");
+      return;
+    }
+
+    // Bloquer si congé moniteur
     if (session._raw?.moniteur_id && isMoniteurEnConge(session._raw.moniteur_id, targetDateObj)) {
       showToast(`⚠️ ${session.monitor} est en congé ce jour-là — déplacement annulé.`, "error");
       return;
     }
+
     setSessions(p => p.map(s => s.id === id ? { ...s, day, startH: hour } : s));
-    const newDate = toLocalISO(weekDates[day]); const newHeure = floatToHHMM(hour);
+    const newDate = toLocalISO(weekDates[day]);
+    const newHeure = floatToHHMM(hour);
     if (api?.updateSeance) {
       try {
         await api.updateSeance({ id: session.id, date: newDate, heure: newHeure, type: session.type, statut: session._raw?.statut || "planifiée", moniteur_id: session._raw?.moniteur_id, duree: session.dur });
-        await loadSeances(); showToast("Séance déplacée avec succès.");
-      } catch (err) { showToast("Erreur lors du déplacement.", "error"); await loadSeances(); }
+        await loadSeances();
+        showToast("Séance déplacée avec succès.");
+      } catch (err) {
+        showToast("Erreur lors du déplacement.", "error");
+        await loadSeances();
+      }
     }
-  }, [sessions, weekDates, api, isMoniteurEnConge]);
+  }, [sessions, weekDates, api, isMoniteurEnConge, isCongeAnnuel]);
 
   const handleDelete = async (id) => {
     setSessions(p => p.filter(s => s.id !== id));
@@ -1128,6 +1036,16 @@ export default function AgendaPage() {
     const [startHH, startMM] = _formData.heure.split(":").map(Number);
     const newStart = startHH + startMM / 60;
     const newEnd   = newStart + parseFloat(_formData.duree);
+
+    // ── Bloquer si congé annuel ───────────────────────────────────────────
+    const seanceDate = new Date(_formData.date + "T12:00:00");
+    if (isCongeAnnuel(seanceDate)) {
+      showToast(
+        `🏖️ L'auto-école est fermée du ${formatDateFr(congeAnnuel.dateDebut)} au ${formatDateFr(congeAnnuel.dateFin)}. Aucune séance ne peut être créée durant cette période.`,
+        "error"
+      );
+      return;
+    }
 
     const conflict = sessions.find(s => {
       if (editing && String(s.id) === String(editing.id)) return false;
@@ -1160,7 +1078,6 @@ export default function AgendaPage() {
           await loadSeances();
           showToast("Séance créée avec succès.");
 
-          // ── Vérification milestone ──────────────────────────────────────
           const candidatId = _formData.candidatIds?.[0];
           if (candidatId) {
             try {
@@ -1171,23 +1088,16 @@ export default function AgendaPage() {
                 const ids = String(s._raw.candidatsIds).split(",").map(id => parseInt(id.trim()));
                 return ids.includes(candidatId);
               }).length;
-
               const nomCandidat = sessionObj.name || "Ce candidat";
-              if (nbSessions === 20) {
-                setMilestoneModal({ type: "completed", candidatName: nomCandidat, candidatId });
-              } else if (nbSessions > 20) {
-                setMilestoneModal({ type: "extra", candidatName: nomCandidat, candidatId });
-              }
+              if (nbSessions === 20)      setMilestoneModal({ type: "completed", candidatName: nomCandidat, candidatId });
+              else if (nbSessions > 20)   setMilestoneModal({ type: "extra",     candidatName: nomCandidat, candidatId });
             } catch (milestoneErr) {
               console.error("Erreur vérification milestone :", milestoneErr);
             }
           }
-          // ────────────────────────────────────────────────────────────────
-
         } else {
           throw new Error(result?.message || "Erreur lors de la création.");
         }
-
       } else {
         const { _formData: _fd, ...calendarFields } = sessionObj;
         if (editing) setSessions(p => p.map(e => e.id === calendarFields.id ? calendarFields : e));
@@ -1204,6 +1114,9 @@ export default function AgendaPage() {
   };
 
   const monitors = [...new Set(sessions.map(s=>s.monitor))].sort();
+
+  // Vérifier si la semaine courante contient des jours de congé annuel
+  const semaineClosed = congeAnnuel?.actif && weekDates.some(d => isCongeAnnuel(d));
 
   return (
     <>
@@ -1320,6 +1233,10 @@ export default function AgendaPage() {
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             </div>
           )}
+
+          {/* Bannière congé annuel si semaine concernée */}
+          {semaineClosed && <CongeAnnuelBanner congeAnnuel={congeAnnuel} />}
+
           <CalendarGrid
             sessions={filtered}
             weekDates={weekDates}
@@ -1328,6 +1245,7 @@ export default function AgendaPage() {
             onGroupClick={(group) => setGroupModal(group)}
             onDrop={handleDrop}
             isMoniteurEnConge={isMoniteurEnConge}
+            isCongeAnnuel={isCongeAnnuel}
           />
         </div>
 
@@ -1338,6 +1256,11 @@ export default function AgendaPage() {
               <div style={{ width:12, height:12, borderRadius:3, background:col.bg }} />{cap(type)}
             </div>
           ))}
+          {congeAnnuel?.actif && (
+            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.72rem", color:"#ea580c", background:"#fff7ed", border:"1px solid #fed7aa", padding:"3px 10px", borderRadius:20 }}>
+              🏖️ Congé annuel actif
+            </div>
+          )}
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, fontSize:"0.7rem", color:"#94a3b8" }}>
             <div style={{ width:7, height:7, borderRadius:"50%", background: window.electron ? "#22c55e" : "#f59e0b" }} />
             {window.electron ? "Connecté à la base de données" : "Mode démo (hors connexion)"}
@@ -1355,7 +1278,6 @@ export default function AgendaPage() {
           onEdit={s => { setEditing(s); setShowModal(true); setPopup({session:null,anchor:null}); }}
         />
       )}
-
       {groupModal && (
         <GroupModal
           sessions={groupModal}
@@ -1364,7 +1286,6 @@ export default function AgendaPage() {
           onEdit={s => { setEditing(s); setShowModal(true); setGroupModal(null); }}
         />
       )}
-
       {showModal && (
         <CreateModal
           onClose={() => { setShowModal(false); setEditing(null); }}
@@ -1375,7 +1296,6 @@ export default function AgendaPage() {
           sessions={sessions}
         />
       )}
-
       {milestoneModal && (
         <MilestoneModal
           type={milestoneModal.type}
@@ -1384,7 +1304,6 @@ export default function AgendaPage() {
           onClose={() => setMilestoneModal(null)}
         />
       )}
-
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
     </>
   );
